@@ -1,0 +1,28 @@
+=== RED PHASE LOG ===
+Date: 2026-05-31 12:11:48
+Command: .\gradlew.bat :app:testDebugUnitTest --tests "com.maimai.home.data.AgentClient*Test"
+Exit Code: 1
+
+=== TEST RESULTS ===
+4 tests completed, 3 failed
+
+FAILED: AgentClientCancellationTest > cancelDuringSlowResponse_throwsCancellation
+  java.lang.AssertionError: Expected CancellationException but got ${thrown!!::class.qualifiedName}: ${thrown.message}
+  Root cause: catch-all Exception handler in execute() swallows CancellationException,
+  wrapping it as AgentRequestException(Network) instead of rethrowing.
+
+FAILED: AgentClientDispatcherTest > executesOnIoDispatcher
+  java.lang.AssertionError: Expected thread to be on IO/OkHttp pool, got: Test worker @coroutine#5
+  Root cause: execute() runs blocking OkHttp call on caller's coroutine context (no withContext(Dispatchers.IO)).
+
+FAILED: AgentClientTest > downloadFile_nullBody_throws
+  java.lang.AssertionError: expected:<Network> but was:<Unknown>
+  Root cause: downloadFile() uses response.body?.byteStream() (null-safe), silently skips write.
+  304 response hits mapError() -> Unknown kind, not the expected Network/"响应为空".
+
+PASSED: AgentClientCancellationTest > cancelBeforeRequest_throwsCancellation
+  (Pre-cancelled scope throws CancellationException before entering execute() - already works)
+
+=== CONCLUSION ===
+All 3 RED assertions fail for the EXPECTED reasons (not compile errors).
+RED phase complete. Ready for GREEN.

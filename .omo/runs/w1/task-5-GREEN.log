@@ -1,0 +1,24 @@
+GREEN phase: EventStreamTest — w1 task 5
+Command: cd apps/mobile-android; .\gradlew.bat :app:testDebugUnitTest --tests "com.maimai.home.data.EventStreamTest"
+Exit code: 0
+
+> :app:testDebugUnitTest > 6 tests completed
+
+Tests passed:
+  com.maimai.home.data.EventStreamTest
+    httpAddressBecomesWs        PASS  — "http://192.168.1.1:8765" → "ws://192.168.1.1:8765"
+    httpsAddressBecomesWss      PASS  — "https://example.com" → "wss://example.com"
+    bareAddressBecomesWs        PASS  — "192.168.1.1:8765" → "ws://192.168.1.1:8765"
+    wssAddressPreserved         PASS  — "wss://secure.example.com" unchanged
+    wsAddressPreserved          PASS  — "ws://plain.example.com" unchanged
+    reconnectJobCancelledOnDisconnect  PASS  — job == null || job.isCancelled after disconnect()
+
+Production changes applied:
+  EventStream.kt:
+    - internal var reconnectJob: Job? = null
+    - scheduleReconnect(): reconnectJob?.cancel(); reconnectJob = scope.launch { try { delay(...); openSocket() } catch (_: CancellationException) {} }
+    - disconnect(): reconnectJob?.cancel(); reconnectJob = null; webSocket?.close(1000, "client disconnect")
+    - normalizedWsBase() extracted as internal top-level fun with https→wss, http→ws, bare→ws://, wss/ws preserved
+
+BUILD SUCCESSFUL in 18s
+28 actionable tasks: 3 executed, 25 up-to-date
