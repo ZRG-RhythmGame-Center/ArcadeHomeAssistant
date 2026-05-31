@@ -366,14 +366,17 @@ internal fun FilesScreenContent(
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text(stringResource(R.string.files_action_download)) }
                 }
-                TextButton(
-                    onClick = { renameEntry = entry; selectedEntry = null },
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(stringResource(R.string.files_action_rename)) }
-                TextButton(
-                    onClick = { moveEntry = entry; selectedEntry = null },
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(stringResource(R.string.files_action_move)) }
+                // Rename and Move hidden on read-only roots (R2 B5).
+                if (state.canMutate) {
+                    TextButton(
+                        onClick = { renameEntry = entry; selectedEntry = null },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.files_action_rename)) }
+                    TextButton(
+                        onClick = { moveEntry = entry; selectedEntry = null },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(stringResource(R.string.files_action_move)) }
+                }
                 // Delete hidden for directories (R1 #8) and readOnly roots (R2 B5).
                 if (!entry.isDirectory && state.canMutate) {
                     TextButton(
@@ -536,7 +539,11 @@ private fun FileEntryRow(
             .fillMaxWidth()
             .combinedClickable(
                 onClick = onOpen,
-                onLongClick = onLongClick,
+                // Long-click opens the action sheet only for mutable roots.
+                // Read-only roots do not support rename/move/delete, so the
+                // action sheet would only show "下载" - we surface that via
+                // the trailing chevron + tap navigation instead.
+                onLongClick = if (canMutate) onLongClick else null,
             ),
     ) {
         ListItem(

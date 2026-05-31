@@ -5,6 +5,8 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -126,8 +128,14 @@ class FilesScreenTest {
     /**
      * Task 29 / R2 B5: delete action must NOT appear when root is readOnly.
      */
+    /**
+     * R2 B5: read-only roots must not expose any mutation affordance. The
+     * long-click handler is disabled on read-only roots (canMutate=false), so
+     * the action sheet never opens. Download remains accessible via the
+     * trailing chevron / tap path.
+     */
     @Test
-    fun deleteHiddenForReadOnlyRoot() {
+    fun mutationsHiddenForReadOnlyRoot() {
         val readOnlyState = defaultState.copy(
             selectedRoot = readOnlyRoot,
             roots = listOf(readOnlyRoot),
@@ -151,11 +159,23 @@ class FilesScreenTest {
             }
         }
 
+        // Long-click on a file. Because canMutate==false, the row's
+        // combinedClickable disables onLongClick (passes null). The action
+        // sheet must NOT open.
         composeRule.onNodeWithText("report.txt").performTouchInput { longClick() }
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.waitForIdle()
-        composeRule.onNodeWithTag(FilesScreenTags.ACTION_SHEET).assertIsDisplayed()
 
+        // No action sheet, no rename/move/delete buttons reachable.
+        assertThat(
+            composeRule.onAllNodesWithTag(FilesScreenTags.ACTION_SHEET).fetchSemanticsNodes(),
+        ).isEmpty()
+        assertThat(
+            composeRule.onAllNodesWithText("重命名").fetchSemanticsNodes(),
+        ).isEmpty()
+        assertThat(
+            composeRule.onAllNodesWithText("移动").fetchSemanticsNodes(),
+        ).isEmpty()
         assertThat(
             composeRule.onAllNodesWithText("删除").fetchSemanticsNodes(),
         ).isEmpty()
