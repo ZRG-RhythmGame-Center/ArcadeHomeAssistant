@@ -24,6 +24,7 @@
     <string name="connection_discovery_title">局域网发现</string>
     <string name="connection_discovery_scanning">正在搜索局域网中的 Agent…</string>
     <string name="connection_discovery_empty">暂无发现结果</string>
+    <string name="connection_address_required">请输入 Agent 的 LAN 地址（例如 192.168.1.100:8765）</string>
 
     <!-- Reusable card composables (Wave 5 task 26). -->
     <string name="card_loading">加载中…</string>
@@ -60,6 +61,7 @@
     <string name="files_select_root">选择根目录</string>
     <string name="files_root_picker_title">选择文件根</string>
     <string name="files_roots_empty">未发现任何文件根</string>
+    <string name="files_empty_directory">此目录为空</string>
     <string name="files_breadcrumb_root">/</string>
     <string name="files_kind_directory">文件夹</string>
     <string name="files_kind_directory_cd">文件夹</string>

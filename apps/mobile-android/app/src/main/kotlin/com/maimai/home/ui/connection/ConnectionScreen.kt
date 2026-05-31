@@ -98,13 +98,19 @@ internal fun ConnectionScreenContent(
                     label = { Text(stringResource(R.string.connection_address_label)) },
                     placeholder = { Text(stringResource(R.string.connection_address_placeholder)) },
                     singleLine = true,
+                    isError = state.address.isBlank() && state.errorMessage != null,
+                    supportingText = {
+                        if (state.address.isBlank()) {
+                            Text(stringResource(R.string.connection_address_required))
+                        }
+                    },
                 )
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                     Button(
                         onClick = onTestConnection,
-                        enabled = !state.isTesting,
+                        enabled = !state.isTesting && state.address.isNotBlank(),
                         modifier = Modifier.weight(1f),
                     ) {
                         if (state.isTesting) {

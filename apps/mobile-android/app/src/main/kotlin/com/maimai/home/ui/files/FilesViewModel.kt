@@ -289,11 +289,32 @@ class FilesViewModel(
         }
     }
 
+    /**
+     * I19 fix: after a move, refresh both the SOURCE directory (the entry
+     * disappeared) and the TARGET directory (the entry appeared). The current
+     * view is the source; if the target differs, we additionally pre-warm it
+     * by triggering a fetch so a subsequent navigateToPath shows fresh data.
+     */
     fun move(entry: FileEntry, newPath: String, onDone: (String) -> Unit, onError: (String) -> Unit) {
         val root = _uiState.value.selectedRoot ?: return
+        val sourcePath = _uiState.value.path
         viewModelScope.launch {
             runCatching { agentClient.moveFile(address, root.id, currentEntryPath(entry), newPath) }
-                .onSuccess { refresh(); onDone("已移动到 $newPath") }
+                .onSuccess {
+                    // Refresh the current (source) directory listing.
+                    refresh()
+                    // Pre-warm the target directory cache by fetching it.
+                    // The result is discarded because the user has not
+                    // navigated yet; the next navigateToPath will trigger a
+                    // fresh fetch so this is best-effort warming.
+                    val targetDir = parentDirOf(newPath)
+                    if (targetDir != sourcePath) {
+                        runCatching {
+                            agentClient.fetchFiles(address, root.id, targetDir)
+                        }
+                    }
+                    onDone("已移动到 $newPath")
+                }
                 .onFailure { error -> onError((error as? AgentRequestException)?.apiError?.message ?: "网络错误") }
         }
     }

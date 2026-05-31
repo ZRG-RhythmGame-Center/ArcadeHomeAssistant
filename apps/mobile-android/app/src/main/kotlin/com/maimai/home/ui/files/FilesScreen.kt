@@ -62,6 +62,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maimai.home.R
 import com.maimai.home.data.models.FileEntry
 import com.maimai.home.data.models.FileRoot
+import com.maimai.home.ui.connection.EmptyCard
 import kotlinx.coroutines.launch
 
 /**
@@ -78,6 +79,7 @@ object FilesScreenTags {
     const val UPLOAD_FAB = "files.upload.fab"
     const val BREADCRUMB_ROW = "files.breadcrumb.row"
     const val SNACKBAR_HOST = "files.snackbar"
+    const val EMPTY_DIRECTORY = "files.empty.directory"
 }
 
 /**
@@ -266,6 +268,17 @@ internal fun FilesScreenContent(
                     )
                 }
 
+                // I10 fix: when the listing is loaded but empty, show a
+                // friendly empty-state message instead of an empty LazyColumn.
+                val entries = state.listing?.entries ?: emptyList()
+                if (state.listing != null && entries.isEmpty() && !state.isRefreshing) {
+                    EmptyCard(
+                        text = stringResource(R.string.files_empty_directory),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag(FilesScreenTags.EMPTY_DIRECTORY),
+                    )
+                }
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxSize(),
