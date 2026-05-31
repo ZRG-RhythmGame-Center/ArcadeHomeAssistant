@@ -6,6 +6,7 @@ import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -49,8 +50,9 @@ class DiscoveryService(
             try {
                 val found = linkedMapOf<String, DiscoveredService>()
                 val started = CompletableDeferred<Unit>()
-                // Track in-flight resolution jobs so we can await them before returning.
-                val pendingResolutions = mutableListOf<CompletableDeferred<Unit>>()
+                // Track in-flight resolution jobs so we can cancel any that
+                // never received a callback when the outer timeout elapses.
+                val pendingResolutions = mutableListOf<Job>()
                 lateinit var listener: NsdManager.DiscoveryListener
 
                 coroutineScope {
@@ -71,19 +73,14 @@ class DiscoveryService(
 
                         override fun onServiceFound(serviceInfo: NsdServiceInfo) {
                             if (serviceInfo.serviceType != "_maimai-home._tcp.") return
-                            val done = CompletableDeferred<Unit>()
-                            synchronized(pendingResolutions) { pendingResolutions.add(done) }
                             // Launch resolution on IO dispatcher — no runBlocking needed.
-                            launch(Dispatchers.IO) {
-                                try {
-                                    val resolved = suspendResolve(serviceInfo)
-                                    if (resolved != null) {
-                                        synchronized(found) { found[resolved.address] = resolved }
-                                    }
-                                } finally {
-                                    done.complete(Unit)
+                            val job = launch(Dispatchers.IO) {
+                                val resolved = suspendResolve(serviceInfo)
+                                if (resolved != null) {
+                                    synchronized(found) { found[resolved.address] = resolved }
                                 }
                             }
+                            synchronized(pendingResolutions) { pendingResolutions.add(job) }
                         }
                     }
 
@@ -96,9 +93,12 @@ class DiscoveryService(
                     delay(timeoutMillis)
                     runCatching { nsdManager.stopServiceDiscovery(listener) }
 
-                    // Wait for all in-flight resolutions to complete.
+                    // Cancel any still-pending resolutions so we never hang
+                    // on a service whose ResolveListener never fires. The
+                    // outer coroutineScope would otherwise wait forever for
+                    // child coroutines stuck in suspendCancellableCoroutine.
                     val snapshot = synchronized(pendingResolutions) { pendingResolutions.toList() }
-                    snapshot.forEach { it.await() }
+                    snapshot.forEach { it.cancel() }
                 }
 
                 found.values.sortedBy { it.name }
