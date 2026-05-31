@@ -86,6 +86,25 @@ if (-not $changeWifiFound) {
     Write-Host "PASS: CHANGE_WIFI_MULTICAST_STATE permission still present"
 }
 
+# Check 4: network_security_config.xml exists, is valid XML,
+#          and declares <base-config cleartextTrafficPermitted='true'>.
+$nscPath = Join-Path (Join-Path $PSScriptRoot "..") "app/src/main/res/xml/network_security_config.xml"
+if (-not (Test-Path $nscPath)) {
+    $errors += "ERROR: network_security_config.xml not found at $nscPath"
+} else {
+    try {
+        [xml]$nsc = Get-Content $nscPath
+        $baseConfig = $nsc.SelectSingleNode("/network-security-config/base-config[@cleartextTrafficPermitted='true']")
+        if ($null -eq $baseConfig) {
+            $errors += "ERROR: NSC missing <base-config cleartextTrafficPermitted='true'>"
+        } else {
+            Write-Host "PASS: NSC has <base-config cleartextTrafficPermitted='true'>"
+        }
+    } catch {
+        $errors += "ERROR: NSC is not valid XML: $($_.Exception.Message)"
+    }
+}
+
 # Report results
 Write-Host ""
 if ($errors.Count -gt 0) {
