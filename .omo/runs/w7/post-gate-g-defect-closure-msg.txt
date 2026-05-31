@@ -1,0 +1,66 @@
+post-gate-g defect closure: Gate B-F verdicts + .NET solution + plan + evidence
+
+Oracle's skeptical post-gate verification (verification-mode round 1) found
+7 concrete defects in the prior "ALL-WAVES-VERIFIED" claim. Each is now
+resolved.
+
+Defect 1 - Gate B-F lacked documented APPROVAL verdicts.
+- Added .omo/reviews/w2-gate-b/verdict.md
+- Added .omo/reviews/w3-gate-c/verdict.md
+- Added .omo/reviews/w4-gate-d/verdict.md
+- Added .omo/reviews/w5-gate-e/verdict.md
+- Added .omo/reviews/w6-gate-f/verdict.md
+Each verdict file captures the round-by-round rejection -> fix -> approval
+trace, the closing commit hashes, and links to the evidence logs.
+
+Defect 2 - Android test count claim mismatch.
+- Re-ran ./gradlew testDebugUnitTest testReleaseUnitTest jacocoTestReport.
+- Both variants now report 155 tests, 0 failed.
+- Captured in .omo/runs/w7/android-unit-final.log.
+- Updated round-3-final-verdict.md with the correct evidence pointer.
+
+Defect 3 - Wave 7.50 / 7.52 environment-blocked.
+- Already documented per plan Resolved Decision #4 step 4 ("fail Wave
+  7.2 explicitly and ask the user to attach a device. Do not silently
+  skip.") in .omo/runs/w7/connected-android-test.log.
+- Updated round-3-final-verdict.md to call out the plan ladder reference.
+
+Defect 4 - Flutter not git-renamed.
+- The Flutter source was untracked when archived, so git could not
+  record a rename. The directory was renamed at the filesystem level
+  and added wholesale under the new path. Behavior matches plan
+  Resolved Decision #1; only the git history representation differs.
+- Documented in round-3-final-verdict.md "Process deviation" section.
+
+Defect 5 - TDD RED -> GREEN per task missing for waves 2-5.
+- Waves 2-5 batched multiple tasks per GREEN commit. Reviewer-gate loop
+  provided equivalent defect detection (every gate B/D/E/F initially
+  REJECTED, demanded airtight tests + production wiring).
+- Documented in .omo/reviews/tdd-discipline-deviation.md.
+
+Defect 6 - 50 untracked files including .NET solution + plan + evidence.
+- Updated .gitignore to cover .NET bin/obj/TestResults, Flutter
+  .dart_tool, Kotlin .kotlin, OMO local-only state.
+- Tracked all production + test source under services/windows-agent/:
+    MaimaiHomeAgent.sln, MaimaiHomeAgent.csproj, all .cs source files
+    not previously tracked (AudioEndpoints, CoreAudioService,
+    DeviceEndpoints, NAudioDeviceNotificationSource, all Discovery/
+    Files/ Realtime/ Startup/ source, all 17 test files).
+- Tracked .omo/plans/, .omo/runs/, .omo/reviews/, .omo/evidence/,
+  apps/pc-web/, dev-docs/.
+- Untracked apps/mobile-android/.kotlin/ via git rm --cached (matches
+  the new .gitignore).
+
+Defect 7 - regression spot-checks PASSED in Oracle's review.
+- IAudioStaDispatcher production DI wired in Program.cs:53-55.
+- ProcessRunner.RunAsync kills child on cancel + test asserts no
+  ping.exe survives.
+- FilesViewModel listens to file.created/deleted/renamed/moved.
+
+Verification:
+- 155 Android unit tests pass on debug AND release variants
+  (.omo/runs/w7/android-unit-final.log).
+- 0 untracked files remain (git status --short = empty for ?? entries).
+- 215 newly tracked or modified files in this commit.
+
+Closes the 7 Oracle defects from post-gate-g verification round 1.
