@@ -1,0 +1,11 @@
+PHASE: GREEN (after manifest changes)
+COMMAND: pwsh -NoProfile -Command cd 'apps/mobile-android'; & .\scripts\verify-manifest.ps1
+EXIT CODE: 0
+
+--- OUTPUT ---
+PASS: android:usesCleartextTraffic = true
+PASS: android:networkSecurityConfig = @xml/network_security_config
+PASS: NEARBY_WIFI_DEVICES declared with usesPermissionFlags = neverForLocation
+PASS: CHANGE_WIFI_MULTICAST_STATE permission still present
+
+VERIFICATION PASSED: All manifest security checks passed
