@@ -171,10 +171,22 @@ class AgentClient(
         withContext(kotlinx.coroutines.Dispatchers.IO) {
             suspendCancellableCoroutine { cont ->
                 val call = okHttpClient.newCall(request)
-                cont.invokeOnCancellation { call.cancel() }
+                // Track the response so we can close it if the caller is
+                // cancelled between resume() and the caller's first use.
+                val responseRef = java.util.concurrent.atomic.AtomicReference<okhttp3.Response?>()
+                cont.invokeOnCancellation {
+                    call.cancel()
+                    runCatching { responseRef.getAndSet(null)?.close() }
+                }
                 try {
                     val response = call.execute()
-                    cont.resume(response)
+                    responseRef.set(response)
+                    if (cont.isCancelled) {
+                        // Lost the race — close immediately, don't leak.
+                        runCatching { responseRef.getAndSet(null)?.close() }
+                    } else {
+                        cont.resume(response)
+                    }
                 } catch (e: kotlinx.coroutines.CancellationException) {
                     cont.cancel(e)
                 } catch (e: java.net.SocketTimeoutException) {
