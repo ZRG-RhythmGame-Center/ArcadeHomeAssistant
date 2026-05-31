@@ -51,6 +51,7 @@ try
     builder.Services.AddHostedService<MdnsAdvertiser>();
 
     builder.Services.AddSingleton<AudioStaDispatcher>();
+    builder.Services.AddSingleton<IAudioStaDispatcher>(sp => sp.GetRequiredService<AudioStaDispatcher>());
     builder.Services.AddHostedService(sp => sp.GetRequiredService<AudioStaDispatcher>());
     builder.Services.AddSingleton<IAudioService, CoreAudioService>();
     builder.Services.AddSingleton<IAudioDeviceNotificationSource, NAudioDeviceNotificationSource>();
