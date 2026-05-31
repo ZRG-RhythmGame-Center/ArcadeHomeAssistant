@@ -260,7 +260,7 @@ class FilesViewModel(
     }
 
     fun upload(uri: Uri, onDone: (String) -> Unit, onError: (String) -> Unit) {
-        val root = _uiState.value.selectedRoot ?: return
+        val root = mutableRoot(onError) ?: return
         viewModelScope.launch {
             runCatching {
                 agentClient.uploadFile(address, root.id, _uiState.value.path, getApplication<Application>().contentResolver, uri)
@@ -272,7 +272,7 @@ class FilesViewModel(
     }
 
     fun delete(entry: FileEntry, onDone: (String) -> Unit, onError: (String) -> Unit) {
-        val root = _uiState.value.selectedRoot ?: return
+        val root = mutableRoot(onError) ?: return
         viewModelScope.launch {
             runCatching { agentClient.deleteFile(address, root.id, currentEntryPath(entry)) }
                 .onSuccess { refresh(); onDone("已删除 ${entry.name}") }
@@ -281,7 +281,7 @@ class FilesViewModel(
     }
 
     fun rename(entry: FileEntry, newName: String, onDone: (String) -> Unit, onError: (String) -> Unit) {
-        val root = _uiState.value.selectedRoot ?: return
+        val root = mutableRoot(onError) ?: return
         viewModelScope.launch {
             runCatching { agentClient.renameFile(address, root.id, currentEntryPath(entry), newName) }
                 .onSuccess { refresh(); onDone("已重命名为 $newName") }
@@ -296,7 +296,7 @@ class FilesViewModel(
      * by triggering a fetch so a subsequent navigateToPath shows fresh data.
      */
     fun move(entry: FileEntry, newPath: String, onDone: (String) -> Unit, onError: (String) -> Unit) {
-        val root = _uiState.value.selectedRoot ?: return
+        val root = mutableRoot(onError) ?: return
         val sourcePath = _uiState.value.path
         viewModelScope.launch {
             runCatching { agentClient.moveFile(address, root.id, currentEntryPath(entry), newPath) }
@@ -322,6 +322,26 @@ class FilesViewModel(
     fun breadcrumbSegments(): List<String> = _uiState.value.path.split('/').filter { it.isNotBlank() }
 
     fun currentEntryPath(entry: FileEntry): String = listOf(_uiState.value.path.takeIf { it.isNotBlank() }, entry.name).filterNotNull().joinToString("/")
+
+    /**
+     * Defense-in-depth: returns the selected root only if mutation is allowed.
+     * UI already gates upload/action-sheet/long-click via [FilesUiState.canMutate],
+     * but ViewModel-level callers must not rely on UI gating alone. Calls
+     * [onError] with a localised message when the root is missing or read-only
+     * and returns null so the caller can short-circuit.
+     */
+    private fun mutableRoot(onError: (String) -> Unit): FileRoot? {
+        val root = _uiState.value.selectedRoot
+        if (root == null) {
+            onError("未选择根目录")
+            return null
+        }
+        if (root.readOnly) {
+            onError("该根目录为只读，不允许修改")
+            return null
+        }
+        return root
+    }
 
     private fun loadListing(root: FileRoot, path: String) {
         viewModelScope.launch {

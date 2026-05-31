@@ -231,6 +231,83 @@ class FilesViewModelTest {
         assertThat(freshVm.uiState.value.canMutate).isFalse()
     }
 
+    // ── Defense-in-depth: ViewModel mutation guards ───────────────────────────
+
+    @Test
+    fun delete_onReadOnlyRoot_callsOnErrorWithoutHittingAgent() = runTest {
+        advanceUntilIdle()
+        vm.selectRoot(readOnlyRoot)
+        advanceUntilIdle()
+
+        var errorMessage: String? = null
+        var doneCalled = false
+        vm.delete(
+            entry = FileEntry(name = "x.txt", kind = "file", size = 0L, modified = ""),
+            onDone = { doneCalled = true },
+            onError = { errorMessage = it },
+        )
+        advanceUntilIdle()
+
+        assertThat(errorMessage).isEqualTo("该根目录为只读，不允许修改")
+        assertThat(doneCalled).isFalse()
+        coVerify(exactly = 0) { agentClient.deleteFile(any(), any(), any()) }
+    }
+
+    @Test
+    fun rename_onReadOnlyRoot_callsOnErrorWithoutHittingAgent() = runTest {
+        advanceUntilIdle()
+        vm.selectRoot(readOnlyRoot)
+        advanceUntilIdle()
+
+        var errorMessage: String? = null
+        vm.rename(
+            entry = FileEntry(name = "x.txt", kind = "file", size = 0L, modified = ""),
+            newName = "y.txt",
+            onDone = {},
+            onError = { errorMessage = it },
+        )
+        advanceUntilIdle()
+
+        assertThat(errorMessage).isEqualTo("该根目录为只读，不允许修改")
+        coVerify(exactly = 0) { agentClient.renameFile(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun move_onReadOnlyRoot_callsOnErrorWithoutHittingAgent() = runTest {
+        advanceUntilIdle()
+        vm.selectRoot(readOnlyRoot)
+        advanceUntilIdle()
+
+        var errorMessage: String? = null
+        vm.move(
+            entry = FileEntry(name = "x.txt", kind = "file", size = 0L, modified = ""),
+            newPath = "/elsewhere/x.txt",
+            onDone = {},
+            onError = { errorMessage = it },
+        )
+        advanceUntilIdle()
+
+        assertThat(errorMessage).isEqualTo("该根目录为只读，不允许修改")
+        coVerify(exactly = 0) { agentClient.moveFile(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun delete_withNoRoot_callsOnErrorWithoutHittingAgent() = runTest {
+        val freshVm = makeVm(roots = emptyList())
+        advanceUntilIdle()
+
+        var errorMessage: String? = null
+        freshVm.delete(
+            entry = FileEntry(name = "x.txt", kind = "file", size = 0L, modified = ""),
+            onDone = {},
+            onError = { errorMessage = it },
+        )
+        advanceUntilIdle()
+
+        assertThat(errorMessage).isEqualTo("未选择根目录")
+        coVerify(exactly = 0) { agentClient.deleteFile(any(), any(), any()) }
+    }
+
     // ── download ──────────────────────────────────────────────────────────────
 
     @Test

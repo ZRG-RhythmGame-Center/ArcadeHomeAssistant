@@ -1,0 +1,17 @@
+W8 Round 9 Verification — Defense-in-depth ViewModel Mutation Guards
+======================================================================
+Date: 2026-05-31 19:20:19
+Commit base: f216a7e (round 8)
+
+Closes Oracle round 9 watch-out: FilesViewModel.upload/delete/rename/move
+relied solely on UI canMutate gating. Now they additionally guard with a
+private mutableRoot(onError) helper that returns null + invokes onError
+with a localised message if selectedRoot is null OR readOnly. UI gating
+remains for clarity but is no longer the only line of defense.
+
+Sequence (PTY pty_c44bd267):
+1. :app:testDebugUnitTest    -> 200 tests, 0 failed (BUILD SUCCESSFUL)
+2. :app:testReleaseUnitTest  -> 200 tests, 0 failed (BUILD SUCCESSFUL)
+3. :app:assembleRelease      -> BUILD SUCCESSFUL (1m 27s total)
+
+Test count progression: 196 (round 6) -> 200 (round 9, +4 ViewModel guard tests).

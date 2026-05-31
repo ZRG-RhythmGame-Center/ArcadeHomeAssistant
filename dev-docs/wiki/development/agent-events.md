@@ -37,8 +37,8 @@
 | `EventTypes.AudioDeviceChanged` | `audio.device.changed` | `DeviceChangeNotifier` 收到 Core Audio 设备增删改回调（默认设备变化、设备插拔、状态变化） | `DeviceResponse[]`：`{ id: string, name: string, isDefault: bool, state: string }[]` |
 | `EventTypes.FileCreated` | `file.created` | T11 文件 watcher 检测到根目录下新文件/新目录创建（上锁后） | `FileEventDto`：`{ rootId: string, path: string, newPath: null }` |
 | `EventTypes.FileDeleted` | `file.deleted` | T11 文件 watcher 检测到删除 | `FileEventDto`：`{ rootId, path, newPath: null }` |
-| `EventTypes.FileRenamed` | `file.renamed` | T11 同目录内重命名 | `FileEventDto`：`{ rootId, path, newPath }`（path = 旧名，newPath = 新名） |
-| `EventTypes.FileMoved` | `file.moved` | T11 跨目录移动（仍在同一根内） | 同上 |
+| `EventTypes.FileRenamed` | `file.renamed` | T11 同目录内重命名 | `{ rootId: string, fromPath: string, toPath: string }`（fromPath = 旧名，toPath = 新名） |
+| `EventTypes.FileMoved` | `file.moved` | T11 跨目录移动（仍在同一根内） | `{ rootId: string, fromPath: string, toPath: string }`（fromPath = 源路径，toPath = 目标路径） |
 | `EventTypes.DeviceUnavailable` | `device.unavailable` | 设备调用抛出 `AudioOperationException`，同时认定该设备已不可达 | `{ deviceId: string }` |
 
 ## 客户端集成约定
