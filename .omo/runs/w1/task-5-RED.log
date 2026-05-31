@@ -1,0 +1,23 @@
+RED phase: EventStreamTest — w1 task 5
+Command: cd apps/mobile-android; .\gradlew.bat :app:testDebugUnitTest --tests "com.maimai.home.data.EventStreamTest"
+Exit code: 1
+
+FAILURE: Build failed with an exception.
+
+Task :app:compileDebugUnitTestKotlin FAILED
+
+Compilation errors (EventStreamTest.kt — expected RED failures):
+  EventStreamTest.kt:26: Unresolved reference 'normalizedWsBase'
+  EventStreamTest.kt:31: Unresolved reference 'normalizedWsBase'
+  EventStreamTest.kt:36: Unresolved reference 'normalizedWsBase'
+  EventStreamTest.kt:41: Unresolved reference 'normalizedWsBase'
+  EventStreamTest.kt:46: Unresolved reference 'normalizedWsBase'
+  EventStreamTest.kt:86: No value passed for parameter 'json'  [fixed in test before GREEN]
+  EventStreamTest.kt:103: Unresolved reference 'reconnectJob'
+  EventStreamTest.kt:106: Unresolved reference 'isCancelled'
+
+RED verdict: CONFIRMED — production code missing:
+  1. internal top-level fun normalizedWsBase(address: String): String
+  2. internal var reconnectJob: Job? on EventStream
+
+BUILD FAILED in 2s

@@ -18,7 +18,6 @@ import org.robolectric.annotation.Config
  * These tests close R1 findings #1 (Critical) and #2 (Major).
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(minSdk = 21)
 class ManifestSecurityTest {
 
     /**
@@ -53,7 +52,10 @@ class ManifestSecurityTest {
             PackageManager.GET_META_DATA
         )
         
-        assert(appInfo.networkSecurityConfigRes != 0) {
+        val resId = try {
+            appInfo.javaClass.getField("networkSecurityConfigRes").getInt(appInfo)
+        } catch (_: NoSuchFieldException) { 0 }
+        assert(resId != 0) {
             "networkSecurityConfigRes not set (expected @xml/network_security_config)"
         }
     }
