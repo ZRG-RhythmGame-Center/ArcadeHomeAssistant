@@ -3,9 +3,12 @@ package com.maimai.home.data
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
+import android.net.wifi.WifiManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
@@ -18,114 +21,121 @@ data class DiscoveredService(
     val address: String get() = "$host:$port"
 }
 
-class DiscoveryService internal constructor(
+class DiscoveryService(
     private val nsdManager: NsdManagerWrapper,
     private val lockFactory: MulticastLockFactory,
 ) {
+    /**
+     * Secondary constructor for production use — takes Context and builds
+     * the real NsdManager wrapper and WifiManager-backed lock factory.
+     */
     constructor(context: Context) : this(
         nsdManager = RealNsdManagerWrapper(
             context.getSystemService(Context.NSD_SERVICE) as NsdManager
         ),
         lockFactory = RealMulticastLockFactory(
-            context.getSystemService(Context.WIFI_SERVICE) as android.net.wifi.WifiManager
+            context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         ),
     )
 
-    suspend fun discover(timeoutMillis: Long = 6_000L): List<DiscoveredService> = withContext(Dispatchers.IO) {
-        val found = linkedMapOf<String, DiscoveredService>()
-        val started = CompletableDeferred<Unit>()
-        lateinit var listener: NsdManager.DiscoveryListener
-
-        listener = object : NsdManager.DiscoveryListener {
-            override fun onDiscoveryStarted(serviceType: String) {
-                started.complete(Unit)
+    suspend fun discover(timeoutMillis: Long = 6_000L): List<DiscoveredService> =
+        withContext(Dispatchers.IO) {
+            // Acquire MulticastLock before NSD discovery so multicast packets
+            // are not filtered by the Wi-Fi driver on Android.
+            val lock = lockFactory.createMulticastLock("maimai-mdns").apply {
+                setReferenceCounted(false)
+                acquire()
             }
+            try {
+                val found = linkedMapOf<String, DiscoveredService>()
+                val started = CompletableDeferred<Unit>()
+                // Track in-flight resolution jobs so we can await them before returning.
+                val pendingResolutions = mutableListOf<CompletableDeferred<Unit>>()
+                lateinit var listener: NsdManager.DiscoveryListener
 
-            override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
-                started.complete(Unit)
-            }
+                coroutineScope {
+                    listener = object : NsdManager.DiscoveryListener {
+                        override fun onDiscoveryStarted(serviceType: String) {
+                            started.complete(Unit)
+                        }
 
-            override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {
-            }
+                        override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
+                            started.complete(Unit)
+                        }
 
-            override fun onDiscoveryStopped(serviceType: String) {
-            }
+                        override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {}
 
-            override fun onServiceLost(serviceInfo: NsdServiceInfo) {
-            }
+                        override fun onDiscoveryStopped(serviceType: String) {}
 
-            override fun onServiceFound(serviceInfo: NsdServiceInfo) {
-                if (serviceInfo.serviceType != "_maimai-home._tcp.") return
-                resolveService(serviceInfo)?.let { resolved ->
-                    found[resolved.address] = resolved
+                        override fun onServiceLost(serviceInfo: NsdServiceInfo) {}
+
+                        override fun onServiceFound(serviceInfo: NsdServiceInfo) {
+                            if (serviceInfo.serviceType != "_maimai-home._tcp.") return
+                            val done = CompletableDeferred<Unit>()
+                            synchronized(pendingResolutions) { pendingResolutions.add(done) }
+                            // Launch resolution on IO dispatcher — no runBlocking needed.
+                            launch(Dispatchers.IO) {
+                                try {
+                                    val resolved = suspendResolve(serviceInfo)
+                                    if (resolved != null) {
+                                        synchronized(found) { found[resolved.address] = resolved }
+                                    }
+                                } finally {
+                                    done.complete(Unit)
+                                }
+                            }
+                        }
+                    }
+
+                    nsdManager.discoverServices(
+                        "_maimai-home._tcp",
+                        NsdManager.PROTOCOL_DNS_SD,
+                        listener,
+                    )
+                    started.await()
+                    delay(timeoutMillis)
+                    runCatching { nsdManager.stopServiceDiscovery(listener) }
+
+                    // Wait for all in-flight resolutions to complete.
+                    val snapshot = synchronized(pendingResolutions) { pendingResolutions.toList() }
+                    snapshot.forEach { it.await() }
                 }
+
+                found.values.sortedBy { it.name }
+            } finally {
+                runCatching { lock.release() }
             }
         }
 
-        nsdManager.discoverServices("_maimai-home._tcp", NsdManager.PROTOCOL_DNS_SD, listener)
-        started.await()
-        delay(timeoutMillis)
-        runCatching { nsdManager.stopServiceDiscovery(listener) }
-        found.values.sortedBy { it.name }
-    }
-
-    private fun resolveService(serviceInfo: NsdServiceInfo): DiscoveredService? {
-        val result = CompletableDeferred<DiscoveredService?>()
-        val callback = object : NsdManager.ResolveListener {
-            override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
-                result.complete(null)
-            }
-
-            override fun onServiceResolved(resolved: NsdServiceInfo) {
-                val host = resolved.host?.hostAddress ?: resolved.host?.hostName
-                if (host == null) {
-                    result.complete(null)
-                    return
-                }
-                result.complete(
-                    DiscoveredService(
-                        name = resolved.serviceName ?: host,
-                        host = host,
-                        port = resolved.port,
-                    ),
-                )
-            }
-        }
-
-        return try {
-            suspendResolve(serviceInfo, callback)
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    private fun suspendResolve(
-        serviceInfo: NsdServiceInfo,
-        callback: NsdManager.ResolveListener,
-    ): DiscoveredService? = kotlinx.coroutines.runBlocking {
+    /**
+     * Resolves a single NsdServiceInfo using suspendCancellableCoroutine.
+     * No runBlocking — the coroutine suspends until the NSD callback fires.
+     */
+    private suspend fun suspendResolve(serviceInfo: NsdServiceInfo): DiscoveredService? =
         suspendCancellableCoroutine { cont ->
-            val wrapped = object : NsdManager.ResolveListener by callback {
+            val listener = object : NsdManager.ResolveListener {
                 override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
-                    callback.onResolveFailed(serviceInfo, errorCode)
                     if (cont.isActive) cont.resume(null)
                 }
 
                 override fun onServiceResolved(resolved: NsdServiceInfo) {
-                    callback.onServiceResolved(resolved)
                     val host = resolved.host?.hostAddress ?: resolved.host?.hostName
                     if (cont.isActive) {
                         cont.resume(
-                            if (host == null) null else DiscoveredService(
+                            if (host == null) null
+                            else DiscoveredService(
                                 name = resolved.serviceName ?: host,
                                 host = host,
                                 port = resolved.port,
-                            ),
+                            )
                         )
                     }
                 }
             }
-
-            nsdManager.resolveService(serviceInfo, wrapped)
+            try {
+                nsdManager.resolveService(serviceInfo, listener)
+            } catch (e: Exception) {
+                if (cont.isActive) cont.resume(null)
+            }
         }
-    }
 }
