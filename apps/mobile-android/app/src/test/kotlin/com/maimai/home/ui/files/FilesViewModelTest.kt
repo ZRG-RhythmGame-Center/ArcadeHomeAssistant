@@ -308,6 +308,43 @@ class FilesViewModelTest {
         coVerify(exactly = 0) { agentClient.deleteFile(any(), any(), any()) }
     }
 
+    @Test
+    fun upload_onReadOnlyRoot_callsOnErrorWithoutHittingAgent() = runTest {
+        advanceUntilIdle()
+        vm.selectRoot(readOnlyRoot)
+        advanceUntilIdle()
+
+        var errorMessage: String? = null
+        var doneCalled = false
+        vm.upload(
+            uri = mockk<android.net.Uri>(relaxed = true),
+            onDone = { doneCalled = true },
+            onError = { errorMessage = it },
+        )
+        advanceUntilIdle()
+
+        assertThat(errorMessage).isEqualTo("该根目录为只读，不允许修改")
+        assertThat(doneCalled).isFalse()
+        coVerify(exactly = 0) { agentClient.uploadFile(any(), any(), any(), any<android.content.ContentResolver>(), any<android.net.Uri>()) }
+    }
+
+    @Test
+    fun upload_withNoRoot_callsOnErrorWithoutHittingAgent() = runTest {
+        val freshVm = makeVm(roots = emptyList())
+        advanceUntilIdle()
+
+        var errorMessage: String? = null
+        freshVm.upload(
+            uri = mockk<android.net.Uri>(relaxed = true),
+            onDone = {},
+            onError = { errorMessage = it },
+        )
+        advanceUntilIdle()
+
+        assertThat(errorMessage).isEqualTo("未选择根目录")
+        coVerify(exactly = 0) { agentClient.uploadFile(any(), any(), any(), any<android.content.ContentResolver>(), any<android.net.Uri>()) }
+    }
+
     // ── download ──────────────────────────────────────────────────────────────
 
     @Test

@@ -1,0 +1,18 @@
+W8 Round 11 Verification — Upload Guard Test Symmetry
+=======================================================
+Date: 2026-05-31 19:26:23
+Commit base: 9fa71f5 (round 10)
+
+Closes Oracle round 10 minor asymmetry: delete/rename/move had read-only
++ no-root negative tests but upload did not. Added 2 upload-specific tests
+using mockk<Uri>(relaxed = true) since android.net.Uri.parse returns null
+in pure JVM tests:
+  - upload_onReadOnlyRoot_callsOnErrorWithoutHittingAgent
+  - upload_withNoRoot_callsOnErrorWithoutHittingAgent
+
+Sequence (PTY pty_c9b256a6):
+1. :app:testDebugUnitTest    -> 202 tests, 0 failed (BUILD SUCCESSFUL)
+2. :app:testReleaseUnitTest  -> 202 tests, 0 failed (BUILD SUCCESSFUL)
+3. :app:assembleRelease      -> BUILD SUCCESSFUL (57s total)
+
+Test count progression: 200 (round 9) -> 202 (round 11, +2 upload guards).
