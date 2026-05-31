@@ -132,7 +132,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-core")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
@@ -159,7 +159,7 @@ dependencies {
     testImplementation("io.mockk:mockk-agent:1.13.14")
 
     // Kotlin / coroutines test helpers.
-    // `kotlin-test:1.9.24` ships JUnit5/JUnit4 framework integrations as
+    // `kotlin-test:2.3.0` ships JUnit5 / JUnit4 / TestNG integrations as
     // optional capabilities. We use Truth + Jupiter for assertions, but a few
     // legacy tests still call `kotlin.test.assertEquals(...)`. Pulling
     // `kotlin-test` directly keeps those compiling without dragging in
@@ -201,28 +201,17 @@ private val coverageClassDirs: List<String> = listOf(
     "com/maimai/home/ui/**",
 )
 
+// Plan Resolved Decision #2 fixes the gate to 70% line coverage on
+// `com/maimai/home/data/**` and `com/maimai/home/ui/**` excluding only
+// *Test*, BuildConfig, and ui/theme/Theme.kt. Anything beyond that scope
+// MUST be added to the plan first.
 private val coverageExclusions: List<String> = listOf(
     "**/R.class",
     "**/R$*.class",
     "**/BuildConfig.*",
     "**/Manifest*.*",
     "**/*Test*.*",
-    "**/*\$*\$*.class",
-    "android/**/*.*",
     "com/maimai/home/ui/theme/Theme*.*",
-    "com/maimai/home/ui/theme/Color*.*",
-    "com/maimai/home/ui/theme/Type*.*",
-    "com/maimai/home/App.*",
-    "com/maimai/home/MainActivity.*",
-    "com/maimai/home/ui/AppUi.*",
-    "com/maimai/home/ui/AppRoot.*",
-    "com/maimai/home/ui/nav/**",
-    "com/maimai/home/ui/connection/ConnectionScreen*.*",
-    "com/maimai/home/ui/audio/AudioScreen*.*",
-    "com/maimai/home/ui/files/FilesScreen*.*",
-    "**/ComposableSingletons\$*.class",
-    "**/*ComposableSingletons*",
-    "**/*Kt\$*.*",
 )
 
 afterEvaluate {
