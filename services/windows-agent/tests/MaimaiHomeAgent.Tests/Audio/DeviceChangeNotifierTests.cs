@@ -116,7 +116,7 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
+        await using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
         await dispatcher.StartAsync(CancellationToken.None);
 
         var notifier = new DeviceChangeNotifier(
@@ -149,7 +149,7 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
+        await using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
         await dispatcher.StartAsync(CancellationToken.None);
 
         var notifier = new DeviceChangeNotifier(
@@ -179,7 +179,7 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
+        await using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
         await dispatcher.StartAsync(CancellationToken.None);
 
         var notifier = new DeviceChangeNotifier(
@@ -208,7 +208,7 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
+        await using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
         await dispatcher.StartAsync(CancellationToken.None);
 
         var notifier = new DeviceChangeNotifier(
@@ -237,7 +237,7 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
+        await using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
         await dispatcher.StartAsync(CancellationToken.None);
 
         var notifier = new DeviceChangeNotifier(

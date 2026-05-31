@@ -238,7 +238,7 @@ public class WebSocketSessionTests
     // ------------------------------------------------------------------ //
 
     [Fact]
-    public void Constructor_SetsExpectedProperties()
+    public async Task Constructor_SetsExpectedProperties()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
         var token = "test-token";
@@ -252,7 +252,7 @@ public class WebSocketSessionTests
         Assert.True(session.ConnectedAt >= before);
         Assert.True(session.LastPongAt >= before);
 
-        session.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        await session.DisposeAsync();
         clientWs.Dispose();
     }
 
@@ -264,7 +264,7 @@ public class WebSocketSessionTests
     }
 
     [Fact]
-    public void MarkPong_UpdatesLastPongAt()
+    public async Task MarkPong_UpdatesLastPongAt()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
         var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
@@ -274,7 +274,7 @@ public class WebSocketSessionTests
 
         Assert.Equal(newTime, session.LastPongAt);
 
-        session.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        await session.DisposeAsync();
         clientWs.Dispose();
     }
 
