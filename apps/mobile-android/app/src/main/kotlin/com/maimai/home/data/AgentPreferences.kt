@@ -1,6 +1,8 @@
 package com.maimai.home.data
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -10,7 +12,23 @@ import kotlinx.coroutines.flow.map
 
 private val Context.agentDataStore by preferencesDataStore(name = "agent_preferences")
 
-class AgentPreferences(private val context: Context) {
+/**
+ * Persisted-preferences gateway for the LAN agent address.
+ *
+ * The primary constructor takes an injectable [DataStore] so unit tests can
+ * supply a hand-rolled [androidx.datastore.preferences.core.PreferenceDataStoreFactory.create]
+ * instance and exercise this class's flow + saveAgentAddress logic without
+ * tripping the process-wide singleton at `agent_preferences.preferences_pb`.
+ *
+ * Production code uses the secondary [Context]-taking constructor, which
+ * resolves to the singleton DataStore declared by the
+ * [preferencesDataStore] delegate at file scope above.
+ */
+class AgentPreferences(
+    private val dataStore: DataStore<Preferences>,
+) {
+    constructor(context: Context) : this(context.agentDataStore)
+
     companion object {
         /**
          * Default address surfaced to the user before they pick one. Sourced
@@ -19,15 +37,15 @@ class AgentPreferences(private val context: Context) {
          * Closes plan task 17 / R1 #17.
          */
         val DEFAULT_AGENT_ADDRESS: String = BuildConfig.DEFAULT_AGENT_ADDRESS
-        private val AGENT_ADDRESS_KEY = stringPreferencesKey("agent_address")
+        internal val AGENT_ADDRESS_KEY = stringPreferencesKey("agent_address")
     }
 
-    val agentAddressFlow: Flow<String> = context.agentDataStore.data.map { prefs ->
+    val agentAddressFlow: Flow<String> = dataStore.data.map { prefs ->
         prefs[AGENT_ADDRESS_KEY] ?: DEFAULT_AGENT_ADDRESS
     }
 
     suspend fun saveAgentAddress(address: String) {
-        context.agentDataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[AGENT_ADDRESS_KEY] = address
         }
     }

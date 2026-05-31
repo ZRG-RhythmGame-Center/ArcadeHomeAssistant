@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">maimai Home</string>
+    <!-- Wave 3 task 19 / R1 #16: dynamic truncation banner format. The %1$d
+         placeholder takes the limit reported by FileListingResult. -->
+    <string name="files_truncated_format">目录结果已截断，仅显示前 %1$d 项。</string>
+</resources>

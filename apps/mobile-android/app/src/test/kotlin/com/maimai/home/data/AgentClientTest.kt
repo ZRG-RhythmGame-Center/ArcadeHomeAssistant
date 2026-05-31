@@ -442,6 +442,40 @@ class AgentClientMockWebServerTest {
         assertThat(result.entries.last().name).isEqualTo("f200")
     }
 
+    /**
+     * Wave 3 task 19: when the server includes a `limit` field in the
+     * FileListingResult JSON, AgentClient must surface it on the result so
+     * the FilesScreen banner can interpolate the actual server-enforced
+     * limit instead of the hardcoded 200.
+     */
+    @Test
+    fun fetchFiles_serverProvidedLimit_isReadIntoResult() = runBlocking {
+        val body = """{"entries":[],"total":250,"truncated":true,"limit":123}"""
+        server.enqueue(MockResponse().setResponseCode(200).setBody(body))
+
+        val result = client.fetchFiles(address(), "root", "/", offset = 0, limit = 200)
+
+        assertThat(result.limit).isEqualTo(123)
+        assertThat(result.truncated).isTrue()
+        assertThat(result.total).isEqualTo(250)
+    }
+
+    /**
+     * Wave 3 task 19 forward-compat: older agents omit the `limit` field.
+     * AgentClient must not crash; the result must fall back to the
+     * documented default (200) so the banner does not render an empty
+     * placeholder.
+     */
+    @Test
+    fun fetchFiles_omittedLimit_defaultsTo200() = runBlocking {
+        val body = """{"entries":[],"total":10,"truncated":false}"""
+        server.enqueue(MockResponse().setResponseCode(200).setBody(body))
+
+        val result = client.fetchFiles(address(), "root", "/", offset = 0, limit = 200)
+
+        assertThat(result.limit).isEqualTo(200)
+    }
+
     // -------------------------- upload / download -------------------------
 
     @Test
