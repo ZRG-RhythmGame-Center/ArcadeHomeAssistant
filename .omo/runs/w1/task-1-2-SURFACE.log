@@ -1,0 +1,13 @@
+PHASE: SURFACE (gradlew assembleDebug)
+COMMAND: pwsh -NoProfile -Command cd 'apps/mobile-android'; .\gradlew.bat assembleDebug
+EXIT CODE: 0
+
+--- OUTPUT (key lines) ---
+> Configure project :app
+w: ...app/build.gradle.kts:78:5: 'fun BaseAppModuleExtension.kotlinOptions(...)' is deprecated.
+> :app:checkDebugAarMetadata
+> :app:compileDebugKotlin
+> :app:dexBuilderDebug
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+BUILD SUCCESSFUL in 5s
