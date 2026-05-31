@@ -1,0 +1,42 @@
+SURFACE phase: full test suite + assembleDebug — w1 task 5
+Commands:
+  cd apps/mobile-android; .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
+  cd apps/mobile-android; .\gradlew.bat :app:assembleDebug
+
+testDebugUnitTest result: 13 tests completed, 5 failed (exit 1)
+assembleDebug result: BUILD SUCCESSFUL (exit 0)
+
+Test results breakdown:
+  com.maimai.home.data.EventStreamTest          6 PASSED  ← task 5 target (all green)
+    httpAddressBecomesWs                        PASS
+    httpsAddressBecomesWss                      PASS
+    bareAddressBecomesWs                        PASS
+    wssAddressPreserved                         PASS
+    wsAddressPreserved                          PASS
+    reconnectJobCancelledOnDisconnect           PASS
+
+  com.maimai.home.ManifestSecurityTest          FAILED (initializationError)
+    Robolectric DefaultSdkPicker.java:119 — SDK config not yet set up (Wave 2 dep)
+    Pre-existing RED state from task 1/2.
+
+  com.maimai.home.data.AgentClientCancellationTest  FAILED
+    cancelDuringSlowResponse_throwsCancellation — RED state, task 3 not yet GREEN
+
+  com.maimai.home.data.AgentClientDispatcherTest    FAILED
+    executesOnIoDispatcher — RED state, task 3 not yet GREEN
+
+  com.maimai.home.data.AgentClientTest              FAILED
+    downloadFile_nullBody_throws — RED state, task 6 not yet GREEN
+
+  com.maimai.home.data.DiscoveryServiceTest         FAILED
+    acquiresAndReleasesMulticastLock — RED state, task 4 not yet GREEN
+
+assembleDebug: BUILD SUCCESSFUL in ~4s
+  app-arm64-v8a-debug.apk produced
+
+Task 5 verdict: COMPLETE
+  - EventStreamTest: 6/6 PASS
+  - EventStream.kt: reconnectJob tracked + cancelled on disconnect()
+  - normalizedWsBase(): https→wss, http→ws, bare→ws://, wss/ws preserved
+  - Closes R1 #12 (reconnect job not tracked), R1 #13 (ws scheme always plain)
+  - Other failures are pre-existing RED states from tasks 1-4/6, not regressions
