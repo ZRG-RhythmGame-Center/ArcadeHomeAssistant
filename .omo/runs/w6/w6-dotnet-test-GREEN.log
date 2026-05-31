@@ -1,0 +1,706 @@
+  正在确定要还原的项目…
+  所有项目均是最新的，无法还原。
+  MaimaiHomeAgent -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\bin\Debug\net9.0-windows\MaimaiHomeAgent.dll
+  MaimaiHomeAgent.Tests -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\MaimaiHomeAgent.Tests.dll
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\MaimaiHomeAgent.Tests.dll (.NETCoreApp,Version=v9.0)的测试运行
+VSTest 版本 17.14.1 (x64)
+
+正在启动测试执行，请稍候...
+总共 1 个测试文件与指定模式相匹配。
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 9.0.16)
+[xUnit.net 00:00:00.05]   Discovering: MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.09]   Discovered:  MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.10]   Starting:    MaimaiHomeAgent.Tests
+info: MaimaiHomeAgent.Files.FileRootService[0]
+      FileRootService initialized with 0 root(s)
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.Constructor_NullSocket_ThrowsArgumentNullException [4 ms]
+  已通过 MaimaiHomeAgent.Tests.Startup.AutoStartManagerTests.IsEnabledAsync_TaskNotFound_ReturnsFalse [7 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.NAudioDeviceNotificationSourceTests.OnDefaultDeviceChanged_CaptureFlow_NotForwardedToSink [8 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_AcceptsForwardSlashSubpath [6 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_AcceptsRootItselfWhenEmpty [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsWindowsReservedChars(relativePath: "quo\"te.txt") [4 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.NAudioDeviceNotificationSourceTests.Unregister_WithoutPriorRegister_DoesNotThrow [8 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsWindowsReservedChars(relativePath: "file<.txt") [2 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsWindowsReservedChars(relativePath: "ques?tion.txt") [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.NAudioDeviceNotificationSourceTests.OnDefaultDeviceChanged_RenderFlow_ForwardedToSink [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.SendPingAsync_DeliversPingFrame [9 ms]
+  已通过 MaimaiHomeAgent.Tests.Startup.AutoStartManagerTests.IsEnabledAsync_TaskExistsAndPathMatches_ReturnsTrue [9 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsWindowsReservedChars(relativePath: "name|pipe.txt") [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.NAudioDeviceNotificationSourceTests.OnDeviceAdded_AlwaysForwardedToSink [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.NAudioDeviceNotificationSourceTests.OnDefaultDeviceChanged_AllFlow_NotForwardedToSink [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsWindowsReservedChars(relativePath: "star*.txt") [< 1 ms]
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+  已通过 MaimaiHomeAgent.Tests.Startup.AutoStartManagerTests.DisableAsync_PassesCorrectDeleteArgs [6 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsWindowsReservedChars(relativePath: "foo>bar.txt") [5 ms]
+  已通过 MaimaiHomeAgent.Tests.Startup.AutoStartManagerTests.IsEnabledAsync_PathMismatch_ReturnsFalse [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsNullChar [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Startup.AutoStartManagerTests.EnableAsync_PassesCorrectCreateArgs [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsOutsideRoot(relativePath: "sub/../../../escape", expectedError: OutsideRoot) [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsOutsideRoot(relativePath: "..", expectedError: OutsideRoot) [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsOutsideRoot(relativePath: "../../Windows/System32", expectedError: OutsideRoot) [< 1 ms]
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/volume - application/json;+charset=utf-8 -
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 PUT http://localhost/api/config/file-roots - application/json;+charset=utf-8 -
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/default-device - application/json;+charset=utf-8 -
+  已通过 MaimaiHomeAgent.Tests.Startup.AutoStartManagerTests.DisableAsync_NonZeroExit_LogsWarningAndReturnsFalse [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsAbsolutePaths(relativePath: "C:\\Windows") [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Startup.AutoStartManagerTests.EnableAsync_NonZeroExit_LogsWarningAndReturnsFalse [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsAbsolutePaths(relativePath: "D:\\anywhere") [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsAbsolutePaths(relativePath: "/etc/passwd") [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_ExpandsEnvironmentVariablesInRoot [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsControlChars [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_AcceptsJunctionPointingInsideRoot [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_AcceptsBackslashSubpath [< 1 ms]
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishFileEvent_BroadcastsRequestedTypeWithFilePayload(eventType: "file.deleted") [35 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishFileEvent_BroadcastsRequestedTypeWithFilePayload(eventType: "file.renamed") [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishFileEvent_BroadcastsRequestedTypeWithFilePayload(eventType: "file.created") [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishFileEvent_BroadcastsRequestedTypeWithFilePayload(eventType: "file.moved") [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_AcceptsNormalRelativePath [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_ResultOk_HasIsOkTrueAndNoError [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishDeviceUnavailable_BroadcastsDeviceUnavailableEnvelope [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_ResultFail_HasIsOkFalseAndError [< 1 ms]
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.CloseAsync_SwallowsWebSocketException [16 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_RejectsJunctionPointingOutsideRoot [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Startup.ProcessRunnerTests.RunAsync_MultiLineOutput_CapturedFully [38 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioStaDispatcherTests.InvokeAsync_AllWorkSharesSameManagedThreadId [38 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.DisposeAsync_CalledTwice_DoesNotThrow [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.PathGuardTests.ResolveSafe_AcceptsLongPath_280Chars [2 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.ReceiveLoopAsync_ExitsOnCancellation [3 ms]
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/default-device'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: PUT /api/config/file-roots => PutFileRoots'
+  已通过 MaimaiHomeAgent.Tests.Audio.NAudioDeviceNotificationSourceTests.Unregister_AfterRegister_DoesNotThrow [20 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioStaDispatcherTests.DisposeAsync_CancelsPendingItems [5 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.NAudioDeviceNotificationSourceTests.OnDeviceStateChanged_AlwaysForwardedToSink [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventHubTests.AddAsync_ThenBroadcast_ClientReceivesEnvelope [46 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.NAudioDeviceNotificationSourceTests.Register_CalledTwice_ThrowsInvalidOperationException [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.NAudioDeviceNotificationSourceTests.OnDeviceRemoved_AlwaysForwardedToSink [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.NAudioDeviceNotificationSourceTests.Register_NullSink_ThrowsArgumentNullException [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishAudioStateChanged_DoesNotBlockCaller [13 ms]
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.BadRequestObjectResult[1]
+      Setting HTTP status code 400.
+info: Microsoft.AspNetCore.Http.Result.BadRequestObjectResult[3]
+      Writing value of type 'String' as Json.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'DeviceResponse[]' as Json.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'AudioStateDto' as Json.
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioStaDispatcherTests.InvokeAsync_RunsWorkOnStaThread [6 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishAudioDeviceChanged_BroadcastsDeviceChangedEnvelope [4 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioStaDispatcherTests.InvokeAsync_QueueFull_ThrowsAudioServiceBusyException [5 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishAudioStateChanged_BroadcastsAudioStateEnvelope [4 ms]
+  已通过 MaimaiHomeAgent.Tests.Tray.TrayAppTests.StopAsync_DisposesHost [76 ms]
+  已通过 MaimaiHomeAgent.Tests.Tray.TrayAppTests.StopAsync_WithoutStart_DoesNotThrow [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Tray.TrayAppTests.StopAsync_StopsPump [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Tray.TrayAppTests.StartAsync_StartsPump [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Tray.TrayAppTests.StartAsync_CallsTrayIconHostCreate [< 1 ms]
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/default-device'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: PUT /api/config/file-roots => PutFileRoots'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 PUT http://localhost/api/config/file-roots - 400 - application/json;+charset=utf-8 46.3024ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/default-device - 200 - application/json;+charset=utf-8 46.3069ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/volume - 200 - application/json;+charset=utf-8 46.3077ms
+[15:44:28 INF] HTTP GET /api/status responded 200 in 2.9164 ms
+info: MaimaiHomeAgent.Files.FileRootService[0]
+      FileRootService initialized with 0 root(s)
+  已通过 MaimaiHomeAgent.Tests.Tray.TrayAppTests.OnToggleAutoStart_Enable_UpdatesHostCheckedState [8 ms]
+  已通过 MaimaiHomeAgent.Tests.Tray.TrayAppTests.OnExit_CallsLifetimeStopApplication [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Tray.TrayAppTests.DisposeAsync_IsIdempotent [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.ReceiveLoopAsync_UpdatesLastPongAt_OnAnyFrame [109 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.SendJsonAsync_ConcurrentSends_AllDeliveredInOrder [2 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.PostVolume_OnSuccess_BroadcastsAudioStateEvent [66 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileRootsConfigEndpointsTests.PutFileRoots_WithNonExistentPath_Returns400 [65 ms]
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/default-device - application/json;+charset=utf-8 -
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 GET http://localhost/api/config - - -
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/volume - application/json;+charset=utf-8 -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: GET /api/config => GetConfig'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/default-device'
+info: Microsoft.AspNetCore.Http.Result.BadRequestObjectResult[1]
+      Setting HTTP status code 400.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.BadRequestObjectResult[3]
+      Writing value of type 'ErrorResponse' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/default-device'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/default-device - 400 - application/json;+charset=utf-8 2.7383ms
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'ConfigResponse' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/volume - 503 - application/json;+charset=utf-8 3.4671ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: GET /api/config => GetConfig'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 GET http://localhost/api/config - 200 - application/json;+charset=utf-8 3.5287ms
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceEndpointsTests.PostDefaultDevice_ValidGuid_Returns200WithDeviceList [68 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.CloseAsync_WhenAlreadyClosed_DoesNotThrow [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.MarkPong_UpdatesLastPongAt [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.ReceiveLoopAsync_WebSocketException_ExitsGracefully [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.ReceiveLoopAsync_ExitsWhenClientCloses [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.SendJsonAsync_DeliversFrameToClient [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceEndpointsTests.PostDefaultDevice_EmptyDeviceId_Returns400 [3 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.PostVolume_DispatcherBusy_Returns503WithRetryAfter [5 ms]
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 GET http://localhost/api/audio/devices - - -
+info: MaimaiHomeAgent.Files.FileRootService[0]
+      FileRootService initialized with 0 root(s)
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/volume - application/json;+charset=utf-8 -
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 PUT http://localhost/api/config/file-roots - application/json;+charset=utf-8 -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: PUT /api/config/file-roots => PutFileRoots'
+info: Microsoft.AspNetCore.Http.Result.BadRequestObjectResult[1]
+      Setting HTTP status code 400.
+info: Microsoft.AspNetCore.Http.Result.BadRequestObjectResult[3]
+      Writing value of type 'String' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: PUT /api/config/file-roots => PutFileRoots'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 PUT http://localhost/api/config/file-roots - 400 - application/json;+charset=utf-8 1.5021ms
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.0892 ms
+info: Microsoft.AspNetCore.Http.Result.JsonResult[1]
+      Setting HTTP status code 400.
+info: Microsoft.AspNetCore.Http.Result.JsonResult[3]
+      Writing value of type '<>f__AnonymousType0`2' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: GET /api/audio/devices'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/volume - 400 - application/json;+charset=utf-8 2.2438ms
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'DeviceResponse[]' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: GET /api/audio/devices'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 GET http://localhost/api/audio/devices - 200 - application/json;+charset=utf-8 4.0439ms
+info: MaimaiHomeAgent.Files.FileRootService[0]
+      FileRootService initialized with 0 root(s)
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 PUT http://localhost/api/config/file-roots - application/json;+charset=utf-8 -
+  已通过 MaimaiHomeAgent.Tests.Files.FileRootsConfigEndpointsTests.GetConfig_Returns200WithExpectedShape [4 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.WebSocketSessionTests.Constructor_SetsExpectedProperties [3 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileRootsConfigEndpointsTests.PutFileRoots_WithDuplicateId_Returns400 [2 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceEndpointsTests.GetDevices_EmptyList_Returns200WithEmptyArray [5 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.PostVolume_OutOfRangeAbove_Returns400 [4 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_UptimeSeconds_IsNonNegative [174 ms]
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/default-device - application/json;+charset=utf-8 -
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/mute - application/json;+charset=utf-8 -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: PUT /api/config/file-roots => PutFileRoots'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/default-device'
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+info: Microsoft.AspNetCore.Http.Result.NotFoundObjectResult[1]
+      Setting HTTP status code 404.
+info: Microsoft.AspNetCore.Http.Result.NotFoundObjectResult[3]
+      Writing value of type 'ErrorResponse' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/default-device'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/default-device - 404 - application/json;+charset=utf-8 6.9311ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/mute'
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'AudioStateDto' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/mute'
+info: FileRootsConfigEndpoints[0]
+      Persisted 2 file root(s) to D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\appsettings.user.json
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/mute - 200 - application/json;+charset=utf-8 9.1812ms
+info: MaimaiHomeAgent.Files.FileRootService[0]
+      FileRootService reloaded with 2 root(s)
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'ConfigResponse' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: PUT /api/config/file-roots => PutFileRoots'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 PUT http://localhost/api/config/file-roots - 200 - application/json;+charset=utf-8 11.6441ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 GET http://localhost/api/audio/devices - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: GET /api/audio/devices'
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'DeviceResponse[]' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: GET /api/audio/devices'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 GET http://localhost/api/audio/devices - 200 - application/json;+charset=utf-8 1.9675ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 GET http://localhost/api/audio/state - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: GET /api/audio/state'
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'AudioStateDto' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: GET /api/audio/state'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 GET http://localhost/api/audio/state - 200 - application/json;+charset=utf-8 1.9050ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/default-device - application/json;+charset=utf-8 -
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.3918 ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/volume - application/json;+charset=utf-8 -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/default-device'
+info: Microsoft.AspNetCore.Http.Result.BadRequestObjectResult[1]
+      Setting HTTP status code 400.
+info: Microsoft.AspNetCore.Http.Result.BadRequestObjectResult[3]
+      Writing value of type 'ErrorResponse' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/default-device'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/default-device - 400 - application/json;+charset=utf-8 1.6595ms
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceEndpointsTests.PostDefaultDevice_DeviceNotFound_Returns404 [8 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.PostMute_True_Returns200WithUpdatedState [12 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileRootsConfigEndpointsTests.PutFileRoots_WithValidData_Returns200AndPersists [13 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceEndpointsTests.GetDevices_Returns200WithProjectedShape [3 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceEndpointsTests.Project_MapsAllDeviceStatesToLowerInvariantStrings [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.GetState_Returns200WithExpectedShape [3 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_ResponseIsJson [24 ms]
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Http.Result.JsonResult[1]
+      Setting HTTP status code 400.
+info: Microsoft.AspNetCore.Http.Result.JsonResult[3]
+      Writing value of type '<>f__AnonymousType0`2' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/volume - 400 - application/json;+charset=utf-8 10.5169ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/mute - application/json;+charset=utf-8 -
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/mute'
+info: Microsoft.AspNetCore.Http.Result.JsonResult[1]
+      Setting HTTP status code 502.
+info: Microsoft.AspNetCore.Http.Result.JsonResult[3]
+      Writing value of type '<>f__AnonymousType1`1' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/mute'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/mute - 502 - application/json;+charset=utf-8 2.4901ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 GET http://localhost/api/audio/state - - -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: GET /api/audio/state'
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'AudioStateDto' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: GET /api/audio/state'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 GET http://localhost/api/audio/state - 200 - application/json;+charset=utf-8 1.5980ms
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceEndpointsTests.PostDefaultDevice_InvalidGuid_Returns400WithInvalidDeviceIdError [11 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.PostVolume_OutOfRangeBelow_Returns400 [11 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.PostMute_DeviceUnavailable_Returns502 [3 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceChangeNotifierTests.Callback_WhenListDevicesThrowsCOMException_DoesNotPropagate [216 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceChangeNotifierTests.StopAsync_WithoutStart_DoesNotCallUnregister [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.GetState_NullDefaultDevice_Returns200WithNull [2 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceChangeNotifierTests.OnDeviceAdded_TriggersBroadcast [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceChangeNotifierTests.OnDeviceStateChanged_TriggersBroadcast [< 1 ms]
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/volume - application/json;+charset=utf-8 2
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Http.Result.JsonResult[1]
+      Setting HTTP status code 400.
+info: Microsoft.AspNetCore.Http.Result.JsonResult[3]
+      Writing value of type '<>f__AnonymousType0`2' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/volume - 400 - application/json;+charset=utf-8 1.8630ms
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.4147 ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/volume - application/json;+charset=utf-8 -
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceChangeNotifierTests.OnDeviceRemoved_TriggersBroadcast [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceChangeNotifierTests.OnDefaultDeviceChanged_FunnelsThroughDispatcher_AndPublishesAudioDeviceChanged [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceChangeNotifierTests.StopAsync_SwallowsCOMExceptionFromUnregister [1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceChangeNotifierTests.StopAsync_AfterStart_UnregistersOnce [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceChangeNotifierTests.StartAsync_RegistersExactlyOnce_AcrossMultipleCalls [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.DeviceChangeNotifierTests.StopAsync_TwiceIsIdempotent [< 1 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.PostVolume_MissingBody_Returns400 [3 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_Capabilities_ContainsDiscoveryBroadcast [29 ms]
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'AudioStateDto' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/volume'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/volume - 200 - application/json;+charset=utf-8 1.7806ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.7190 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/mute - application/json;+charset=utf-8 -
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/mute'
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'AudioStateDto' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/mute'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/mute - 200 - application/json;+charset=utf-8 1.7986ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 POST http://localhost/api/audio/mute - application/json;+charset=utf-8 2
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: POST /api/audio/mute'
+info: Microsoft.AspNetCore.Http.Result.JsonResult[1]
+      Setting HTTP status code 400.
+info: Microsoft.AspNetCore.Http.Result.JsonResult[3]
+      Writing value of type '<>f__AnonymousType0`2' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: POST /api/audio/mute'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 POST http://localhost/api/audio/mute - 400 - application/json;+charset=utf-8 1.6518ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 GET http://localhost/api/audio/state - - -
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.3028 ms
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: GET /api/audio/state'
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: GET /api/audio/state'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 GET http://localhost/api/audio/state - 503 - application/json;+charset=utf-8 1.6172ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.3731 ms
+info: Microsoft.AspNetCore.Hosting.Diagnostics[1]
+      Request starting HTTP/1.1 GET http://localhost/api/audio/state - - -
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[0]
+      Executing endpoint 'HTTP: GET /api/audio/state'
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[1]
+      Setting HTTP status code 200.
+info: Microsoft.AspNetCore.Http.Result.OkObjectResult[3]
+      Writing value of type 'AudioStateDto' as Json.
+info: Microsoft.AspNetCore.Routing.EndpointMiddleware[1]
+      Executed endpoint 'HTTP: GET /api/audio/state'
+info: Microsoft.AspNetCore.Hosting.Diagnostics[2]
+      Request finished HTTP/1.1 GET http://localhost/api/audio/state - 200 - application/json;+charset=utf-8 1.5075ms
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.3771 ms
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.PostVolume_ValidLevel_Returns200WithUpdatedState [3 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_Capabilities_ContainsAudioMute [16 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.PostMute_OnSuccess_BroadcastsAudioStateEvent [18 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.PostMute_MissingBody_Returns400 [2 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_ContainsUptimeSeconds [14 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.GetState_DispatcherBusy_Returns503WithRetryAfter [7 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_ContainsCapabilities [14 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_ContainsMachineName [13 ms]
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.3856 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.3281 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.3315 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.5221 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.4788 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] HTTP GET /api/status responded 200 in 0.3408 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 1 root(s)
+[15:44:28 INF] HTTP GET /api/files responded 400 in 3.3077 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 1 root(s)
+[15:44:28 INF] HTTP GET /api/files responded 404 in 1.1131 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 1 root(s)
+[15:44:28 INF] HTTP GET /api/files responded 400 in 0.6085 ms
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_ContainsVersion [13 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_Capabilities_ContainsFileManagement [13 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_Capabilities_ContainsAudioVolume [13 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_Returns200 [15 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_Capabilities_ContainsAudioDeviceSwitch [21 ms]
+  已通过 MaimaiHomeAgent.Tests.StatusEndpointTests.GetStatus_ContainsStartedAt [13 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileListingEndpointsTests.GetFiles_MissingRootId_Returns400 [19 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileListingEndpointsTests.GetFiles_NonExistentPath_Returns404 [15 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileListingEndpointsTests.GetFiles_PathIsFile_Returns400 [14 ms]
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 1 root(s)
+[15:44:28 INF] HTTP GET /api/files responded 200 in 6.3062 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 1 root(s)
+[15:44:28 INF] HTTP GET /api/files responded 200 in 1.1286 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 1 root(s)
+[15:44:28 INF] HTTP GET /api/file-roots responded 200 in 9.2786 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 1 root(s)
+[15:44:28 INF] HTTP GET /api/files responded 404 in 0.5248 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+  已通过 MaimaiHomeAgent.Tests.Files.FileListingEndpointsTests.GetFiles_OffsetPagination_ReturnsCorrectPage [30 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileListingEndpointsTests.GetFiles_ValidPath_ReturnsEntriesAndShape [18 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileListingEndpointsTests.GetFileRoots_ReturnsConfiguredRoots_WithoutDiskPath [26 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileListingEndpointsTests.GetFiles_UnknownRootId_Returns404 [15 ms]
+  已通过 MaimaiHomeAgent.Tests.Startup.ProcessRunnerTests.RunAsync_CancellationToken_KillsProcess [518 ms]
+  已通过 MaimaiHomeAgent.Tests.Startup.ProcessRunnerTests.RunAsync_ExitCode7_ReturnsExitCode7 [14 ms]
+  已通过 MaimaiHomeAgent.Tests.Startup.ProcessRunnerTests.RunAsync_EchoHello_ReturnsExitCode0AndStdout [16 ms]
+  已通过 MaimaiHomeAgent.Tests.Startup.ProcessRunnerTests.RunAsync_StderrOutput_CapturedInStandardError [14 ms]
+[15:44:28 INF] FileRootService initialized with 1 root(s)
+[15:44:28 INF] HTTP GET /api/files responded 200 in 1.4089 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 1 root(s)
+[15:44:28 INF] HTTP GET /api/files responded 200 in 0.6903 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 1 root(s)
+[15:44:28 INF] HTTP GET /api/files responded 403 in 0.5114 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP POST /api/files/move responded 403 in 1.6582 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP POST /api/files/upload responded 201 in 8.8571 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP POST /api/files/upload responded 409 in 1.0138 ms
+  已通过 MaimaiHomeAgent.Tests.Startup.ProcessRunnerTests.RunAsync_NonZeroExitCode_StillCapturesOutput [14 ms]
+  已通过 MaimaiHomeAgent.Tests.Startup.ProcessRunnerTests.RunAsync_ZeroExitCode_StandardOutputTrimmed [13 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileListingEndpointsTests.GetFiles_LimitClampedTo500_ReturnsTruncatedTrue [121 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileListingEndpointsTests.GetFiles_HiddenAndSystemEntries_AreFiltered [17 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.FileListingEndpointsTests.GetFiles_PathTraversal_Returns403WithOutsideRootError [14 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Move_ReadOnlyRoot_Returns403 [20 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Upload_Success_Returns201 [27 ms]
+  已通过 MaimaiHomeAgent.Tests.Audio.AudioEndpointsTests.GetState_DoesNotBroadcast [474 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Upload_OverwriteFalse_AndFileExists_Returns409 [17 ms]
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP GET /api/files/download responded 403 in 0.7976 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP DELETE /api/files responded 400 in 1.6033 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP POST /api/files/move responded 400 in 0.3796 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP POST /api/files/rename responded 400 in 1.3192 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP POST /api/files/rename responded 200 in 1.9781 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP DELETE /api/files responded 400 in 0.4468 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP GET /api/files/download responded 200 in 4.3850 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Download_PathTraversal_Returns403 [15 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Delete_ConfirmFalse_Returns400 [16 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Move_ConfirmMissing_Returns400 [15 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Rename_ConfirmMissing_Returns400 [16 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Rename_HappyPath_Returns200 [26 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Delete_ConfirmMissing_Returns400 [15 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Download_ExistingFile_ReturnsBytes [20 ms]
+  已通过 MaimaiHomeAgent.Tests.Discovery.MdnsAdvertiserTests.OnNetworkChanged_DebouncesMergesRapidEvents [894 ms]
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP POST /api/files/upload responded 403 in 0.8551 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP POST /api/files/upload responded 200 in 1.1360 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP POST /api/files/rename responded 404 in 0.8195 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP POST /api/files/move responded 409 in 0.7379 ms
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:28 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:28 INF] FileRootService initialized with 2 root(s)
+[15:44:28 INF] HTTP DELETE /api/files responded 200 in 1.5038 ms
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] FileRootService initialized with 2 root(s)
+[15:44:29 INF] HTTP POST /api/files/rename responded 409 in 0.7442 ms
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] FileRootService initialized with 2 root(s)
+[15:44:29 INF] HTTP POST /api/files/move responded 403 in 0.6089 ms
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Upload_PathTraversal_Returns403 [16 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Upload_OverwriteTrue_AndFileExists_Returns200 [17 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Rename_NonExistent_Returns404 [16 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Move_TargetExists_OverwriteFalse_Returns409 [16 ms]
+  已通过 MaimaiHomeAgent.Tests.Discovery.MdnsAdvertiserTests.StopAsync_UnregistersNetworkChangeHandler [77 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Delete_File_Returns200 [26 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Rename_TargetExists_Returns409 [18 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Move_CrossRootAttempt_PathEscapesRoot_Returns403 [16 ms]
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] FileRootService initialized with 2 root(s)
+[15:44:29 INF] HTTP GET /api/files/download responded 404 in 0.6590 ms
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] FileRootService initialized with 2 root(s)
+[15:44:29 INF] HTTP POST /api/files/move responded 200 in 1.2451 ms
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] FileRootService initialized with 2 root(s)
+[15:44:29 INF] HTTP POST /api/files/upload responded 403 in 0.5922 ms
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] FileRootService initialized with 2 root(s)
+[15:44:29 INF] HTTP POST /api/files/rename responded 400 in 1.3057 ms
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] FileRootService initialized with 2 root(s)
+[15:44:29 INF] HTTP DELETE /api/files responded 400 in 0.9572 ms
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] FileRootService initialized with 2 root(s)
+[15:44:29 INF] HTTP DELETE /api/files responded 403 in 0.4140 ms
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[15:44:29 WRN] The WebRootPath was not found: D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\wwwroot. Static files may be unavailable.
+[15:44:29 INF] FileRootService initialized with 2 root(s)
+[15:44:29 INF] HTTP POST /api/files/upload responded 413 in 1.4598 ms
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Download_NonExistent_Returns404 [17 ms]
+  已通过 MaimaiHomeAgent.Tests.Discovery.MdnsAdvertiserTests.StartAsync_RegistersNetworkChangeHandler [67 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Move_SameVolume_Returns200 [19 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Upload_ReadOnlyRoot_Returns403 [16 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Rename_NewNameWithPathSeparator_Returns400 [25 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Delete_Directory_Returns400 [16 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Delete_ReadOnlyRoot_Returns403 [15 ms]
+  已通过 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Upload_LargerThan100Mb_Returns413 [93 ms]
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventHubTests.HeartbeatTimeout_RemovesConnection [5 s]
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventHubTests.RemoveAsync_ThenBroadcast_DoesNotThrow [5 s]
+[xUnit.net 00:00:10.20]   Finished:    MaimaiHomeAgent.Tests
+数据收集器“Blame”消息: 所有测试都已运行完毕，将不生成序列文件。
+  已通过 MaimaiHomeAgent.Tests.Realtime.EventHubTests.TwoConnections_BothReceiveBroadcast [15 ms]
+
+测试运行成功。
+测试总数: 170
+     通过数: 170
+总时间: 10.6732 秒
+EXIT_CODE_0  
