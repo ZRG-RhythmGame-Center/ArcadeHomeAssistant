@@ -51,11 +51,11 @@ class AgentClientCancellationTest {
 
     @Test
     fun cancelDuringSlowResponse_throwsCancellation() = runBlocking {
+        // Use NO_RESPONSE so the server never sends headers — call.execute() blocks
+        // indefinitely until the OkHttp call is cancelled.
         server.enqueue(
             MockResponse()
-                .setResponseCode(200)
-                .setBody("{}")
-                .setBodyDelay(2, TimeUnit.SECONDS)
+                .setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.NO_RESPONSE)
         )
 
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -79,7 +79,7 @@ class AgentClientCancellationTest {
             generateSequence(thrown) { it.cause }.any { it is kotlinx.coroutines.CancellationException }
         val isAgentReqEx = thrown is AgentRequestException
         assertTrue(
-            "Expected CancellationException but got \${thrown!!::class.qualifiedName}: \${thrown.message}",
+            "Expected CancellationException but got " + thrown!!::class.qualifiedName + ": " + thrown.message,
             isCancellation && !isAgentReqEx
         )
         scope.cancel()
@@ -109,7 +109,7 @@ class AgentClientCancellationTest {
         val isCancellation = thrown is kotlinx.coroutines.CancellationException ||
             generateSequence(thrown) { it.cause }.any { it is kotlinx.coroutines.CancellationException }
         assertTrue(
-            "Expected CancellationException but got \${thrown!!::class.qualifiedName}: \${thrown.message}",
+            "Expected CancellationException but got " + thrown!!::class.qualifiedName + ": " + thrown.message,
             isCancellation
         )
     }

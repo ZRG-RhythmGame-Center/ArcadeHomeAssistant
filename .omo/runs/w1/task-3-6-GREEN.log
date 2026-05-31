@@ -1,0 +1,31 @@
+=== GREEN PHASE LOG ===
+Date: 2026-05-31 12:22:49
+Command: .\gradlew.bat :app:testDebugUnitTest --tests "com.maimai.home.data.AgentClient*Test"
+Exit Code: 0
+
+=== TEST RESULTS ===
+4 tests completed, 0 failed
+
+PASSED: AgentClientCancellationTest > cancelDuringSlowResponse_throwsCancellation
+  - suspendCancellableCoroutine + invokeOnCancellation { call.cancel() } inside withContext(Dispatchers.IO)
+  - NO_RESPONSE socket policy makes call.execute() block; cancel() fires call.cancel() -> IOException
+  - IOException handler checks cont.isCancelled -> cont.cancel() -> CancellationException propagates
+
+PASSED: AgentClientCancellationTest > cancelBeforeRequest_throwsCancellation
+  - Pre-cancelled scope throws CancellationException before entering execute()
+
+PASSED: AgentClientDispatcherTest > executesOnIoDispatcher
+  - withContext(Dispatchers.IO) wraps the blocking call
+  - Interceptor captures thread name: DefaultDispatcher-worker-N (IO pool)
+
+PASSED: AgentClientTest > downloadFile_nullBody_throws
+  - Mockito mock returns Response with null body
+  - downloadFile() throws AgentRequestException(Network, "响应为空")
+
+=== IMPLEMENTATION NOTES ===
+execute() uses withContext(Dispatchers.IO) { suspendCancellableCoroutine { ... } }
+- withContext provides IO thread dispatch (fixes R1 #3)
+- suspendCancellableCoroutine + invokeOnCancellation { call.cancel() } propagates cancellation (fixes R1 #4)
+- IOException from cancelled call detected via cont.isCancelled -> cont.cancel()
+ServiceLocator.kt: writeTimeout already 300s (R2 #B6 already applied)
+downloadFile(): body ?: throw AgentRequestException(Network, "响应为空") (fixes R1 #17)
