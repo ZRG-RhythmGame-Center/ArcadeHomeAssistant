@@ -1,0 +1,15 @@
+RED phase: gate-a-fix — Wave 1 Gate A re-review
+Command: cd apps/mobile-android; .\gradlew.bat :app:testDebugUnitTest --no-daemon
+Exit code: 1 (run 1 — ManifestSecurityTest.networkSecurityConfigPermitsCleartext failed)
+
+FAILURE: ManifestSecurityTest > networkSecurityConfigPermitsCleartext FAILED
+  java.lang.AssertionError: NSC must not use <domain> entries: Android NSC does not support CIDR/IP-range matching.
+  at ManifestSecurityTest.kt:129
+
+Root cause: assert(!xml.contains("<domain")) matched the comment text in the NSC file
+  which contains the phrase "inside <domain>". Fixed by checking "<domain " (with space).
+
+Exit code: 1 (run 2 — ManifestSecurityTest.kt:134 Syntax error: Missing '}')
+Root cause: edit tool produced malformed brace structure. Fixed by re-reading and correcting.
+
+Both failures were in the new test code, not in production code.

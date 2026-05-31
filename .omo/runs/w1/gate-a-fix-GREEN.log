@@ -1,0 +1,36 @@
+GREEN phase: gate-a-fix — Wave 1 Gate A re-review
+Command: cd apps/mobile-android; .\gradlew.bat :app:testDebugUnitTest --no-daemon
+Exit code: 0
+
+> :app:testDebugUnitTest > 17 tests completed
+BUILD SUCCESSFUL in 14s
+
+Test classes executed:
+  com.maimai.home.ManifestSecurityTest          — 5 tests (cleartextTrafficEnabled, networkSecurityConfigPresent,
+                                                   declaresNearbyWifiDevicesOnSdk33Plus,
+                                                   keepsChangeWifiMulticastStatePermission,
+                                                   networkSecurityConfigPermitsCleartext) — all PASSED
+  com.maimai.home.data.AgentClientCancellationTest — PASSED
+  com.maimai.home.data.AgentClientTest             — PASSED
+  com.maimai.home.data.AgentClientDispatcherTest   — PASSED
+  com.maimai.home.data.DiscoveryServiceTest        — 2 tests (acquiresAndReleasesMulticastLock,
+                                                   discoverDoesNotHangWhenResolutionStalls) — all PASSED
+  com.maimai.home.data.EventStreamTest             — 6 tests (httpAddressBecomesWs, httpsAddressBecomesWss,
+                                                   bareAddressBecomesWs, wssAddressPreserved,
+                                                   wsAddressPreserved,
+                                                   reconnectJobCancelledOnDisconnect) — all PASSED
+
+17 tests completed, 0 failed.
+
+APK build:
+Command: cd apps/mobile-android; .\gradlew.bat :app:assembleDebug --no-daemon
+Exit code: 0
+BUILD SUCCESSFUL in 10s
+
+verify-manifest.ps1:
+PASS: android:usesCleartextTraffic = true
+PASS: android:networkSecurityConfig = @xml/network_security_config
+PASS: NEARBY_WIFI_DEVICES declared with usesPermissionFlags = neverForLocation
+PASS: CHANGE_WIFI_MULTICAST_STATE permission still present
+PASS: NSC has <base-config cleartextTrafficPermitted='true'>
+VERIFICATION PASSED: All manifest security checks passed

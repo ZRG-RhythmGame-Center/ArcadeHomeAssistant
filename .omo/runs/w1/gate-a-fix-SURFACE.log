@@ -1,0 +1,38 @@
+SURFACE phase: gate-a-fix — Wave 1 Gate A re-review
+Date: 2026-05-31
+
+Fixes applied:
+  C1: apps/mobile-android/app/src/main/res/xml/network_security_config.xml
+      Replaced invalid <domain>-based NSC with <base-config cleartextTrafficPermitted="true">.
+      Android NSC does not support CIDR/IP-range matching via <domain> tags.
+
+  C2: apps/mobile-android/scripts/verify-manifest.ps1
+      Added Check 4: validates NSC file exists, is valid XML, and has base-config cleartext policy.
+      Also fixed Join-Path to use nested calls for PowerShell 5 compatibility.
+
+  M1: apps/mobile-android/app/src/main/kotlin/com/maimai/home/data/DiscoveryService.kt
+      Changed pendingResolutions from List<CompletableDeferred<Unit>> to List<Job>.
+      After timeout, cancels all pending resolution Jobs so coroutineScope doesn't hang.
+
+  M2: apps/mobile-android/app/src/test/kotlin/com/maimai/home/data/DiscoveryServiceTest.kt
+      HangingNsdManager.discoverServices() now emits onServiceFound with a mocked NsdServiceInfo
+      (serviceType="_maimai-home._tcp.") before hanging in resolveService. Test renamed to
+      discoverDoesNotHangWhenResolutionStalls and asserts result is non-null AND empty.
+
+  M3: .omo/runs/w1/task-4-{RED,GREEN,SURFACE}.log committed (were untracked).
+
+  M4: .omo/runs/w1/task-5-RED.log — addendum appended explaining compile-failure = RED proof.
+
+  m1: apps/mobile-android/app/src/test/kotlin/com/maimai/home/ManifestSecurityTest.kt
+      Added networkSecurityConfigPermitsCleartext() test: reads NSC XML file directly,
+      asserts <base-config cleartextTrafficPermitted="true"> present, <domain > absent.
+
+  m2: apps/mobile-android/app/src/test/kotlin/com/maimai/home/data/EventStreamTest.kt
+      reconnectJobCancelledOnDisconnect: captures reconnectJob BEFORE disconnect(),
+      asserts capturedJob != null (via ?: error()), then asserts capturedJob.isCancelled.
+
+  m3: apps/mobile-android/app/src/main/kotlin/com/maimai/home/data/AgentClient.kt
+      execute(): added AtomicReference<Response?> to track response across cancellation race.
+      invokeOnCancellation closes the response if it was set before cancellation handler ran.
+
+All 17 tests pass. APK builds. verify-manifest.ps1 passes all 5 checks.
