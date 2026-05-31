@@ -1,0 +1,11 @@
+build/
+.gradle/
+.idea/
+*.iml
+*.apk
+*.aab
+.DS_Store
+node_modules/
+dist/
+.env
+.env.local
