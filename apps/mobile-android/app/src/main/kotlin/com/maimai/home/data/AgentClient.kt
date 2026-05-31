@@ -201,7 +201,17 @@ class AgentClient(
                     if (cont.isCancelled) {
                         cont.cancel()
                     } else {
-                        cont.resumeWithException(AgentRequestException(ApiError(ApiError.Kind.Network, e.message ?: "网络错误")))
+                        // Map specific IOException subtypes to user-friendly messages (R2 B7).
+                        val message = when {
+                            e is java.net.ConnectException ||
+                                e.message?.contains("refused", ignoreCase = true) == true ||
+                                e.message?.contains("ECONNREFUSED", ignoreCase = true) == true ->
+                                "无法连接到 Agent，请确认地址、端口和防火墙设置。"
+                            e is java.net.UnknownHostException ->
+                                "无法解析 Agent 主机名，请检查地址。"
+                            else -> e.message ?: "网络错误"
+                        }
+                        cont.resumeWithException(AgentRequestException(ApiError(ApiError.Kind.Network, message)))
                     }
                 }
             }

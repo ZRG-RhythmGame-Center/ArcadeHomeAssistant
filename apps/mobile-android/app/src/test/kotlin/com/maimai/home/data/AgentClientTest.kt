@@ -696,3 +696,100 @@ class AgentClientMockWebServerTest {
         return caught
     }
 }
+
+/**
+ * Wave 5 task 38: network error specificity.
+ *
+ * AgentClient.execute() must map DNS failures, connection-refused, and
+ * socket-timeout to distinct, user-friendly messages (R2 B7).
+ *
+ * These tests use MockWebServer's SocketPolicy to simulate the failure modes.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
+class AgentClientNetworkErrorSpecificityTest {
+
+    private lateinit var server: MockWebServer
+    private lateinit var json: Json
+
+    @Before
+    fun setUp() {
+        server = MockWebServer()
+        server.start()
+        json = Json { ignoreUnknownKeys = true; explicitNulls = false }
+    }
+
+    @After
+    fun tearDown() {
+        server.shutdown()
+    }
+
+    private fun address(): String = server.url("/").toString().removeSuffix("/")
+
+    /**
+     * RED→GREEN (Task 38): socket timeout must map to ApiError.Kind.Timeout
+     * with the user-friendly message from R2 B7.
+     */
+    @Test
+    fun socketTimeout_mapsToTimeoutKind() = runBlocking {
+        server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
+        val shortClient = AgentClient(
+            OkHttpClient.Builder()
+                .connectTimeout(300, TimeUnit.MILLISECONDS)
+                .readTimeout(300, TimeUnit.MILLISECONDS)
+                .writeTimeout(300, TimeUnit.MILLISECONDS)
+                .build(),
+            json,
+        )
+
+        val ex = assertAgentException { shortClient.fetchStatus(address()) }
+
+        assertThat(ex.apiError.kind).isEqualTo(ApiError.Kind.Timeout)
+        assertThat(ex.apiError.message).isEqualTo("连接超时")
+    }
+
+    /**
+     * RED→GREEN (Task 38): connection-refused must map to ApiError.Kind.Network
+     * with the specific R2 B7 message.
+     */
+    @Test
+    fun connectionRefused_mapsToNetworkKindWithSpecificMessage() = runBlocking {
+        // Shut down the server so the port is closed (connection refused).
+        server.shutdown()
+        val closedAddress = address()
+
+        val client = AgentClient(
+            OkHttpClient.Builder()
+                .connectTimeout(500, TimeUnit.MILLISECONDS)
+                .readTimeout(500, TimeUnit.MILLISECONDS)
+                .build(),
+            json,
+        )
+
+        val ex = assertAgentException { client.fetchStatus(closedAddress) }
+
+        assertThat(ex.apiError.kind).isEqualTo(ApiError.Kind.Network)
+        // The message must be the specific R2 B7 copy, not the raw IOException message.
+        assertThat(ex.apiError.message).isEqualTo("无法连接到 Agent，请确认地址、端口和防火墙设置。")
+    }
+
+    private inline fun assertAgentException(block: () -> Unit): AgentRequestException {
+        val caught: Throwable? = try {
+            block()
+            null
+        } catch (e: Throwable) {
+            e
+        }
+        if (caught == null) {
+            fail("Expected AgentRequestException, but call returned normally")
+            error("unreachable")
+        }
+        if (caught !is AgentRequestException) {
+            fail(
+                "Expected AgentRequestException, got " + caught::class.qualifiedName + ": " + caught.message,
+            )
+            error("unreachable")
+        }
+        return caught
+    }
+}

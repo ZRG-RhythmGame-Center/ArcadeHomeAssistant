@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Wave 5 task 40: dropped appcompat dependency.
+         Uses the Android framework Material theme as the base so we don't
+         need the appcompat library just for the Activity window chrome.
+         Compose draws its own UI; the Activity theme only controls the
+         window background and status-bar colour. -->
+    <style name="Theme.MaimaiHome" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

@@ -21,7 +21,7 @@ object ServiceLocator {
     val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(5, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(300, TimeUnit.SECONDS)
             .writeTimeout(300, TimeUnit.SECONDS)
             .build()
     }

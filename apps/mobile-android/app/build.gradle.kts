@@ -130,8 +130,7 @@ dependencies {
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
-    implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-compose:1.10.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
@@ -143,13 +142,24 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-core")
+    implementation("androidx.compose.material:material-icons-extended")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    // ui-test-manifest provides ComponentActivity registration needed by createComposeRule().
+    // Must be available for both debug and release unit tests.
+    testImplementation("androidx.compose.ui:ui-test-manifest")
+    // ui-test-manifest provides ComponentActivity registration needed by createComposeRule().
+    // Must be available for both debug and release unit tests.
+    testImplementation("androidx.compose.ui:ui-test-manifest")
+    // Also add for release variant explicitly.
+    testReleaseImplementation("androidx.compose.ui:ui-test-manifest")
+    // ui-test-manifest provides ComponentActivity registration needed by createComposeRule().
+    // Must be testImplementation (not debugImplementation) so release unit tests also work.
+    testImplementation("androidx.compose.ui:ui-test-manifest")
 
     // ----- Unit test stack (Wave 2.7) ----------------------------------------
     // JUnit 5 (Jupiter) BOM aligns api / params / engine versions.
@@ -186,6 +196,12 @@ dependencies {
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("androidx.test.ext:junit:1.2.1")
 
+    // Compose UI tests under Robolectric (Wave 5).
+    // ui-test-junit4 brings createComposeRule(); ui-test-manifest provides the
+    // ComponentActivity needed to host setContent() under Robolectric.
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation("androidx.compose.ui:ui-test-manifest")
+
     // Mockito is preserved from the pre-Wave-2 setup because two existing
     // Wave 1 tests (AgentClientTest + DiscoveryServiceTest) use Mockito.kt
     // helpers. New tests should prefer MockK; this dep stays so the legacy
@@ -199,6 +215,27 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("io.mockk:mockk-android:1.13.14")
 }
+
+// Wave 5: Force androidx.core to 1.13.1 in the unit-test RUNTIME classpath only.
+// Robolectric 4.13 shadows don't include the tag_compat_insets_dispatch field
+// added in core 1.14+, causing NoSuchFieldError in Compose UI tests.
+// We use afterEvaluate so the configuration exists before we access it.
+afterEvaluate {
+    configurations.matching {
+        it.name.contains("UnitTest", ignoreCase = true) &&
+            it.name.contains("RuntimeClasspath", ignoreCase = true)
+    }.configureEach {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "androidx.core" &&
+                (requested.name == "core" || requested.name == "core-ktx")
+            ) {
+                useVersion("1.13.1")
+                because("Robolectric 4.13 shadows are incompatible with core 1.14+")
+            }
+        }
+    }
+}
+
 
 // ----- JaCoCo configuration (Wave 2.12) -------------------------------------
 // Targets the `debug` unit test variant; release is shrunk + obfuscated, which
