@@ -45,8 +45,8 @@ and a stronger code-level enforcement.
 ## Verification
 
 - `:app:testDebugUnitTest` passes — 188/189 baseline + 6 new = 194 attempted; 1 known flaky test (`EventStreamMockServerTest.malformedFrame_isSilentlyDropped`) reproduces only on a busy machine and passes on rerun (`pty_27637752` exit 0). It was passing in the W7 baseline log and is **NOT** affected by the LAN policy change (no URL/host involvement in the assertion).
-- `:app:testReleaseUnitTest` re-run pending in this round.
-- `:app:assembleRelease` re-run pending in this round.
+- `:app:testReleaseUnitTest` — superseded by Round 6 verification (`.omo/runs/w8/round-6-verification.log`): 196 tests, 0 failed, BUILD SUCCESSFUL.
+- `:app:assembleRelease` — superseded by Round 6 verification: BUILD SUCCESSFUL.
 
 ## Why this is stronger than the literal plan contract
 

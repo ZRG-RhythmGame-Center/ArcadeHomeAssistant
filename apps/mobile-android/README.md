@@ -63,7 +63,7 @@ Then `./gradlew.bat assembleRelease` produces a properly-signed APK.
 
 ## How to run tests
 
-Unit tests (155 tests via JUnit 5 + Robolectric + MockK + Truth):
+Unit tests (196 tests via JUnit 5 + Robolectric + MockK + Truth):
 
 ```powershell
 ./gradlew.bat testDebugUnitTest

@@ -8,7 +8,7 @@ The Android port reaches feature parity with this Flutter source and adds:
 
 - ~10x smaller APK size (1.57 MB vs typical 30+ MB Flutter APK).
 - Native Material3 UX with proper Android system integration.
-- Full unit + Compose UI test coverage (155 tests).
+- Full unit + Compose UI test coverage (196 tests).
 - mDNS / NSD discovery, WebSocket reconnect with backoff, file mutation
   parity, and the same `/api/*` contract documented in
   [`services/windows-agent/README.md`](../../services/windows-agent/README.md).
