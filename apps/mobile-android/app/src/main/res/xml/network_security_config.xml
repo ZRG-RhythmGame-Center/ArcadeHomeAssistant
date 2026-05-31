@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Network Security Configuration
-    Whitelists RFC1918 private address ranges for cleartext HTTP.
-    This allows the app to communicate with LAN agents on Android 9+ (API 28+)
-    without requiring HTTPS for local network traffic.
 
-    RFC1918 ranges covered:
-      - 192.168.0.0/16  (most home/office routers)
-      - 10.0.0.0/8      (corporate / VPN)
-      - 172.16.0.0/12   (Docker, some enterprise)
+    This app is a LAN-only client that talks to a Windows agent over plain
+    HTTP (and ws://) on RFC1918 addresses. Android Network Security Config
+    does NOT support CIDR or IP-range entries inside <domain>; per-IP
+    domain entries would silently fail to match arbitrary LAN addresses.
+
+    The simplest valid policy for this use case is a base-config that
+    permits cleartext globally. The android:usesCleartextTraffic="true"
+    attribute on <application> already opens cleartext for everything;
+    this NSC just confirms the policy explicitly and provides the system
+    trust anchors for any future https:// traffic.
 -->
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <!-- 192.168.0.0/16 -->
-        <domain includeSubdomains="true">192.168.0.0</domain>
-        <!-- 10.0.0.0/8 -->
-        <domain includeSubdomains="true">10.0.0.0</domain>
-        <!-- 172.16.0.0/12 -->
-        <domain includeSubdomains="true">172.16.0.0</domain>
-    </domain-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
 </network-security-config>
