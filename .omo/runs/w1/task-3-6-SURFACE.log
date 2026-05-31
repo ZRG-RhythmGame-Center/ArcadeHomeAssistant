@@ -1,0 +1,23 @@
+=== SURFACE PHASE LOG ===
+Date: 2026-05-31 12:25:18
+Command: .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
+Exit Code: 0
+
+=== TEST RESULTS ===
+16 tests completed, 0 failed
+
+Test classes:
+  AgentClientCancellationTest : tests=2 failures=0
+  AgentClientDispatcherTest   : tests=1 failures=0
+  AgentClientTest             : tests=1 failures=0
+  DiscoveryServiceTest        : tests=2 failures=0
+  EventStreamTest             : tests=6 failures=0
+  ManifestSecurityTest        : tests=4 failures=0
+
+=== BUILD ===
+:app:assembleDebug BUILD SUCCESSFUL in 21s
+APK packaged successfully
+
+=== NOTES ===
+ManifestSecurityTest: added @Config(sdk = [34]) to fix Robolectric 4.13 maxSdkVersion=34
+vs targetSdk=35 incompatibility (pre-existing issue from tasks 1+2).

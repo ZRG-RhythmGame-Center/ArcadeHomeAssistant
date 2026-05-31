@@ -18,6 +18,7 @@ import org.robolectric.annotation.Config
  * These tests close R1 findings #1 (Critical) and #2 (Major).
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class ManifestSecurityTest {
 
     /**
