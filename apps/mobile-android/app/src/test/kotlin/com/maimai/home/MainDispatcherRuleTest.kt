@@ -5,11 +5,10 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlin.test.assertFailsWith
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtensionContext
 
@@ -52,40 +51,31 @@ class MainDispatcherRuleTest {
 
     @Test
     fun afterEach_actuallyCallsResetMain() {
-        // The first rule installs `installedDispatcher` on Dispatchers.Main.
-        val installedDispatcher = StandardTestDispatcher()
-        val rule = MainDispatcherRule(installedDispatcher)
+        val dispatcher = StandardTestDispatcher()
+        val rule = MainDispatcherRule(dispatcher)
         val ctx = mockk<ExtensionContext>(relaxed = true)
+
         rule.beforeEach(ctx)
         rule.afterEach(ctx)
 
-        // After afterEach, `installedDispatcher` MUST no longer drive
-        // Dispatchers.Main. Prove that behaviorally by installing a SECOND
-        // distinct dispatcher, scheduling a delayed coroutine on
-        // Dispatchers.Main, and verifying the SECOND scheduler advanced
-        // virtual time while the FIRST stayed put.
-        val secondDispatcher = StandardTestDispatcher()
-        val secondRule = MainDispatcherRule(secondDispatcher)
-        secondRule.beforeEach(ctx)
-        try {
-            runTest(secondDispatcher) {
-                var ranOnSecond = 0
-                launch(Dispatchers.Main) {
-                    delay(100)
-                    ranOnSecond++
-                }
-                advanceUntilIdle()
-                assertThat(ranOnSecond).isEqualTo(1)
-            }
-            // installedDispatcher must have been reset out of the slot, so
-            // its scheduler never advances during the second rule's window.
-            assertThat(installedDispatcher.scheduler.currentTime).isEqualTo(0L)
-            // secondDispatcher's scheduler advanced past 100 ms because
-            // Dispatchers.Main routed the delay through it.
-            assertThat(secondDispatcher.scheduler.currentTime)
-                .isAtLeast(100L)
-        } finally {
-            secondRule.afterEach(ctx)
+        // After afterEach, the test override is gone. On JVM unit tests with
+        // no platform Main dispatcher (Android Looper), kotlinx-coroutines-test
+        // 1.10+ throws IllegalStateException synchronously the moment any code
+        // touches Dispatchers.Main's dispatch path. Force that touch by
+        // calling `isDispatchNeeded` on the property. This is the cheapest
+        // synchronous probe; runBlocking + withContext(Dispatchers.Main) can
+        // deadlock instead of throwing because the missing dispatcher swallows
+        // the continuation rather than dispatching it.
+        //
+        // If MainDispatcherRule.afterEach were a no-op (resetMain() removed),
+        // Dispatchers.Main would still resolve to the test override and the
+        // call would succeed instead of throwing - the assertion would fail.
+        val ex = assertFailsWith<IllegalStateException> {
+            Dispatchers.Main.isDispatchNeeded(kotlin.coroutines.EmptyCoroutineContext)
         }
+        // Defensive sanity: the failure must reference the missing Main
+        // dispatcher, not be a generic ISE leaked from somewhere else.
+        assertThat(ex.message ?: "").contains("Dispatchers.Main")
+        assertThat(ex.message ?: "").contains("resetMain")
     }
 }
