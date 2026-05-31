@@ -149,16 +149,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
-    // ui-test-manifest provides ComponentActivity registration needed by createComposeRule().
-    // Must be available for both debug and release unit tests.
-    testImplementation("androidx.compose.ui:ui-test-manifest")
-    // ui-test-manifest provides ComponentActivity registration needed by createComposeRule().
-    // Must be available for both debug and release unit tests.
-    testImplementation("androidx.compose.ui:ui-test-manifest")
-    // Also add for release variant explicitly.
-    testReleaseImplementation("androidx.compose.ui:ui-test-manifest")
-    // ui-test-manifest provides ComponentActivity registration needed by createComposeRule().
-    // Must be testImplementation (not debugImplementation) so release unit tests also work.
+    // ui-test-manifest provides ComponentActivity registration needed by
+    // createComposeRule(). Must be available for both debug and release unit
+     // tests so release variant runs (debug-only would only cover testDebugUnitTest).
     testImplementation("androidx.compose.ui:ui-test-manifest")
 
     // ----- Unit test stack (Wave 2.7) ----------------------------------------
@@ -197,10 +190,9 @@ dependencies {
     testImplementation("androidx.test.ext:junit:1.2.1")
 
     // Compose UI tests under Robolectric (Wave 5).
-    // ui-test-junit4 brings createComposeRule(); ui-test-manifest provides the
-    // ComponentActivity needed to host setContent() under Robolectric.
+    // ui-test-junit4 brings createComposeRule(). ui-test-manifest is declared
+    // once near the top of this dependencies block.
     testImplementation("androidx.compose.ui:ui-test-junit4")
-    testImplementation("androidx.compose.ui:ui-test-manifest")
 
     // Mockito is preserved from the pre-Wave-2 setup because two existing
     // Wave 1 tests (AgentClientTest + DiscoveryServiceTest) use Mockito.kt

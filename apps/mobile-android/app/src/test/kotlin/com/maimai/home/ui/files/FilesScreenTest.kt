@@ -86,6 +86,7 @@ class FilesScreenTest {
         composeRule.waitForIdle()
 
         // The ModalBottomSheet with ACTION_SHEET tag must appear.
+        composeRule.onNodeWithTag(FilesScreenTags.ACTION_SHEET).assertIsDisplayed()
     }
 
     /**

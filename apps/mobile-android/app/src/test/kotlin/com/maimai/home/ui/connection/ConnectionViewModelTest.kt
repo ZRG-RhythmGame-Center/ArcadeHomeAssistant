@@ -1,5 +1,6 @@
 package com.maimai.home.ui.connection
 
+import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.maimai.home.MainDispatcherRule
 import com.maimai.home.data.AgentClient
@@ -191,6 +192,26 @@ class ConnectionViewModelTest {
         val state = vm.uiState.value
         assertThat(state.connectedStatus).isEqualTo(okStatus)
         assertThat(state.address).isEqualTo(service.address)
+    }
+
+    /**
+     * Closes Gate G F1 / M5 / R1#6: silent verify must also emit a one-shot
+     * discoveryNavigation event so ConnectionScreen can auto-navigate to the
+     * AudioScreen without requiring the user to tap "进入设备".
+     */
+    @Test
+    fun useDiscoveredService_emitsDiscoveryNavigationEvent() = runTest {
+        val service = DiscoveredService("PC-Auto", "10.0.0.5", 8765)
+        coEvery { agentClient.fetchStatus(service.address) } returns okStatus
+
+        vm.discoveryNavigation.test {
+            vm.useDiscoveredService(service)
+            advanceUntilIdle()
+
+            val event = awaitItem()
+            assertThat(event.address).isEqualTo(service.address)
+            assertThat(event.machineName).isEqualTo(okStatus.machineName)
+        }
     }
 
     @Test

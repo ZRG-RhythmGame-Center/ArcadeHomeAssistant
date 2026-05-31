@@ -95,25 +95,70 @@ class FilesViewModel(
     }
 
     /**
-     * Task 25: subscribe to files.changed events. Debounce rapid bursts (500 ms),
+     * Task 25 + Gate G F2 B8: subscribe to file.* events emitted by the Windows
+     * agent (`file.created`, `file.deleted`, `file.renamed`, `file.moved`).
+     * The agent does NOT emit a generic `files.changed` event — the original
+     * subscription string was a Wave 4 oversight. Debounce rapid bursts (500 ms),
      * then refresh the listing only if rootId + path match the current view.
+     *
+     * For renames/moves we also refresh when the event references the current
+     * directory as `fromPath` (the source disappeared) or `toPath` (the target
+     * gained a child).
      */
     private fun subscribeToWsEvents() {
         viewModelScope.launch {
             eventFlow
-                .filter { it.type == "files.changed" }
-                .debounce(500L)
-                .collect { event ->
-                    val payload = runCatching { event.payload.jsonObject }.getOrNull() ?: return@collect
-                    val rootId = runCatching { payload["rootId"]?.jsonPrimitive?.content }.getOrNull() ?: return@collect
-                    val path = runCatching { payload["path"]?.jsonPrimitive?.content }.getOrNull() ?: return@collect
-
-                    val current = _uiState.value
-                    if (current.selectedRoot?.id == rootId && current.path == path) {
-                        loadListing(current.selectedRoot!!, path)
-                    }
+                .filter { event ->
+                    event.type == "file.created" ||
+                        event.type == "file.deleted" ||
+                        event.type == "file.renamed" ||
+                        event.type == "file.moved"
                 }
+                .debounce(500L)
+                .collect { event -> handleFileEvent(event) }
         }
+    }
+
+    /**
+     * Refresh the current listing if the event affects the current view.
+     * Shared by the constructor-injected eventFlow path (tests) and the
+     * production [start] path that wires a real EventStream.
+     */
+    private fun handleFileEvent(event: EventEnvelope) {
+        val payload = runCatching { event.payload.jsonObject }.getOrNull() ?: return
+        val rootId = runCatching { payload["rootId"]?.jsonPrimitive?.content }.getOrNull() ?: return
+        // Try the common path-bearing fields. file.created/deleted use `path`.
+        // file.renamed/moved use `fromPath` and `toPath`.
+        val candidatePaths = listOfNotNull(
+            runCatching { payload["path"]?.jsonPrimitive?.content }.getOrNull(),
+            runCatching { payload["fromPath"]?.jsonPrimitive?.content }.getOrNull(),
+            runCatching { payload["toPath"]?.jsonPrimitive?.content }.getOrNull(),
+        )
+
+        val current = _uiState.value
+        val selectedId = current.selectedRoot?.id ?: return
+        if (selectedId != rootId) return
+
+        // Refresh if the current directory matches OR is the parent of any of
+        // the affected paths (i.e. the affected entry lives directly inside).
+        val currentDir = current.path
+        val refreshNeeded = candidatePaths.any { affected ->
+            affected == currentDir || parentDirOf(affected) == currentDir
+        }
+        if (refreshNeeded) {
+            loadListing(current.selectedRoot!!, currentDir)
+        }
+    }
+
+    /**
+     * Returns the parent directory of an in-root path. Empty string is the
+     * root level. Mirrors the agent's path semantics (forward slashes).
+     */
+    private fun parentDirOf(path: String): String {
+        val normalized = path.trim('/').trim()
+        if (normalized.isEmpty()) return ""
+        val idx = normalized.lastIndexOf('/')
+        return if (idx < 0) "" else normalized.substring(0, idx)
     }
 
     /**
@@ -140,17 +185,14 @@ class FilesViewModel(
         // real stream. This keeps tests using the constructor flow unaffected.
         eventJob = viewModelScope.launch {
             stream.events
-                .filter { it.type == "files.changed" }
-                .debounce(500L)
-                .collect { event ->
-                    val payload = runCatching { event.payload.jsonObject }.getOrNull() ?: return@collect
-                    val rootId = runCatching { payload["rootId"]?.jsonPrimitive?.content }.getOrNull() ?: return@collect
-                    val path = runCatching { payload["path"]?.jsonPrimitive?.content }.getOrNull() ?: return@collect
-                    val current = _uiState.value
-                    if (current.selectedRoot?.id == rootId && current.path == path) {
-                        loadListing(current.selectedRoot!!, path)
-                    }
+                .filter { event ->
+                    event.type == "file.created" ||
+                        event.type == "file.deleted" ||
+                        event.type == "file.renamed" ||
+                        event.type == "file.moved"
                 }
+                .debounce(500L)
+                .collect { event -> handleFileEvent(event) }
         }
         stream.connect()
     }

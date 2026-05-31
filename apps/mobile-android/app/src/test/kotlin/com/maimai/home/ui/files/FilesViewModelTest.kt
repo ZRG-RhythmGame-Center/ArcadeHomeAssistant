@@ -372,7 +372,7 @@ class FilesViewModelTest {
         advanceUntilIdle() // init loadRoots = 1 call to fetchFiles
 
         val envelope = EventEnvelope(
-            type = "files.changed",
+            type = "file.created",
             payload = buildJsonObject {
                 put("rootId", writableRoot.id)
                 put("path", "")
@@ -394,7 +394,7 @@ class FilesViewModelTest {
         advanceUntilIdle() // init = 1 call
 
         val envelope = EventEnvelope(
-            type = "files.changed",
+            type = "file.created",
             payload = buildJsonObject {
                 put("rootId", "other-root")
                 put("path", "")
@@ -414,7 +414,7 @@ class FilesViewModelTest {
         advanceUntilIdle() // init = 1 call, current path = ""
 
         val envelope = EventEnvelope(
-            type = "files.changed",
+            type = "file.created",
             payload = buildJsonObject {
                 put("rootId", writableRoot.id)
                 put("path", "some/other/path")
@@ -434,7 +434,7 @@ class FilesViewModelTest {
         advanceUntilIdle() // init = 1 call
 
         val envelope = EventEnvelope(
-            type = "files.changed",
+            type = "file.created",
             payload = buildJsonObject {
                 put("rootId", writableRoot.id)
                 put("path", "")
@@ -465,7 +465,7 @@ class FilesViewModelTest {
         // Emit an event for the original path ("").
         fakeEvents.emit(
             EventEnvelope(
-                type = "files.changed",
+                type = "file.created",
                 payload = buildJsonObject {
                     put("rootId", writableRoot.id)
                     put("path", "")
@@ -500,7 +500,7 @@ class FilesViewModelTest {
 
         fakeEvents.emit(
             EventEnvelope(
-                type = "files.changed",
+                type = "file.created",
                 payload = buildJsonObject {
                     put("rootId", writableRoot.id)
                     put("path", "")

@@ -23,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +47,14 @@ fun ConnectionScreen(
     viewModel: ConnectionViewModel = viewModel(factory = ConnectionViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // M5 / R1#6: discovered service tap silently verifies and navigates.
+    // Manual testConnection still requires the explicit "进入设备" button.
+    LaunchedEffect(viewModel) {
+        viewModel.discoveryNavigation.collect { event ->
+            onConnected(event.address, event.machineName)
+            viewModel.clearConnectedStatus()
+        }
+    }
     ConnectionScreenContent(
         state = uiState,
         onUpdateAddress = viewModel::updateAddress,
