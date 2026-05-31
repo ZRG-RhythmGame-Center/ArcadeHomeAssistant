@@ -106,4 +106,30 @@ class ManifestSecurityTest {
             "CHANGE_WIFI_MULTICAST_STATE permission was removed (should be kept for backward compatibility)"
         }
     }
+
+    /**
+     * Verifies the network_security_config.xml resource declares
+     * <base-config cleartextTrafficPermitted="true">.
+     *
+     * The original NSC (R1) used <domain> entries for RFC1918 addresses,
+     * which is invalid — Android NSC <domain> tags do NOT support CIDR or
+     * IP-range matching. This test reads the raw XML resource file from the
+     * project tree and asserts the policy directly, which is the most
+     * reliable cross-Robolectric-version check.
+     */
+    @Test
+    fun networkSecurityConfigPermitsCleartext() {
+        val nsc = java.io.File("src/main/res/xml/network_security_config.xml")
+        assert(nsc.exists()) { "network_security_config.xml not found at ${nsc.absolutePath}" }
+        val xml = nsc.readText()
+        assert(xml.contains("<base-config") && xml.contains("cleartextTrafficPermitted=\"true\"")) {
+            "NSC must declare <base-config cleartextTrafficPermitted=\"true\">. Got:\n$xml"
+        }
+        // Reject the old, invalid <domain>-based policy that Gate A flagged.
+        // Match "<domain " (with trailing space) to avoid false-positives from
+        // comment text that mentions the element name.
+        assert(!xml.contains("<domain ")) {
+            "NSC must not use <domain> entries: Android NSC does not support CIDR/IP-range matching. Got:\n$xml"
+        }
+    }
 }
