@@ -40,8 +40,15 @@ public class WebSocketSessionTests
         var (serverWs, clientWs) = CreateLinkedPair();
         var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
 
+        // Run the server receive loop so the close handshake can complete.
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var loopTask = session.ReceiveLoopAsync(cts.Token);
+
         // Close from the client side first.
         await clientWs.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
+
+        // Wait for the receive loop to process the close frame.
+        await loopTask.WaitAsync(TimeSpan.FromSeconds(5));
 
         // Server-side close on an already-closed socket must not throw.
         await session.CloseAsync(WebSocketCloseStatus.NormalClosure, "done");

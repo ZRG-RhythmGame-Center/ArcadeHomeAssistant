@@ -10,8 +10,11 @@ namespace MaimaiHomeAgent.Tests.Audio;
 /// <summary>
 /// Unit tests for <see cref="DeviceChangeNotifier"/>. Verifies the hosted-service
 /// lifecycle (idempotent register/unregister, swallowed COMException on stop)
-/// and that callback paths funnel through <see cref="AudioStaDispatcher"/> +
+/// and that callback paths funnel through <see cref="IAudioStaDispatcher"/> +
 /// <see cref="EventPublisher"/>.
+///
+/// Uses <see cref="InlineDispatcher"/> instead of the real AudioStaDispatcher
+/// to avoid spinning up an STA thread that can hang the test process.
 /// </summary>
 public class DeviceChangeNotifierTests
 {
@@ -116,8 +119,7 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        await using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
-        await dispatcher.StartAsync(CancellationToken.None);
+        var dispatcher = new InlineDispatcher();
 
         var notifier = new DeviceChangeNotifier(
             source.Object,
@@ -129,8 +131,6 @@ public class DeviceChangeNotifierTests
         // Fire the callback synchronously (HandleCallbackAsync is fire-and-forget).
         notifier.OnDefaultDeviceChanged("device-id");
         await hub.WaitForBroadcastAsync(1, TimeSpan.FromSeconds(5));
-
-        await dispatcher.StopAsync(CancellationToken.None);
 
         var envelope = Assert.Single(hub.Broadcasts);
         Assert.Equal(EventTypes.AudioDeviceChanged, envelope.Type);
@@ -149,8 +149,7 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        await using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
-        await dispatcher.StartAsync(CancellationToken.None);
+        var dispatcher = new InlineDispatcher();
 
         var notifier = new DeviceChangeNotifier(
             source.Object,
@@ -161,8 +160,6 @@ public class DeviceChangeNotifierTests
 
         notifier.OnDeviceAdded("new-id");
         await hub.WaitForBroadcastAsync(1, TimeSpan.FromSeconds(5));
-
-        await dispatcher.StopAsync(CancellationToken.None);
 
         Assert.Single(hub.Broadcasts);
         Assert.Equal(EventTypes.AudioDeviceChanged, hub.Broadcasts[0].Type);
@@ -179,8 +176,7 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        await using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
-        await dispatcher.StartAsync(CancellationToken.None);
+        var dispatcher = new InlineDispatcher();
 
         var notifier = new DeviceChangeNotifier(
             source.Object,
@@ -191,8 +187,6 @@ public class DeviceChangeNotifierTests
 
         notifier.OnDeviceRemoved("gone-id");
         await hub.WaitForBroadcastAsync(1, TimeSpan.FromSeconds(5));
-
-        await dispatcher.StopAsync(CancellationToken.None);
 
         Assert.Single(hub.Broadcasts);
     }
@@ -208,8 +202,7 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        await using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
-        await dispatcher.StartAsync(CancellationToken.None);
+        var dispatcher = new InlineDispatcher();
 
         var notifier = new DeviceChangeNotifier(
             source.Object,
@@ -220,8 +213,6 @@ public class DeviceChangeNotifierTests
 
         notifier.OnDeviceStateChanged("state-id");
         await hub.WaitForBroadcastAsync(1, TimeSpan.FromSeconds(5));
-
-        await dispatcher.StopAsync(CancellationToken.None);
 
         Assert.Single(hub.Broadcasts);
     }
@@ -237,8 +228,7 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        await using var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
-        await dispatcher.StartAsync(CancellationToken.None);
+        var dispatcher = new InlineDispatcher();
 
         var notifier = new DeviceChangeNotifier(
             source.Object,
@@ -251,8 +241,6 @@ public class DeviceChangeNotifierTests
         // No broadcast should occur, but neither should we get an unobserved exception.
         await Task.Delay(150);
 
-        await dispatcher.StopAsync(CancellationToken.None);
-
         Assert.Empty(hub.Broadcasts);
     }
 
@@ -263,7 +251,7 @@ public class DeviceChangeNotifierTests
     {
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        var dispatcher = new AudioStaDispatcher(NullLogger<AudioStaDispatcher>.Instance);
+        var dispatcher = new InlineDispatcher();
         var audio = new Mock<IAudioService>(MockBehavior.Loose).Object;
         return (
             new DeviceChangeNotifier(
@@ -273,6 +261,16 @@ public class DeviceChangeNotifierTests
                 publisher,
                 NullLogger<DeviceChangeNotifier>.Instance),
             hub);
+    }
+
+    /// <summary>
+    /// Test-only dispatcher that executes work inline on the calling thread.
+    /// Implements <see cref="IAudioStaDispatcher"/> directly — no STA thread.
+    /// </summary>
+    private sealed class InlineDispatcher : IAudioStaDispatcher
+    {
+        public Task<T> InvokeAsync<T>(Func<Task<T>> work) => work();
+        public Task InvokeAsync(Func<Task> work) => work();
     }
 
     private sealed class RecordingHub : EventHub
