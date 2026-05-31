@@ -98,14 +98,18 @@ class EventStreamTest {
         // Give the coroutine scheduler a moment to set reconnectJob
         Thread.sleep(100)
 
+        // Capture the reconnect job BEFORE disconnect() so production code
+        // is free to null the field on disconnect; we still hold the
+        // reference and can verify cancellation occurred.
+        val capturedJob = stream.reconnectJob
+            ?: error("reconnect job must be scheduled before disconnect()")
+
         // disconnect() must cancel the pending reconnect job
         stream.disconnect()
 
-        // The reconnect job should now be cancelled
-        val job = stream.reconnectJob
         assertTrue(
-            "reconnectJob should be cancelled after disconnect()",
-            job == null || job.isCancelled
+            "reconnectJob captured pre-disconnect must be cancelled after disconnect()",
+            capturedJob.isCancelled,
         )
     }
 }
