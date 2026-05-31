@@ -18,6 +18,12 @@ data class DiscoveredService(
     val name: String,
     val host: String,
     val port: Int,
+    /**
+     * Optional version reported by the agent's mDNS TXT record. Older agents
+     * omit it; the UI shows the version line only when it is non-null.
+     * Closes R2 I13.
+     */
+    val version: String? = null,
 ) {
     val address: String get() = "$host:$port"
 }
@@ -121,12 +127,18 @@ class DiscoveryService(
                 override fun onServiceResolved(resolved: NsdServiceInfo) {
                     val host = resolved.host?.hostAddress ?: resolved.host?.hostName
                     if (cont.isActive) {
+                        // I13: read agent version from TXT attributes when present.
+                        // attributes is API 21+; entries are byte arrays per NSD spec.
+                        val version = runCatching {
+                            resolved.attributes?.get("version")?.toString(Charsets.UTF_8)
+                        }.getOrNull()
                         cont.resume(
                             if (host == null) null
                             else DiscoveredService(
                                 name = resolved.serviceName ?: host,
                                 host = host,
                                 port = resolved.port,
+                                version = version,
                             )
                         )
                     }

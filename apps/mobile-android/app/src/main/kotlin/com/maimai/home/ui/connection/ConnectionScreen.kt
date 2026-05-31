@@ -12,10 +12,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -90,6 +95,14 @@ internal fun ConnectionScreenContent(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // I21: intro paragraph above the address form.
+            item {
+                Text(
+                    text = stringResource(R.string.connection_intro_paragraph),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             item {
                 OutlinedTextField(
                     value = state.address,
@@ -161,6 +174,14 @@ internal fun ConnectionScreenContent(
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(service.name, style = MaterialTheme.typography.titleMedium)
                             Text(service.address)
+                            // I13: show version line when the agent advertises it.
+                            service.version?.takeIf { it.isNotBlank() }?.let { v ->
+                                Text(
+                                    text = stringResource(R.string.connection_discovery_version_format, v),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
@@ -170,6 +191,7 @@ internal fun ConnectionScreenContent(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ConnectionInfoCard(
     error: String?,
@@ -185,16 +207,40 @@ private fun ConnectionInfoCard(
                 Text(stringResource(R.string.connection_machine_format, s.machineName))
                 Text(stringResource(R.string.connection_version_format, s.version))
                 Text(stringResource(R.string.connection_uptime_format, s.uptimeSeconds))
-                Text(
-                    stringResource(
-                        R.string.connection_capabilities_format,
-                        flag(s.capabilities.audioVolume),
-                        flag(s.capabilities.audioMute),
-                        flag(s.capabilities.audioDeviceSwitch),
-                        flag(s.capabilities.fileManagement),
-                        flag(s.capabilities.discoveryBroadcast),
-                    ),
-                )
+                // I12: render each capability as an AssistChip with a
+                // checkmark/cross icon instead of the historical flat string.
+                // Two-row layout: chips wrap manually instead of FlowRow to
+                // avoid the Compose 1.7 / 1.8 ABI break in FlowRow's signature.
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    CapabilityChip(
+                        label = stringResource(R.string.capability_audio_volume),
+                        enabled = s.capabilities.audioVolume,
+                    )
+                    CapabilityChip(
+                        label = stringResource(R.string.capability_audio_mute),
+                        enabled = s.capabilities.audioMute,
+                    )
+                    CapabilityChip(
+                        label = stringResource(R.string.capability_audio_device_switch),
+                        enabled = s.capabilities.audioDeviceSwitch,
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    CapabilityChip(
+                        label = stringResource(R.string.capability_file_management),
+                        enabled = s.capabilities.fileManagement,
+                    )
+                    CapabilityChip(
+                        label = stringResource(R.string.capability_discovery_broadcast),
+                        enabled = s.capabilities.discoveryBroadcast,
+                    )
+                }
                 // Wave 5 task 26: explicit "进入设备" button. No auto-navigation.
                 Button(
                     onClick = { onEnterDevice(address, s.machineName) },
@@ -251,4 +297,30 @@ fun ErrorCard(
     }
 }
 
-private fun flag(value: Boolean): String = if (value) "\u2713" else "\u2717"
+private fun flag(value: Boolean): String = if (value) "✓" else "✗"
+
+/**
+ * I12: per-capability chip. Renders a leading icon (check/cross) + the
+ * capability label. Disabled visual when the capability is unsupported by
+ * the agent.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CapabilityChip(label: String, enabled: Boolean) {
+    AssistChip(
+        onClick = {},
+        label = { Text(label) },
+        leadingIcon = {
+            Icon(
+                imageVector = if (enabled) Icons.Filled.Check else Icons.Filled.Close,
+                contentDescription = null,
+                tint = if (enabled) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        },
+        enabled = enabled,
+    )
+}

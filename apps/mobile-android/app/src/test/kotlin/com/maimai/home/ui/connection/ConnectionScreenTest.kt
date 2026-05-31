@@ -175,7 +175,7 @@ class ConnectionScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("暂无发现结果").assertIsDisplayed()
+        composeRule.onNodeWithText("暂无发现结果", substring = true).assertIsDisplayed()
     }
 
     @Test

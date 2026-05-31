@@ -271,7 +271,7 @@ class FilesScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("目录结果已截断，仅显示前 123 项。").assertIsDisplayed()
+        composeRule.onNodeWithText("仅显示前 123 项", substring = true).assertIsDisplayed()
     }
 
     // ── Task 35: ModalBottomSheet root selector ───────────────────────────────

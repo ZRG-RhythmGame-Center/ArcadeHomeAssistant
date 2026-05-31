@@ -2,9 +2,10 @@
 <resources>
     <string name="app_name">maimai Home</string>
 
-    <!-- Wave 3 task 19 / R1 #16: dynamic truncation banner format. The %1$d
-         placeholder takes the limit reported by FileListingResult. -->
-    <string name="files_truncated_format">目录结果已截断，仅显示前 %1$d 项。</string>
+    <!-- I11: truncation banner. %1$d is the limit reported by FileListingResult,
+         %2$d is the actual total reported by the server. The advice copy
+         steers users toward navigating into a subdirectory or filtering. -->
+    <string name="files_truncated_format">目录结果已截断：共 %2$d 项，仅显示前 %1$d 项。请进入子目录或缩小范围。</string>
 
     <!-- ===== Connection screen ============================================ -->
     <!-- Wave 5 task 27/37: extracted from ConnectionScreen.kt. -->
@@ -20,10 +21,21 @@
     <string name="connection_version_format">版本：%1$s</string>
     <string name="connection_uptime_format">运行秒数：%1$d</string>
     <string name="connection_capabilities_format">能力：音量 %1$s / 静音 %2$s / 设备切换 %3$s / 文件管理 %4$s / 网络发现 %5$s</string>
+    <!-- I12: per-capability chip labels rendered as AssistChip rows. -->
+    <string name="capability_audio_volume">音量</string>
+    <string name="capability_audio_mute">静音</string>
+    <string name="capability_audio_device_switch">设备切换</string>
+    <string name="capability_file_management">文件管理</string>
+    <string name="capability_discovery_broadcast">网络发现</string>
     <string name="connection_open_device">进入设备</string>
     <string name="connection_discovery_title">局域网发现</string>
     <string name="connection_discovery_scanning">正在搜索局域网中的 Agent…</string>
-    <string name="connection_discovery_empty">暂无发现结果</string>
+    <!-- I21: empty discovery copy includes a second clause guiding the user. -->
+    <string name="connection_discovery_empty">暂无发现结果。请确认 Agent 已启动且手机与 PC 位于同一局域网，随后重试。</string>
+    <!-- I13: discovered service version line. -->
+    <string name="connection_discovery_version_format">版本：%1$s</string>
+    <!-- I21: intro paragraph rendered above the address form. -->
+    <string name="connection_intro_paragraph">输入运行在 Windows PC 上的 maimai Home Agent 的局域网地址，或点击“扫描局域网”自动查找在线的 Agent。</string>
     <string name="connection_address_required">请输入 Agent 的 LAN 地址（例如 192.168.1.100:8765）</string>
 
     <!-- Reusable card composables (Wave 5 task 26). -->

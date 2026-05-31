@@ -19,7 +19,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.UploadFile
@@ -63,6 +67,8 @@ import com.maimai.home.R
 import com.maimai.home.data.models.FileEntry
 import com.maimai.home.data.models.FileRoot
 import com.maimai.home.ui.connection.EmptyCard
+import com.maimai.home.ui.connection.ErrorCard
+import com.maimai.home.ui.connection.LoadingCard
 import kotlinx.coroutines.launch
 
 /**
@@ -262,9 +268,22 @@ internal fun FilesScreenContent(
                 // Truncation banner (W3.19 / R1 #16).
                 state.listing?.takeIf { it.truncated }?.let { listing ->
                     Text(
-                        text = stringResource(R.string.files_truncated_format, listing.limit),
+                        text = stringResource(R.string.files_truncated_format, listing.limit, listing.total),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                // I3 fix: show LoadingCard for initial fetch (no listing yet)
+                // and ErrorCard for non-transient errors. Snackbars still
+                // handle mutation feedback.
+                if (state.listing == null && state.isRefreshing) {
+                    LoadingCard(modifier = Modifier.fillMaxWidth())
+                }
+                if (state.errorMessage != null && state.listing == null) {
+                    ErrorCard(
+                        text = state.errorMessage,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
 
@@ -377,25 +396,46 @@ internal fun FilesScreenContent(
                             onDownload(entry)
                         },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text(stringResource(R.string.files_action_download)) }
+                    ) {
+                        ActionSheetButtonContent(
+                            icon = Icons.Filled.Download,
+                            label = stringResource(R.string.files_action_download),
+                        )
+                    }
                 }
                 // Rename and Move hidden on read-only roots (R2 B5).
                 if (state.canMutate) {
                     TextButton(
                         onClick = { renameEntry = entry; selectedEntry = null },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text(stringResource(R.string.files_action_rename)) }
+                    ) {
+                        ActionSheetButtonContent(
+                            icon = Icons.Filled.Edit,
+                            label = stringResource(R.string.files_action_rename),
+                        )
+                    }
                     TextButton(
                         onClick = { moveEntry = entry; selectedEntry = null },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text(stringResource(R.string.files_action_move)) }
+                    ) {
+                        ActionSheetButtonContent(
+                            icon = Icons.AutoMirrored.Filled.DriveFileMove,
+                            label = stringResource(R.string.files_action_move),
+                        )
+                    }
                 }
                 // Delete hidden for directories (R1 #8) and readOnly roots (R2 B5).
                 if (!entry.isDirectory && state.canMutate) {
                     TextButton(
                         onClick = { deleteEntry = entry; selectedEntry = null },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text(stringResource(R.string.files_action_delete)) }
+                    ) {
+                        ActionSheetButtonContent(
+                            icon = Icons.Filled.Delete,
+                            label = stringResource(R.string.files_action_delete),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
                 }
                 Spacer(Modifier.height(16.dp))
             }
@@ -775,4 +815,25 @@ internal fun MoveDialogForTest(
             }
         },
     )
+}
+
+/**
+ * I7 fix: action-sheet rows render an icon + label so the Files action
+ * sheet visually mirrors the Flutter parity sheet (download/rename/move/
+ * delete each carry their own glyph).
+ */
+@Composable
+private fun ActionSheetButtonContent(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    tint: androidx.compose.ui.graphics.Color = androidx.compose.material3.LocalContentColor.current,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(imageVector = icon, contentDescription = null, tint = tint)
+        Text(text = label, color = tint, modifier = Modifier.weight(1f))
+    }
 }
