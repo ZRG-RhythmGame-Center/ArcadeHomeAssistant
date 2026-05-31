@@ -62,6 +62,7 @@ class FilesViewModelTest {
         FileEntry(name = "subdir", kind = "dir", size = null, modified = "2026-01-01T00:00:00Z"),
     )
     private val sampleListing = FileListingResult(entries = sampleEntries, total = 2, truncated = false, limit = 200)
+    private val emptyListing = FileListingResult(entries = emptyList(), total = 0, truncated = false, limit = 200)
 
     /** Creates a fresh VM with the given root list. Resets mock stubs. */
     private fun makeVm(roots: List<FileRoot> = listOf(writableRoot, readOnlyRoot)): FilesViewModel {
@@ -448,5 +449,76 @@ class FilesViewModelTest {
 
         // 1 (init) + 1 (debounced WS) = exactly 2
         coVerify(exactly = 2) { agentClient.fetchFiles(address, writableRoot.id, "", any(), any()) }
+    }
+
+    /**
+     * Closes Gate D #5: when the user navigates away from a directory mid-
+     * debounce, the in-flight files.changed event must not refresh the OLD
+     * directory's listing. Production code reads `_uiState.value` after
+     * `debounce(500L)`, so by the time the event fires, the path/rootId
+     * filter compares against the NEW view, and the listing is left alone.
+     */
+    @Test
+    fun wsFilesChanged_pathChangesMidDebounce_doesNotRefreshOldPath() = runTest {
+        advanceUntilIdle() // init: fetchFiles(rootId, "") = 1 call
+
+        // Emit an event for the original path ("").
+        fakeEvents.emit(
+            EventEnvelope(
+                type = "files.changed",
+                payload = buildJsonObject {
+                    put("rootId", writableRoot.id)
+                    put("path", "")
+                },
+                timestamp = "2026-01-01T00:00:00Z",
+            ),
+        )
+        advanceTimeBy(200L) // partway through the 500ms debounce window
+
+        // User navigates into a subdirectory mid-debounce.
+        coEvery { agentClient.fetchFiles(address, writableRoot.id, "sub", any(), any()) } returns emptyListing
+        vm.navigateToPath("sub")
+        advanceUntilIdle()
+
+        // Now let the debounce window expire. The WS event was for path ""
+        // but the current path is now "sub", so the filter rejects it.
+        advanceTimeBy(600L)
+        advanceUntilIdle()
+
+        // fetchFiles for path "" should NOT be called again. Total calls
+        // for "" = 1 (init only).
+        coVerify(exactly = 1) { agentClient.fetchFiles(address, writableRoot.id, "", any(), any()) }
+    }
+
+    /**
+     * Closes Gate D #5: when the user switches roots mid-debounce, the in-
+     * flight files.changed event must not refresh the OLD root's listing.
+     */
+    @Test
+    fun wsFilesChanged_rootChangesMidDebounce_doesNotRefreshOldRoot() = runTest {
+        advanceUntilIdle()
+
+        fakeEvents.emit(
+            EventEnvelope(
+                type = "files.changed",
+                payload = buildJsonObject {
+                    put("rootId", writableRoot.id)
+                    put("path", "")
+                },
+                timestamp = "2026-01-01T00:00:00Z",
+            ),
+        )
+        advanceTimeBy(200L)
+
+        // Switch to the read-only root mid-debounce.
+        coEvery { agentClient.fetchFiles(address, readOnlyRoot.id, "", any(), any()) } returns emptyListing
+        vm.selectRoot(readOnlyRoot)
+        advanceUntilIdle()
+
+        advanceTimeBy(600L)
+        advanceUntilIdle()
+
+        // The original writableRoot should only have its initial fetch.
+        coVerify(exactly = 1) { agentClient.fetchFiles(address, writableRoot.id, "", any(), any()) }
     }
 }

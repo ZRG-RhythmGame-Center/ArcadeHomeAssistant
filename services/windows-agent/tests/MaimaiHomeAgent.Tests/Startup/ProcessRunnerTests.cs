@@ -60,11 +60,51 @@ public class ProcessRunnerTests
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
 
-        // ping -n 30 sends 30 ICMP pings with 1s delay each (~30s total).
-        // With redirected stdin/stdout it does not exit early, so cancellation
-        // fires before the process finishes and WaitForExitAsync throws.
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
-            await _runner.RunAsync("ping.exe", "-n 30 127.0.0.1", cts.Token));
+        // Snapshot the ping.exe processes that exist BEFORE we run, so the
+        // teardown assertion can identify the new process precisely.
+        var pingsBefore = System.Diagnostics.Process.GetProcessesByName("ping")
+            .Select(p => p.Id)
+            .ToHashSet();
+        try
+        {
+            // ping -n 30 sends 30 ICMP pings with 1s delay each (~30s total).
+            // With redirected stdin/stdout it does not exit early, so cancellation
+            // fires before the process finishes and WaitForExitAsync throws.
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+                await _runner.RunAsync("ping.exe", "-n 30 127.0.0.1", cts.Token));
+
+            // Closes Gate F #2: prove the process was actually KILLED, not just
+            // that the wait was abandoned. ProcessRunner.RunAsync wires
+            // process.Kill(entireProcessTree: true) into the cancellation path,
+            // so any ping.exe spawned during this test must be gone after
+            // RunAsync returns. We give the OS a brief moment to reap the PID.
+            for (var i = 0; i < 20; i++)
+            {
+                var pingsNow = System.Diagnostics.Process.GetProcessesByName("ping")
+                    .Select(p => p.Id)
+                    .ToHashSet();
+                pingsNow.ExceptWith(pingsBefore);
+                if (pingsNow.Count == 0)
+                {
+                    return; // success: no orphaned ping.exe survived cancellation.
+                }
+                await Task.Delay(50);
+            }
+            Assert.Fail("ping.exe spawned by ProcessRunner.RunAsync was not killed within 1s after cancellation");
+        }
+        finally
+        {
+            // Defensive: if the assertion failed, kill any leaked ping.exe so
+            // the test process does not hang on shutdown.
+            foreach (var p in System.Diagnostics.Process.GetProcessesByName("ping"))
+            {
+                if (!pingsBefore.Contains(p.Id))
+                {
+                    try { p.Kill(); } catch { /* best effort */ }
+                }
+                p.Dispose();
+            }
+        }
     }
 
     [Fact]

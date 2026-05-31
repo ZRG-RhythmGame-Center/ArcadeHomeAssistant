@@ -16,10 +16,6 @@ namespace MaimaiHomeAgent.Tests;
 /// Joined to the "WafProgramTests" collection so it shares the same
 /// serialization context as the other WAF-based test classes and avoids
 /// Serilog static-logger conflicts.
-///
-/// Finding: the current /api/status response does not include a <c>baseUrl</c>
-/// field. If the mobile client requires it, a follow-up task should add it to
-/// Program.cs and update this test.
 /// </summary>
 [Collection("WafProgramTests")]
 public class StatusEndpointTests : IDisposable
@@ -168,6 +164,28 @@ public class StatusEndpointTests : IDisposable
         var caps = doc.RootElement.GetProperty("capabilities");
         Assert.True(caps.TryGetProperty("discoveryBroadcast", out var prop));
         Assert.Equal(JsonValueKind.True, prop.ValueKind);
+    }
+
+    /// <summary>
+    /// Closes Gate F #3: /api/status must include a baseUrl field so the
+    /// mobile-side AgentStatus.baseUrl mirror has a value to read.
+    /// </summary>
+    [Fact]
+    public async Task GetStatus_ContainsBaseUrl()
+    {
+        var response = await _client.GetAsync("/api/status");
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+
+        Assert.True(doc.RootElement.TryGetProperty("baseUrl", out var prop));
+        Assert.Equal(JsonValueKind.String, prop.ValueKind);
+        var baseUrl = prop.GetString();
+        Assert.False(string.IsNullOrWhiteSpace(baseUrl));
+        // Must be a well-formed http(s) URL so the mobile client can use it.
+        Assert.True(
+            Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri) &&
+            (uri.Scheme == "http" || uri.Scheme == "https"),
+            $"baseUrl must be an absolute http(s) URL but was '{baseUrl}'");
     }
 
     [Fact]

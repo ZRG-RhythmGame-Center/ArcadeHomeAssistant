@@ -15,6 +15,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -136,18 +137,34 @@ class AudioViewModelTest {
     // ── isVolumeBusy (RED before task 23) ─────────────────────────────────────
 
     /**
-     * RED: AudioUiState doesn't have isVolumeBusy yet. After task 23 adds it,
-     * this test goes GREEN.
+     * Asserts isVolumeBusy is TRUE while the setVolume request is in-flight
+     * AND becomes FALSE after the request completes. The test holds the
+     * mocked agentClient.setVolume call open with a CompletableDeferred so
+     * we can sample the busy state mid-flight; if a future regression deletes
+     * the `isVolumeBusy = true` update at the start of setVolume, this test
+     * fails because the mid-flight assertion sees `false` instead of `true`.
      */
     @Test
     fun setVolume_setsIsVolumeBusyAroundRequest() = runTest {
         val newState = AudioState(masterVolume = 0.8, muted = false)
-        coEvery { agentClient.setVolume(address, any()) } returns newState
+        val gate = kotlinx.coroutines.CompletableDeferred<AudioState>()
+        coEvery { agentClient.setVolume(address, any()) } coAnswers {
+            gate.await()
+        }
 
         vm.setVolume(80f)
+        // Pump the coroutines that have run synchronously up to the suspend.
+        // The `coAnswers { gate.await() }` parks the call; setVolume's
+        // `_uiState.update { it.copy(isVolumeBusy = true) }` has already
+        // executed because it ran before agentClient.setVolume.
+        runCurrent()
+        assertThat(vm.uiState.value.isVolumeBusy).isTrue()
+
+        // Now release the gate and let setVolume complete.
+        gate.complete(newState)
         advanceUntilIdle()
 
-        // After completion, isVolumeBusy must be false
+        // After completion, isVolumeBusy must flip back to false.
         assertThat(vm.uiState.value.isVolumeBusy).isFalse()
         assertThat(vm.uiState.value.audioState).isEqualTo(newState)
     }

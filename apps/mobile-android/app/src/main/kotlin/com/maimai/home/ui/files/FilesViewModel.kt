@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.maimai.home.ServiceLocator
 import com.maimai.home.data.AgentClient
+import com.maimai.home.data.EventStream
 import com.maimai.home.data.FileListingResult
 import com.maimai.home.data.models.AgentRequestException
 import com.maimai.home.data.models.EventEnvelope
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -77,6 +79,13 @@ class FilesViewModel(
 
     private val json: Json = ServiceLocator.json
 
+    /**
+     * Production EventStream wired by [start]; null in tests (eventFlow is
+     * injected directly).
+     */
+    private var eventStream: EventStream? = null
+    private var eventJob: Job? = null
+
     private val _uiState = MutableStateFlow(FilesUiState(address = address, machineName = machineName))
     val uiState: StateFlow<FilesUiState> = _uiState.asStateFlow()
 
@@ -105,6 +114,56 @@ class FilesViewModel(
                     }
                 }
         }
+    }
+
+    /**
+     * Called by the production screen via DisposableEffect. Creates a real
+     * [EventStream] and forwards its events into the WS subscription set up
+     * in [subscribeToWsEvents]. The screen calls [stop] on dispose.
+     *
+     * Tests do NOT call this; they pass `eventFlow` directly via the primary
+     * constructor.
+     */
+    fun start() {
+        if (eventStream != null) return
+        val stream = EventStream(ServiceLocator.okHttpClient, json, address) {
+            // On reconnect, refresh the listing.
+            refresh()
+        }
+        eventStream = stream
+        // Forward the real EventStream's events into the same flow the WS
+        // subscription consumes. We use a simple relay coroutine that emits
+        // every received event into a MutableSharedFlow that subscribeToWsEvents
+        // already collects from -- but since the existing subscription was wired
+        // to the constructor-injected eventFlow, we instead launch a parallel
+        // collector here that mirrors subscribeToWsEvents's logic against the
+        // real stream. This keeps tests using the constructor flow unaffected.
+        eventJob = viewModelScope.launch {
+            stream.events
+                .filter { it.type == "files.changed" }
+                .debounce(500L)
+                .collect { event ->
+                    val payload = runCatching { event.payload.jsonObject }.getOrNull() ?: return@collect
+                    val rootId = runCatching { payload["rootId"]?.jsonPrimitive?.content }.getOrNull() ?: return@collect
+                    val path = runCatching { payload["path"]?.jsonPrimitive?.content }.getOrNull() ?: return@collect
+                    val current = _uiState.value
+                    if (current.selectedRoot?.id == rootId && current.path == path) {
+                        loadListing(current.selectedRoot!!, path)
+                    }
+                }
+        }
+        stream.connect()
+    }
+
+    fun stop() {
+        eventJob?.cancel()
+        eventJob = null
+        eventStream?.disconnect()
+        eventStream = null
+    }
+
+    override fun onCleared() {
+        stop()
     }
 
     fun loadRoots() {
