@@ -127,9 +127,18 @@
 
 应用层 LAN 允许列表，在 `AgentClient` 和 `EventStream` 的地址规范化路径中强制执行：
 
-- 允许：`127.0.0.0/8`（loopback）、`10.0.0.0/8`、`172.16.0.0/12`、`192.168.0.0/16`、`localhost`、`.local` mDNS 主机名、IPv6 loopback（`::1`）、IPv6 link-local（`fe80:`）
+- 允许：`127.0.0.0/8`（loopback）、`10.0.0.0/8`、`172.16.0.0/12`、`192.168.0.0/16`、`169.254.0.0/16`（IPv4 link-local）、`localhost`、`.local` mDNS 主机名、IPv6 loopback（`::1`）、IPv6 link-local（`fe80::`）、IPv6 site-local（`fec0::/10`）、IPv6 unique-local（`fc00::/7`）
 - 拒绝：公网 IP 和任意公共主机名，抛出 `IllegalArgumentException`
-- 主要方法：`requireLanHost(host)`（校验，不通过则抛出）、`isLanHost(host): Boolean`（纯判断）、`extractHost(address): String?`（从含 scheme 或裸 host:port 的地址中提取 host）
+- 主要方法：`requireLanHost(host)`（校验，不通过则抛出）、`isLanHost(host): Boolean`（纯判断；对主机名执行 DNS 解析，要求所有解析地址均为私有/loopback，防止 DNS rebinding 攻击）、`extractHost(address): String?`（从含 scheme 或裸 host:port 的地址中提取 host）
+
+### LanDns
+
+OkHttp `Dns` 接口的内部实现（`internal class LanDns`），作为连接层第二道 DNS 防护，弥补 `LanAddressPolicy.requireLanHost`（URL 构造时校验）与 OkHttp 实际 DNS 解析之间的 TOCTOU 缺口：
+
+- 对每次 DNS 解析结果逐一检查，若任意地址不属于私有/loopback 范围，则抛出 `UnknownHostException`，阻止 socket 建立
+- 部分解析结果为私有、部分为公网时，整批拒绝（防止 DNS rebinding 攻击中的混合结果）
+- `localhost` 直接短路，不发起 DNS 查询
+- 通过 `ServiceLocator` 注入到 `OkHttpClient`，同时覆盖 HTTP 调用和 WebSocket 升级两条路径
 
 ## UI 层关键接口
 

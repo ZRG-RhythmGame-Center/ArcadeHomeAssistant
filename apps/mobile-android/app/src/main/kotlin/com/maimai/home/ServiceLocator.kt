@@ -2,6 +2,7 @@ package com.maimai.home
 
 import android.content.Context
 import com.maimai.home.data.AgentClient
+import com.maimai.home.data.LanDns
 import com.maimai.home.data.AgentPreferences
 import com.maimai.home.data.DiscoveryService
 import kotlinx.serialization.json.Json
@@ -20,6 +21,7 @@ object ServiceLocator {
 
     val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
+            .dns(LanDns())
             .connectTimeout(5, TimeUnit.SECONDS)
             .readTimeout(300, TimeUnit.SECONDS)
             .writeTimeout(300, TimeUnit.SECONDS)

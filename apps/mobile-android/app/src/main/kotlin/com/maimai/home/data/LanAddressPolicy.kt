@@ -73,7 +73,7 @@ internal object LanAddressPolicy {
         return runCatching { InetAddress.getByName(host) }.getOrNull()
     }
 
-    private fun isPrivateInet(address: InetAddress): Boolean {
+    internal fun isPrivateInet(address: InetAddress): Boolean {
         if (address.isLoopbackAddress) return true
         if (address.isLinkLocalAddress) return true
         if (address.isAnyLocalAddress) return false

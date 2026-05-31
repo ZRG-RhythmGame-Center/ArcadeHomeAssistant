@@ -1,0 +1,17 @@
+W8 Round 6 Verification — OkHttp DNS Guard
+============================================
+Date: 2026-05-31 19:05:20
+Commit base: 697ebfb (round 5)
+
+Sequence (PTY pty_46f28766):
+1. :app:testDebugUnitTest    -> 196 tests, 0 failed (BUILD SUCCESSFUL)
+2. :app:testReleaseUnitTest  -> 196 tests, 0 failed (BUILD SUCCESSFUL)
+3. :app:assembleRelease      -> BUILD SUCCESSFUL (57s total)
+
+Net new: +7 LanDnsTest cases vs round 5 (189 -> 196).
+
+Closes Oracle round 5 TOCTOU defect: LanDns is now wired into the SINGLE
+production OkHttpClient via ServiceLocator. OkHttp's DNS resolution at
+connect time is gated by the same RFC1918+loopback+ULA check as the
+preflight LanAddressPolicy.requireLanHost. There is no second resolution
+to disagree.
