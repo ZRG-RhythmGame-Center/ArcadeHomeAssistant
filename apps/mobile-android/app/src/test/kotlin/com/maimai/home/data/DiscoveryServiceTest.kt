@@ -3,17 +3,17 @@ package com.maimai.home.data
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Test
+import org.mockito.Mockito
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 /**
- * RED phase tests for DiscoveryService.
+ * Unit tests for DiscoveryService.
  *
- * Tests verify:
- * 1. MulticastLock is acquired before discovery and released after (via injected factory)
- * 2. discover() completes within timeout — no runBlocking hang in resolution path
- *
- * RED: Both tests fail because DiscoveryService doesn't accept MulticastLockFactory yet.
+ * Verifies:
+ * 1. MulticastLock is acquired before discovery and released after (via injected factory).
+ * 2. discover() completes within timeout even when an NSD ResolveListener never
+ *    fires — i.e. resolution coroutines are cancelled, not awaited indefinitely.
  */
 class DiscoveryServiceTest {
 
@@ -35,31 +35,45 @@ class DiscoveryServiceTest {
     }
 
     /**
-     * Fake NsdManager that never calls back on resolveService — simulates a
-     * hung resolution. With runBlocking this would block forever; with
-     * suspendCancellableCoroutine + timeout it returns gracefully.
+     * Fake NsdManager that:
+     *  - Reports discovery started immediately.
+     *  - Emits exactly one onServiceFound for a fake service whose serviceType
+     *    matches the production filter ("_maimai-home._tcp.").
+     *  - Never calls back from resolveService — simulates a hung NSD resolution.
+     *
+     * This actually exercises the hang path (real call into the resolution
+     * coroutine), so the assertion in [discoverDoesNotHangWhenResolutionStalls]
+     * is meaningful, not vacuous.
      */
     class HangingNsdManager : FakeNsdManager() {
+        override fun discoverServices(
+            serviceType: String,
+            protocolType: Int,
+            listener: android.net.nsd.NsdManager.DiscoveryListener,
+        ) {
+            listener.onDiscoveryStarted(serviceType)
+            // Mockito 5.x defaults to inline-mock-maker, which can mock the
+            // final NsdServiceInfo class without extra configuration.
+            val info = Mockito.mock(android.net.nsd.NsdServiceInfo::class.java)
+            Mockito.`when`(info.serviceType).thenReturn("_maimai-home._tcp.")
+            listener.onServiceFound(info)
+        }
+
         override fun resolveService(
             serviceInfo: android.net.nsd.NsdServiceInfo,
             listener: android.net.nsd.NsdManager.ResolveListener,
         ) {
-            // intentionally never calls back
+            // intentionally never calls back — simulates a hung resolution
         }
     }
 
     // ── tests ─────────────────────────────────────────────────────────────────
 
-    /**
-     * RED: fails because DiscoveryService(nsdManager, lockFactory) constructor
-     * doesn't exist yet.
-     */
     @Test
     fun acquiresAndReleasesMulticastLock() {
         val factory = FakeLockFactory()
         val nsd = FakeNsdManager()
 
-        // RED: this constructor overload doesn't exist yet → compile error
         val service = DiscoveryService(nsdManager = nsd, lockFactory = factory)
 
         runBlocking { service.discover(timeoutMillis = 200) }
@@ -69,18 +83,17 @@ class DiscoveryServiceTest {
     }
 
     /**
-     * RED: fails because DiscoveryService(nsdManager, lockFactory) constructor
-     * doesn't exist yet.
-     *
-     * With runBlocking in suspendResolve this would hang; with
-     * suspendCancellableCoroutine it returns within the outer timeout.
+     * If a ResolveListener never fires, DiscoveryService.discover() must still
+     * return within the outer timeout (we cancel pending resolution jobs once
+     * the discovery window elapses). We give an outer ceiling of 7 s with a
+     * 500 ms discovery window — if the cancellation is broken, the test hangs
+     * far past the ceiling and withTimeoutOrNull returns null.
      */
     @Test
-    fun doesNotRunBlockingInside() {
+    fun discoverDoesNotHangWhenResolutionStalls() {
         val factory = FakeLockFactory()
         val nsd = HangingNsdManager()
 
-        // RED: this constructor overload doesn't exist yet → compile error
         val service = DiscoveryService(nsdManager = nsd, lockFactory = factory)
 
         val result = runBlocking {
@@ -89,6 +102,7 @@ class DiscoveryServiceTest {
             }
         }
 
-        assertNotNull(result, "discover() must complete within 7 s — runBlocking in resolution would hang")
+        assertNotNull(result, "discover() must complete within 7 s even when resolveService never calls back")
+        assertEquals(0, result.size, "no services should be returned when resolution hangs")
     }
 }
