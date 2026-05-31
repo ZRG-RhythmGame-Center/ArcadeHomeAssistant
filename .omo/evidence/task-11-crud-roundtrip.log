@@ -1,0 +1,40 @@
+  姝ｅ湪纭畾瑕佽繕鍘熺殑椤圭洰鈥?
+  鎵€鏈夐」鐩潎鏄渶鏂扮殑锛屾棤娉曡繕鍘熴€?
+  MaimaiHomeAgent -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\bin\Debug\net9.0\MaimaiHomeAgent.dll
+  MaimaiHomeAgent.Tests -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0\MaimaiHomeAgent.Tests.dll
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0\MaimaiHomeAgent.Tests.dll (.NETCoreApp,Version=v9.0)鐨勬祴璇曡繍琛?
+VSTest 鐗堟湰 17.14.1 (x64)
+
+姝ｅ湪鍚姩娴嬭瘯鎵ц锛岃绋嶅€?..
+鎬诲叡 1 涓祴璇曟枃浠朵笌鎸囧畾妯″紡鐩稿尮閰嶃€?
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0\MaimaiHomeAgent.Tests.dll
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 9.0.16)
+[xUnit.net 00:00:00.05]   Discovering: MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.08]   Discovered:  MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.09]   Starting:    MaimaiHomeAgent.Tests
+[01:31:23 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[01:31:23 INF] FileRootService initialized with 2 root(s)
+[01:31:23 INF] HTTP POST /api/files/upload responded 201 in 23.5446 ms
+[01:31:23 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[01:31:23 INF] FileRootService initialized with 2 root(s)
+[01:31:23 INF] HTTP POST /api/files/rename responded 200 in 6.4720 ms
+[01:31:23 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[01:31:23 INF] FileRootService initialized with 2 root(s)
+[01:31:23 INF] HTTP GET /api/files/download responded 200 in 5.8186 ms
+[01:31:23 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[01:31:23 INF] FileRootService initialized with 2 root(s)
+[01:31:23 INF] HTTP DELETE /api/files responded 200 in 2.6341 ms
+[01:31:23 INF] Maimai Home Agent starting. Machine=FRZ-XIAOXIN Version=1.0.0.0
+[01:31:23 INF] FileRootService initialized with 2 root(s)
+[01:31:23 INF] HTTP POST /api/files/move responded 200 in 2.0013 ms
+[xUnit.net 00:00:00.46]   Finished:    MaimaiHomeAgent.Tests
+  宸查€氳繃 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Upload_Success_Returns201 [252 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Rename_HappyPath_Returns200 [29 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Download_ExistingFile_ReturnsBytes [21 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Delete_File_Returns200 [18 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Files.Mutation.FileMutationEndpointsTests.Move_SameVolume_Returns200 [18 ms]
+
+娴嬭瘯杩愯鎴愬姛銆?
+娴嬭瘯鎬绘暟: 5
+     閫氳繃鏁? 5
+鎬绘椂闂? 0.7835 绉?

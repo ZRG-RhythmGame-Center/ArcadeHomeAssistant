@@ -1,0 +1,2 @@
+HTTP=200 elapsed=0.68s
+{"machineName":"FRZ-XIAOXIN","version":"1.0.0.0","startedAt":"2026-05-31T01:37:32.526881+00:00","uptimeSeconds":0,"capabilities":{"audioVolume":true,"audioMute":true,"audioDeviceSwitch":true,"fileManagement":true,"discoveryBroadcast":true}}

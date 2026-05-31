@@ -1,0 +1,49 @@
+w3: gate-c fix: AgentPreferences DI + tighter regression assertions + R.string + server-limit tests
+
+Reviewer Gate C (oracle data-layer review) returned 4 blocking concerns
+on the initial Wave 3 commit. This commit closes all four.
+
+Concern 1: AgentPreferencesTest copied AgentPreferences logic instead of
+exercising the real instance.
+- Refactor AgentPreferences to take an injectable DataStore<Preferences>.
+  Production code still calls AgentPreferences(context) - that delegates
+  to the file-scope `Context.agentDataStore` singleton via a secondary
+  constructor.
+- AgentPreferencesTest now constructs a fresh DataStore per test method
+  (unique file under Robolectric storage), passes it to
+  AgentPreferences(dataStore), and exercises agentAddressFlow.first() +
+  saveAgentAddress(...). Coverage of the production code path is now real.
+
+Concern 2: defaultIsNotHardcodedLan asserted isAnyOf(legacy LAN, "") which
+would pass even if BuildConfig wiring regressed.
+- Replaced with two strict assertions:
+    defaultAgentAddress_equalsBuildConfigField asserts
+    `AgentPreferences.DEFAULT_AGENT_ADDRESS == BuildConfig.DEFAULT_AGENT_ADDRESS`,
+    catching any regression that re-introduces a hardcoded literal.
+    debugBuild_defaultIsHistoricLanSample branches on BuildConfig.DEBUG and
+    asserts the exact debug-side value `"192.168.1.100:8765"`. Tests run
+    against the debug variant, so this also implicitly verifies the
+    Gradle buildConfigField wiring landed.
+
+Concern 3: FileListingResult.limit server-override path was not tested.
+- Added two new MockWebServer cases in AgentClientMockWebServerTest:
+    fetchFiles_serverProvidedLimit_isReadIntoResult: server returns
+    `{"limit":123,...}`, asserts result.limit == 123.
+    fetchFiles_omittedLimit_defaultsTo200: server omits the field,
+    asserts result.limit == 200 (the documented forward-compat default).
+
+Concern 4: FilesScreen banner still used an inline Chinese string instead
+of R.string per plan task 19.
+- Added `files_truncated_format` to res/values/strings.xml.
+- FilesScreen now renders via stringResource(R.string.files_truncated_format,
+  listing.limit). The literal "目录结果已截断..." is gone from the source
+  tree.
+
+Verification:
+- 68 unit tests pass (was 65, +3 from the new server-limit + tightened
+  regression cases).
+- AgentPreferencesTest now uses the real production class.
+- Truncation banner localized to a string resource ready for Wave 5
+  i18n extraction (task 37).
+
+Closes Reviewer Gate C concerns 1, 2, 3, 4.

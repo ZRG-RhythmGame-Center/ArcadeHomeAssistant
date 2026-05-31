@@ -1,0 +1,71 @@
+Task 5 - Atomic Write Evidence
+Captured: 2026-05-30 22:27 +08:00
+
+## Mechanism
+Source: services/windows-agent/src/MaimaiHomeAgent/Security/JsonFileTokenStore.cs
+
+  1. Serialize tokens to <path>.tmp via FileStream(FileMode.Create, FileShare.None) then FlushAsync
+  2. File.Move(tmp, target, overwrite: true) -- NTFS uses MoveFileEx REPLACE_EXISTING (atomic)
+  3. Reads open with FileShare.Read; writes open with FileShare.None
+  4. SemaphoreSlim(1,1) gates all ops -> single-writer, serialized reads
+  5. Directory auto-created on first write if missing
+  6. JsonException / IOException / UnauthorizedAccessException on read => log warning + empty list (do not crash agent on corrupt store)
+  7. MVP: tokens stored in plaintext (per task spec); SHA-256 hashing deferred. Note in TokenRecord XML doc.
+
+## Source extract (WriteAllAsync)
+
+    private async Task WriteAllAsync(IReadOnlyList<TokenRecord> tokens)
+    {
+        var dir = Path.GetDirectoryName(_filePath);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        // 1) Write to .tmp
+        await using (var fs = new FileStream(
+            _tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await JsonSerializer.SerializeAsync(fs, tokens, JsonOptions).ConfigureAwait(false);
+            await fs.FlushAsync().ConfigureAwait(false);
+        }
+
+        // 2) Atomic replace. File.Move(..., overwrite:true) maps to MoveFileEx REPLACE_EXISTING on NTFS.
+        File.Move(_tempFilePath, _filePath, overwrite: true);
+    }
+
+## Test evidence (from .omo/evidence/task-5-pairing-race.trx)
+
+Tests exercising the atomic-write contract:
+  [Passed] JsonFileTokenStoreTests.AtomicWrite_DoesNotLeaveTempFile          duration=00:00:00.512
+  [Passed] JsonFileTokenStoreTests.ReadFailure_FallsBackToEmpty              duration=00:00:00.515
+  [Passed] JsonFileTokenStoreTests.Add_Persists_AcrossInstances              duration=00:00:01.533
+  [Passed] JsonFileTokenStoreTests.ValidateAsync_ExpiredToken_ReturnsNull    duration=00:00:01.537
+  [Passed] JsonFileTokenStoreTests.Concurrent_50_Adds_AllReadableBack        duration=00:00:02.035
+  [Passed] JsonFileTokenStoreTests.Add_Then_List_ContainsNewToken            duration=00:00:01.527
+
+## Key proofs
+
+- AtomicWrite_DoesNotLeaveTempFile
+    After AddAsync, asserts tokens.json.tmp does NOT exist on disk.
+    Proves: File.Move successfully consumes the temp file (no leak).
+
+- Concurrent_50_Adds_AllReadableBack
+    Fires 50 parallel AddAsync via Task.Run; on completion ListAsync returns 50 distinct ids.
+    Proves: SemaphoreSlim(1,1) serializes the read-modify-write cycle, no records lost.
+    A naive WriteAllText without the gate would lose writes here (last-writer-wins on stale read).
+
+- Add_Persists_AcrossInstances
+    First store writes one record then disposes; second store reads it back.
+    Proves: on-disk JSON is well-formed and round-trippable.
+
+- ReadFailure_FallsBackToEmpty
+    Pre-seeds tokens.json with malformed JSON; ListAsync returns empty list,
+    then a subsequent AddAsync overwrites the file atomically.
+    Proves: corrupt store does not brick the agent.
+
+## Live target path on this machine
+  C:\Users\abbey\AppData\Local\maimai-home-assistant\tokens.json
+
+## Total Security suite result
+  17 / 17 passed, 0 failed (see task-5-pairing-race.trx for full list)

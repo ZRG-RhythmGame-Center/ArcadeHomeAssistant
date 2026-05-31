@@ -1,0 +1,37 @@
+w2: gate-b fix v2: MainDispatcherRuleTest reset assertion now airtight (mutation-tested)
+
+Reviewer Gate B v1 fix was REJECTED on resubmission. Oracle's remaining
+Major: afterEach_actuallyCallsResetMain only proved the SECOND beforeEach
+overwrote Main. It did not prove the FIRST afterEach reset Main, because
+secondRule.beforeEach(ctx) ran before any behavioral assertion against
+Dispatchers.Main.
+
+Fix:
+- Asserting the post-reset state IMMEDIATELY after rule.afterEach(ctx),
+  with NO intervening setMain. The probe is
+  Dispatchers.Main.isDispatchNeeded(EmptyCoroutineContext), which kotlinx-
+  coroutines-test 1.10+ throws IllegalStateException for whenever the test
+  override has been popped and no platform Main is available (JVM unit
+  tests). assertFailsWith<IllegalStateException> catches that and a
+  defensive defensive contains-check on the message ensures the failure
+  truly references Dispatchers.Main / resetMain rather than some leaked
+  generic ISE.
+- Why isDispatchNeeded() instead of runBlocking { withContext(Main) {...} }:
+  the latter can deadlock instead of throwing because the missing dispatcher
+  swallows the continuation rather than dispatching it (the runBlocking just
+  parks waiting for a wakeup that never arrives). isDispatchNeeded() is
+  synchronous, has no continuation machinery, and throws immediately.
+
+Mutation test (proves the assertion catches the regression):
+- Temporarily commented out Dispatchers.resetMain() in
+  MainDispatcherRule.afterEach.
+- Ran ./gradlew :app:testDebugUnitTest --tests com.maimai.home.MainDispatcherRuleTest.
+- Result: afterEach_actuallyCallsResetMain FAILED with the message
+  "Expected an exception of class java.lang.IllegalStateException to be
+  thrown, but was completed successfully with the result: <true>" at
+  MainDispatcherRuleTest.kt:73.
+- Restored the resetMain() call. Full 21-test suite back to GREEN.
+- Evidence: .omo/runs/w2/w2-gateB-v2-mutation-RED.log
+            .omo/runs/w2/w2-gateB-v2-final-GREEN.log
+
+Closes Reviewer Gate B v2 remaining Major.

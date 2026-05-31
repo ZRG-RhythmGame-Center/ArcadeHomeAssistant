@@ -1,0 +1,19 @@
+# T20 PC Web Realtime — runtime evidence (browser console)
+
+## Before (main.tsx without App + useEventStream wiring, page reload)
+[error] Failed to load resource: net::ERR_CONNECTION_REFUSED   (HTTP only - useAudio query)
+[error] Failed to load resource: net::ERR_CONNECTION_REFUSED
+[error] Failed to load resource: net::ERR_CONNECTION_REFUSED
+[error] Failed to load resource: net::ERR_CONNECTION_REFUSED
+NO 'WebSocket connection' line — no realtime channel exists.
+
+## After (App + useEventStream mounted, page reload, no agent running)
+[warning] WebSocket connection to 'ws://127.0.0.1:8765/api/events?token=' failed: WebSocket is closed before the connection is established.
+[error]   WebSocket connection to 'ws://127.0.0.1:8765/api/events?token=' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[error]   WebSocket connection to 'ws://127.0.0.1:8765/api/events?token=' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+[error]   WebSocket connection to 'ws://127.0.0.1:8765/api/events?token=' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED
+
+Multiple WebSocket attempts within ~7 seconds confirms exponential-backoff reconnect loop:
+  attempt 0 -> 1s -> attempt 1 -> 2s -> attempt 2 -> 4s -> attempt 3
+URL matches the 'ws://<baseUrl>/api/events?token=<token>' contract from the task spec.
+Token is empty (null in store -> '' in querystring) — expected until T25 pairing wires it up.

@@ -1,0 +1,19 @@
+W2 Gate B v2 mutation evidence captured at 2026-05-31 14:02:00
+
+Mutation: commented out Dispatchers.resetMain() in
+apps/mobile-android/app/src/test/kotlin/com/maimai/home/MainDispatcherRule.kt:44
+
+Test result: MainDispatcherRuleTest.afterEach_actuallyCallsResetMain() FAILED
+Expected message:
+  org.opentest4j.AssertionFailedError: Expected an exception of class
+  java.lang.IllegalStateException to be thrown, but was completed successfully
+  with the result: <true>.
+
+Failure location: MainDispatcherRuleTest.kt:73 (assertFailsWith<IllegalStateException>)
+
+Conclusion: the assertion is airtight. Removing the resetMain() call from
+the rule's afterEach turns the test RED. Reset has been restored.
+
+Concurrent state of the rest of the suite: not run (we filtered to only
+MainDispatcherRuleTest via --tests). The full 21-test suite was last
+green at .omo/runs/w2/w2-gateB-fix-GREEN.log.

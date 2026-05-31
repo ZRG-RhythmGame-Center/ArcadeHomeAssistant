@@ -1,0 +1,68 @@
+w2: gate-b fix: tighten JaCoCo, harden RobolectricSmokeTest and MainDispatcherRuleTest, align coroutines
+
+Reviewer Gate B (oracle code-quality) rejected the initial Wave 2 commit
+with 2 Critical + 3 Major + 1 Minor findings. This commit closes all six.
+
+Critical 1 - JaCoCo exclusions broader than the plan contract.
+- Plan Resolved Decision #2 says exclude ONLY *Test*, BuildConfig, and
+  ui/theme/Theme.kt for the 70% line coverage gate. The previous commit
+  also excluded ConnectionScreen, AudioScreen, FilesScreen, AppUi, AppRoot,
+  ui/nav/, MainActivity, and App, which would have let Wave 5 UI work
+  escape measurement.
+- Tightened coverageExclusions to the plan's exact set:
+  R/R$/BuildConfig/Manifest/*Test*/ui.theme.Theme*. Nothing else.
+- Verified the new XML report includes ui.connection, ui.audio, ui.files,
+  ui (AppUi/AppRoot), and ui.nav packages with their full class lists,
+  giving the gate proper denominator.
+
+Critical 2 - Broad Kotlin nested/generated-class exclusions.
+- Removed the */*$*$*.class, /*Kt$*.*, and /*ComposableSingletons* globs.
+  Those would have hidden meaningful Kotlin lambda / Compose generated
+  code from the coverage measurement.
+
+Major 1 - RobolectricSmokeTest assertion was too loose.
+- It only asserted packageName.startsWith("com.maimai.home"), which would
+  pass for "com.maimai.homepage" or any prefix-share regression.
+- Now the test:
+  * fetches the context as `App` (not generic `Context`), proving the
+    manifest android:name=".App" wiring is intact;
+  * assertThat(app).isInstanceOf(App::class.java);
+  * assertThat(app.packageName).isAnyOf("com.maimai.home",
+    "com.maimai.home.debug").
+
+Major 2 - MainDispatcherRuleTest only verified beforeEach.
+- Old test name claimed "setsAndResetsMain" but the body never proved the
+  reset half. A regression that dropped Dispatchers.resetMain() from
+  afterEach would still pass.
+- Split into two tests:
+  * beforeEach_installsTestDispatcherOnMain - drives beforeEach by hand,
+    asserts launch(Dispatchers.Main) requires runCurrent() to dispatch
+    (proves the StandardTestDispatcher is the active Main).
+  * afterEach_actuallyCallsResetMain - installs dispatcher A, calls
+    afterEach, then installs dispatcher B. Schedules launch(Main) with a
+    100 ms delay inside runTest(B), advances the second scheduler, and
+    asserts A.scheduler.currentTime stays 0 while B.scheduler.currentTime
+    is at least 100. If afterEach forgot to resetMain(), A would still be
+    on the Main slot under setMain stacking semantics, B's setMain would
+    push, and on B's afterEach the slot would pop back to A leaving stale
+    state for the next test.
+- Both tests use mockk relaxed ExtensionContext fakes so they are
+  independent of @RegisterExtension class-level wiring (which would mask
+  the regression by reinstalling the rule each test).
+
+Major 3 - Coroutine version drift.
+- Production was kotlinx-coroutines-android:1.9.0; tests were
+  kotlinx-coroutines-test:1.10.2. Aligned both to 1.10.2.
+
+Minor 1 - Stale comment.
+- Comment near kotlin-test still said "kotlin-test:1.9.24"; updated to
+  "kotlin-test:2.3.0" to match the actual coordinate.
+
+Verification:
+- 21 unit tests pass (was 20, +1 because MainDispatcherRuleTest grew from
+  1 to 2 cases). Evidence: .omo/runs/w2/w2-gateB-fix-GREEN.log.
+- jacocoTestReport runs successfully with the tightened scope.
+  Evidence: .omo/runs/w2/jacocoTestReport-gateB-fix.xml; the report now
+  includes the previously-excluded ui screen and nav packages.
+
+Closes Reviewer Gate B Critical 1, 2 + Major 1, 2, 3 + Minor 1.

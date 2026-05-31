@@ -1,0 +1,57 @@
+w3: data layer characterization tests + small fixes (GREEN)
+
+Wave 3 (tasks 13-19) - covers the entire data/ package with realistic
+test scenarios and fills the production gaps R1+R2 review found.
+
+Test deliveries (44 new tests, 21 -> 65 total):
+- W3.13 AgentClient: AgentClientMockWebServerTest with 26 cases against
+  MockWebServer covering fetchStatus / fetchAudioState / fetchAudioDevices
+  / setVolume / setMute / switchDevice / fetchFileRoots / fetchFiles /
+  uploadFile / downloadFile / deleteFile / renameFile / moveFile.
+  Includes happy paths, status mappings (404/503/502/413/409/500), JSON
+  malformed, scheme-prefix-prepended, multipart upload body inspection,
+  ErrorResponse parseErrorCode wiring, SocketTimeout simulation. The
+  existing downloadFile_nullBody_throws is preserved verbatim.
+- W3.14 EventStream: EventStreamMockServerTest with 4 end-to-end cases
+  via MockWebServer.withWebSocketUpgrade - text frame forwarding, malformed
+  frame drop, Connecting->Connected transition, upgrade-failure
+  Reconnecting + reconnectJob tracking. Wave 1's scheme + reconnect-on-
+  disconnect tests preserved.
+- W3.15 DiscoveryService: DiscoveryServiceMultiTest with 4 Robolectric-
+  backed cases - multi-service name-sorted ordering, dedupe by host:port,
+  unrelated service-type filtering, partial-resolution-failure isolation.
+  Wave 1's MulticastLock + hung-resolution timeout tests preserved.
+  Robolectric is required because NsdServiceInfo's setters/getters are
+  no-op stubs in raw android.jar; Robolectric replaces them with the
+  Shadow* implementation that actually round-trips field values.
+- W3.16 AgentPreferences: AgentPreferencesTest with 5 Robolectric-backed
+  DataStore round-trip cases - default fallback, save+read, overwrite,
+  empty-string accepted verbatim, characterization of DEFAULT_AGENT_ADDRESS.
+- W3.18 AgentStatus.kt: AgentStatusSerializationTest with 5 cases - full
+  parse, unknown capability ignored, unknown top-level ignored,
+  baseUrl read when present, baseUrl null when absent.
+
+Production changes:
+- AgentStatus: added optional `baseUrl: String? = null` field. Older
+  agents do not return baseUrl; the JSON parser already runs with
+  ignoreUnknownKeys=true (ServiceLocator) so the new field is forward-
+  compatible. Closes R2 I20.
+- AgentPreferences: DEFAULT_AGENT_ADDRESS now reads from
+  BuildConfig.DEFAULT_AGENT_ADDRESS. Debug build keeps "192.168.1.100:8765"
+  for the historic developer-friendly default; release build is empty so
+  the input field shows its placeholder hint instead of a wrong-network
+  192.168.x.x address. Closes R1 #17 / plan task 17.
+- FileListingResult: added optional `limit: Int = 200` field. Older agents
+  omit it; default mirrors the historical AgentClient.fetchFiles default.
+  FilesScreen truncation banner now interpolates the listing's `limit`
+  instead of the literal "前 500 项". Closes R1 #16 / R2 I11 / plan task 19.
+- app/build.gradle.kts: added buildConfigField DEFAULT_AGENT_ADDRESS
+  to debug + release variants per the spec.
+
+Verification:
+- 65 unit tests pass (was 21 after W2). Evidence:
+  .omo/runs/w3/w3-testDebugUnitTest-GREEN.log.
+- All earlier W1+W2 tests still GREEN.
+- jacocoTestReport runs successfully end-to-end.
+
+Closes Wave 3 tasks 13, 14, 15, 16, 17, 18, 19.

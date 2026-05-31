@@ -1,0 +1,14 @@
+W3 GREEN log captured at 2026-05-31 14:16:22
+
+Total tests: 65
+Failed: 0
+
+Waves 1+2+3 progression: 17 (W1) -> 21 (W2) -> 65 (W3)
+
+W3.13 (AgentClient MockWebServer): 26 tests (subagent-delivered)
+W3.14 (EventStream MockWebServer): 4 tests
+W3.15 (DiscoveryService multi): 4 tests
+W3.16 (AgentPreferences DataStore): 5 tests
+W3.17 (DEFAULT_AGENT_ADDRESS via BuildConfig): characterized, debug build hit
+W3.18 (AgentStatus.baseUrl + ignoreUnknownKeys): 5 tests
+W3.19 (FileListingResult.limit dynamic banner): production code updated, exercised via W3.13

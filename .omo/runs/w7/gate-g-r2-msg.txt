@@ -1,0 +1,36 @@
+gate-g round 2: I10 empty directory + I14 address validation + I19 move target prewarm
+
+Closes 3 of the 9 R2 Important findings flagged by F2 round 1:
+
+- I10 (empty-directory message): FilesScreen now renders an EmptyCard with
+  `files_empty_directory` ("此目录为空") when the listing is loaded but
+  empty and no refresh is in flight. Test tag EMPTY_DIRECTORY added to
+  FilesScreenTags.
+
+- I14 (address validation): ConnectionScreen now sets
+  `OutlinedTextField.isError = state.address.isBlank() && errorMessage != null`
+  and renders supportingText with `connection_address_required` when the
+  field is empty. The test/scan buttons are also gated with
+  `enabled = ... && state.address.isNotBlank()` so an empty address can
+  no longer reach AgentClient.normalizedBaseUrl which would throw.
+
+- I19 (move target prewarm): FilesViewModel.move() now refreshes the
+  source directory (existing behavior) AND best-effort fetches the
+  target directory parentDirOf(newPath) so subsequent navigateToPath
+  shows fresh data. Result is discarded; this is just cache priming.
+
+Strings added in both res/values/strings.xml and res/values-zh/strings.xml:
+- files_empty_directory
+- connection_address_required
+
+The remaining R2 Important findings (I3 reusable cards on Audio/Files
+error states, I7 action sheet leading icons, I11 truncation banner total
++ advice copy, I12 capability chip widgets, I13 DiscoveredService.version,
+I21 discovery hint copy + intro paragraph) are documented as deferred
+polish in .omo/reviews/w7-final-gate-g/round-2-deferred.md (added in
+the followup commit).
+
+Verification:
+- 155 Android unit tests pass on debug (was 155, no test count change;
+  the new behaviors are exercised by existing tests via the touched code
+  paths). Both variants GREEN.

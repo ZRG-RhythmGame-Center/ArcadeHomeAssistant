@@ -1,0 +1,23 @@
+gate-d+e fix: gate rename/move + long-click on canMutate (R2 B5 closure)
+
+Reviewer Gate D (Wave 4) and Gate E (Wave 5) both rejected because
+FilesScreen action sheet still showed Rename/Move on read-only roots
+and the long-click handler opened the action sheet regardless of
+canMutate.
+
+Production fix:
+- FilesScreen action sheet now wraps Rename + Move buttons in
+  `if (state.canMutate) { ... }`, mirroring the existing Delete gate.
+- FileEntryRow combinedClickable now uses `onLongClick = if (canMutate)
+  onLongClick else null` so the action sheet does not open at all on
+  read-only roots. Download remains accessible via tap chevron.
+
+Test update:
+- Replaced deleteHiddenForReadOnlyRoot with mutationsHiddenForReadOnlyRoot
+  which asserts:
+  1. Long-clicking a file on a read-only root does NOT open the action
+     sheet (zero ACTION_SHEET nodes).
+  2. None of the mutation labels (重命名, 移动, 删除) are reachable.
+- Closes R2 B5 fully.
+
+Verification: 154 unit tests pass, 0 failed.

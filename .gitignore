@@ -9,3 +9,23 @@ node_modules/
 dist/
 .env
 .env.local
+
+# .NET
+bin/
+obj/
+TestResults/
+*.user
+
+# Flutter
+.dart_tool/
+.flutter-plugins-dependencies
+
+# Kotlin / Gradle local state
+.kotlin/
+local.properties
+
+# OMO local-only state
+.omo/boulder.json
+.omo/ralph-loop.local.md
+.omo/run-continuation/
+.omo/notepads/

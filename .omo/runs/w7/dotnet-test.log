@@ -1,0 +1,5 @@
+W7.53 dotnet test + coverage
+
+Total: 171 tests, 0 failed, 0 skipped
+Coverage XML copied to .omo/runs/w7/dotnet-coverage.cobertura.xml
+Filter: Category!=Integration (excludes 8 CoreAudioServiceTests requiring live COM)

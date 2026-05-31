@@ -1,0 +1,32 @@
+  姝ｅ湪纭畾瑕佽繕鍘熺殑椤圭洰鈥?
+  鎵€鏈夐」鐩潎鏄渶鏂扮殑锛屾棤娉曡繕鍘熴€?
+  MaimaiHomeAgent -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\bin\Debug\net9.0\MaimaiHomeAgent.dll
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\Discovery\MdnsAdvertiserTests.cs(57,47): warning CS8602: 瑙ｅ紩鐢ㄥ彲鑳藉嚭鐜扮┖寮曠敤銆?[D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\MaimaiHomeAgent.Tests.csproj]
+  MaimaiHomeAgent.Tests -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0\MaimaiHomeAgent.Tests.dll
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0\MaimaiHomeAgent.Tests.dll (.NETCoreApp,Version=v9.0)鐨勬祴璇曡繍琛?
+VSTest 鐗堟湰 17.14.1 (x64)
+
+姝ｅ湪鍚姩娴嬭瘯鎵ц锛岃绋嶅€?..
+鎬诲叡 1 涓祴璇曟枃浠朵笌鎸囧畾妯″紡鐩稿尮閰嶃€?
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 9.0.16)
+[xUnit.net 00:00:00.05]   Discovering: MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.08]   Discovered:  MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.09]   Starting:    MaimaiHomeAgent.Tests
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishFileEvent_BroadcastsRequestedTypeWithFilePayload(eventType: "file.deleted") [19 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishFileEvent_BroadcastsRequestedTypeWithFilePayload(eventType: "file.renamed") [< 1 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishFileEvent_BroadcastsRequestedTypeWithFilePayload(eventType: "file.created") [< 1 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishFileEvent_BroadcastsRequestedTypeWithFilePayload(eventType: "file.moved") [< 1 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishDeviceUnavailable_BroadcastsDeviceUnavailableEnvelope [< 1 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishAudioStateChanged_DoesNotBlockCaller [10 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventHubTests.AddAsync_ThenBroadcast_ClientReceivesEnvelope [36 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishAudioDeviceChanged_BroadcastsDeviceChangedEnvelope [3 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventPublisherTests.PublishAudioStateChanged_BroadcastsAudioStateEnvelope [3 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventHubTests.HeartbeatTimeout_RemovesConnection [5 s]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventHubTests.RemoveAsync_ThenBroadcast_DoesNotThrow [5 s]
+[xUnit.net 00:00:10.18]   Finished:    MaimaiHomeAgent.Tests
+  宸查€氳繃 MaimaiHomeAgent.Tests.Realtime.EventHubTests.TwoConnections_BothReceiveBroadcast [14 ms]
+
+娴嬭瘯杩愯鎴愬姛銆?
+娴嬭瘯鎬绘暟: 12
+     閫氳繃鏁? 12
+鎬绘椂闂? 10.4803 绉?

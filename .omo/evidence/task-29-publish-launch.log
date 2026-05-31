@@ -1,0 +1,45 @@
+Already up to date
+Done in 30ms using pnpm v11.0.8
+$ tsc --noEmit && vite build
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32m鉁?[39m 160 modules transformed.
+rendering chunks...
+computing gzip size...
+[2m../../services/windows-agent/src/MaimaiHomeAgent/wwwroot/[22m[32mindex.html                 [39m[1m[2m  0.39 kB[22m[1m[22m[2m 鈹?gzip:   0.26 kB[22m
+[2m../../services/windows-agent/src/MaimaiHomeAgent/wwwroot/[22m[35massets/index-C0AR9ZFW.css  [39m[1m[2m  8.92 kB[22m[1m[22m[2m 鈹?gzip:   2.03 kB[22m
+[2m../../services/windows-agent/src/MaimaiHomeAgent/wwwroot/[22m[36massets/index-3lT4b7Ib.js   [39m[1m[2m313.02 kB[22m[1m[22m[2m 鈹?gzip: 102.88 kB[22m[2m 鈹?map: 1,242.75 kB[22m
+[32m鉁?built in 894ms[39m
+  姝ｅ湪纭畾瑕佽繕鍘熺殑椤圭洰鈥?
+  鎵€鏈夐」鐩潎鏄渶鏂扮殑锛屾棤娉曡繕鍘熴€?
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\Audio\NAudioDeviceNotificationSource.cs(58,34): warning SYSLIB1095: 鍏锋湁鈥淕eneratedComClassAttribute鈥濈殑绫?MaimaiHomeAgent.Audio.NAudioDeviceNotificationSource.NotificationClient 涓嶅疄鐜板叿鏈夆€淕eneratedComInterfaceAttribute鈥濈殑浠讳綍鎺ュ彛銆備笉浼氫负鈥淢aimaiHomeAgent.Audio.NAudioDeviceNotificationSource.NotificationClient鈥濈敓鎴愭簮銆?(https://learn.microsoft.com/dotnet/fundamentals/syslib-diagnostics/syslib1095) [D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\MaimaiHomeAgent.csproj]
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\Audio\NAudioDeviceNotificationSource.cs(22,58): warning SYSLIB1099: 涓嶆敮鎸佸湪鈥淐omImport鈥濈被鍨嬪拰婧愮敓鎴愮殑 COM 绫诲瀷涔嬮棿寮哄埗杞崲 (https://learn.microsoft.com/dotnet/fundamentals/syslib-diagnostics/syslib1099) [D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\MaimaiHomeAgent.csproj]
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\Audio\NAudioDeviceNotificationSource.cs(36,64): warning SYSLIB1099: 涓嶆敮鎸佸湪鈥淐omImport鈥濈被鍨嬪拰婧愮敓鎴愮殑 COM 绫诲瀷涔嬮棿寮哄埗杞崲 (https://learn.microsoft.com/dotnet/fundamentals/syslib-diagnostics/syslib1099) [D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\MaimaiHomeAgent.csproj]
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\Audio\NAudioDeviceNotificationSource.cs(46,68): warning SYSLIB1099: 涓嶆敮鎸佸湪鈥淐omImport鈥濈被鍨嬪拰婧愮敓鎴愮殑 COM 绫诲瀷涔嬮棿寮哄埗杞崲 (https://learn.microsoft.com/dotnet/fundamentals/syslib-diagnostics/syslib1099) [D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\MaimaiHomeAgent.csproj]
+  MaimaiHomeAgent -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\bin\Release\net9.0-windows\win-x64\MaimaiHomeAgent.dll
+  MaimaiHomeAgent -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\bin\publish\win-x64\
+
+==========================================================================
+LAUNCH VERIFICATION (after publish, run from repo-root CWD)
+==========================================================================
+Command         : Start-Process -FilePath <exe> -PassThru
+WorkingDirectory: <inherited from caller, NOT exe dir>
+ResolvedExePath : services\windows-agent\src\MaimaiHomeAgent\bin\publish\win-x64\MaimaiHomeAgent.exe
+
+Result          : OK
+TimeToReady     : 1.18s
+Probe URL       : http://127.0.0.1:8765/api/status
+HTTP Status     : 200
+Content-Type    : application/json; charset=utf-8
+
+Response body:
+{"machineName":"FRZ-XIAOXIN","version":"1.0.0.0","startedAt":"2026-05-30T21:52:47.9231039+00:00","uptimeSeconds":0,"capabilities":{"audioVolume":true,"audioMute":true,"audioDeviceSwitch":true,"fileManagement":true,"discoveryBroadcast":true}}
+
+All five capabilities are TRUE -> audio + file management + discovery all wired
+in the published exe.
+
+Note: Program.cs pins ContentRootPath = AppContext.BaseDirectory so
+appsettings.json (next to the exe) loads regardless of the CWD the user
+launched from. Without that fix, launching from any non-publish CWD trips
+Serilog's Serilog:WriteTo:1:Name has no 'Name' element error because
+appsettings.json is never read.

@@ -1,0 +1,51 @@
+gate-d+f fix: wire FilesViewModel WS in production + /api/status baseUrl + airtight tests
+
+Combined fix for Reviewer Gate D (Wave 4) and Gate F (Wave 6) rejection
+findings.
+
+GATE D fixes:
+
+1. FilesViewModel WS subscription wired to real EventStream in production.
+   Old: secondary constructor passed `eventFlow = emptyFlow()`, so
+   `files.changed` events never reached the screen.
+   New: FilesViewModel.start()/stop() create a real EventStream (mirrors
+   AudioViewModel.start/stop), and FilesScreen wires DisposableEffect to
+   call them. Tests still inject eventFlow directly via the primary
+   constructor; production path now subscribes to live WebSocket events.
+
+2. Strengthened `setVolume_setsIsVolumeBusyAroundRequest` with
+   CompletableDeferred so the test asserts isVolumeBusy is TRUE mid-flight
+   (between the request firing and the response landing). A regression
+   that deletes the `isVolumeBusy = true` update at setVolume's start now
+   fails this test. Closes Gate D #6.
+
+3. Added two new debounce edge-case tests in FilesViewModelTest:
+   - wsFilesChanged_pathChangesMidDebounce_doesNotRefreshOldPath
+   - wsFilesChanged_rootChangesMidDebounce_doesNotRefreshOldRoot
+   Both prove that if the user navigates mid-debounce, the in-flight
+   files.changed event for the OLD view does not refresh. Closes Gate D #5.
+
+GATE F fixes:
+
+4. Program.cs: /api/status now returns baseUrl derived from the inbound
+   request scheme + host. Mobile-side AgentStatus.baseUrl (added in
+   Wave 3) now has a real source. Closes Gate F #3 / R2 I20.
+
+5. StatusEndpointTests: added GetStatus_ContainsBaseUrl asserting the
+   field is present, JSON string, and a well-formed http(s) absolute URL.
+   The "missing baseUrl" finding comment is removed.
+
+6. ProcessRunnerTests.RunAsync_CancellationToken_KillsProcess strengthened:
+   - Snapshots existing ping.exe PIDs before launching.
+   - After cancellation, polls for up to 1s asserting NO new ping.exe PIDs
+     remain. Proves ProcessRunner.RunAsync(...) actually killed the child
+     process (not just abandoned the wait).
+   - Defensive teardown kills any leaked ping.exe so the test process can
+     exit. Closes Gate F #2.
+
+Verification:
+- 154 Android unit tests pass (was 152, +2 new debounce edge cases).
+- 171 .NET unit tests pass (was 170, +1 baseUrl test).
+- Both Android variants (debug + release) GREEN.
+
+Closes Gate D #1, #3, #5, #6 and Gate F #2, #3.

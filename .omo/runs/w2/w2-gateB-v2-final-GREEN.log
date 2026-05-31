@@ -1,0 +1,7 @@
+W2 Gate B v2 final GREEN log captured at 2026-05-31 14:03:08
+
+Total tests: 21
+Failed: 0
+
+MainDispatcherRule.afterEach restored to call Dispatchers.resetMain().
+Mutation evidence: .omo/runs/w2/w2-gateB-v2-mutation-RED.log

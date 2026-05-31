@@ -1,0 +1,38 @@
+# T26 — Tray pairing evidence
+# Date: 2026-05-31 02:42:36
+# Tests covering TrayBridge (the named-pipe seam called by the tray UI).
+
+## TrayApp menu items (exactly 4, as required):
+  1. "状态: 运行中"        (display only, Enabled = false)
+  2. "生成配对码"           → IPairingService.CreateCode(IPAddress.Loopback, "Tray")
+                              → MessageBox shows the 6-digit code + countdown
+  3. "开机自启"             (Checked = AutoStartManager.IsEnabledAsync())
+                              → toggles via EnableAsync() / DisableAsync()
+  4. "退出"                 → IHostApplicationLifetime.StopApplication()
+
+## H.NotifyIcon decision:
+  Switched to non-WPF H.NotifyIcon 2.2.0 (TrayIconWithContextMenu). Single-file
+  publish validated:  dotnet publish -c Release -r win-x64 --self-contained
+                       -p:PublishSingleFile=true   → exit 0.
+  Target framework moved to net9.0-windows; UseWindowsForms=true added so the
+  STA tray thread can host an Application.Run() message pump.
+
+## Tests (--filter "FullyQualifiedName~Tray"):
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0-windows\MaimaiHomeAgent.Tests.dll (.NETCoreApp,Version=v9.0)的测试运行
+VSTest 版本 17.14.1 (x64)
+
+正在启动测试执行，请稍候...
+总共 1 个测试文件与指定模式相匹配。
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 9.0.16)
+[xUnit.net 00:00:00.05]   Discovering: MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.08]   Discovered:  MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.09]   Starting:    MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.45]   Finished:    MaimaiHomeAgent.Tests
+  已通过 MaimaiHomeAgent.Tests.Tray.TrayBridgeTests.NamedPipe_GeneratePairingCodeCommand_InvokesPairingServiceOnce [119 ms]
+  已通过 MaimaiHomeAgent.Tests.Tray.TrayBridgeTests.NamedPipe_UnknownCommand_IsIgnoredWithoutException [211 ms]
+
+测试运行成功。
+测试总数: 2
+     通过数: 2
+总时间: 0.7546 秒
+

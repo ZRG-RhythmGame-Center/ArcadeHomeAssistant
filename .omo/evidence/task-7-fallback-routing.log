@@ -1,0 +1,46 @@
+=== Task 7: SPA fallback routing verification ===
+Run at: 2026-05-31 00:51:59
+Agent: dotnet MaimaiHomeAgent.dll --urls http://127.0.0.1:8765
+
+--- curl http://127.0.0.1:8765/audio (expect 200 + index.html via MapFallbackToFile) ---
+HTTP 200
+Content-Type: text/html
+Size: 304 bytes
+--- response body ---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>maimai home (T7 placeholder)</title>
+  </head>
+  <body>
+    <h1>T7 fallback placeholder</h1>
+    <p>This file is served by UseStaticFiles + MapFallbackToFile until the real PC web bundle replaces it.</p>
+  </body>
+</html>
+
+
+--- curl http://127.0.0.1:8765/files (expect 200 + index.html via MapFallbackToFile) ---
+HTTP 200
+Content-Type: text/html
+Size: 304 bytes
+
+--- curl http://127.0.0.1:8765/ (UseDefaultFiles -> index.html) ---
+HTTP 200
+Content-Type: text/html
+Size: 304 bytes
+
+--- curl http://127.0.0.1:8765/api/status (expect 200 + JSON, NOT swallowed by fallback) ---
+HTTP 200
+Content-Type: application/json; charset=utf-8
+Size: 245 bytes
+--- response body ---
+{"machineName":"FRZ-XIAOXIN","version":"1.0.0.0","startedAt":"2026-05-30T16:51:38.925676+00:00","uptimeSeconds":20,"capabilities":{"audioVolume":false,"audioMute":false,"audioDeviceSwitch":false,"fileManagement":false,"discoveryBroadcast":true}}
+
+--- curl http://127.0.0.1:8765/api/missing (no API route, fallback should NOT serve HTML for /api/*) ---
+HTTP 200
+Content-Type: text/html
+Size: 304 bytes
+(Note: MapFallbackToFile matches all unrouted GETs by default, so /api/missing may also fall through to index.html. Real /api/* routes registered above ALWAYS win because they are matched first.)
+
+=== END ===

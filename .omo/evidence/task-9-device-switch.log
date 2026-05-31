@@ -1,0 +1,35 @@
+Task: T9 audio device switch + notifications
+Date: 2026-05-31
+
+Files added/updated:
+- services/windows-agent/src/MaimaiHomeAgent/Audio/DeviceEndpoints.cs
+- services/windows-agent/src/MaimaiHomeAgent/Audio/DeviceChangeNotifier.cs
+- services/windows-agent/src/MaimaiHomeAgent/Audio/AudioDeviceNotificationContracts.cs
+- services/windows-agent/src/MaimaiHomeAgent/Audio/NAudioDeviceNotificationSource.cs
+- services/windows-agent/src/MaimaiHomeAgent/Audio/AudioExceptions.cs
+- services/windows-agent/src/MaimaiHomeAgent/Audio/CoreAudioService.cs
+- services/windows-agent/src/MaimaiHomeAgent/Program.cs
+- services/windows-agent/src/MaimaiHomeAgent/MaimaiHomeAgent.csproj
+- services/windows-agent/tests/MaimaiHomeAgent.Tests/Audio/DeviceEndpointsTests.cs
+- services/windows-agent/tests/MaimaiHomeAgent.Tests/Audio/DeviceChangeNotifierTests.cs
+- services/windows-agent/tests/MaimaiHomeAgent.Tests/MaimaiHomeAgent.Tests.csproj
+- .omo/notepads/maimai-home-assistant-full/learnings.md
+
+Verification commands:
+1) dotnet test --filter Audio
+Command:
+& "C:\Users\abbey\scoop\apps\dotnet9-sdk\9.0.314\dotnet.exe" test "services\windows-agent\MaimaiHomeAgent.sln" --filter Audio -nologo -p:UseSharedCompilation=false /nodeReuse:false
+Result:
+- Passed: 4
+- Failed: 0
+
+2) dotnet build
+Command:
+& "C:\Users\abbey\scoop\apps\dotnet9-sdk\9.0.314\dotnet.exe" build "services\windows-agent\MaimaiHomeAgent.sln" -nologo -p:UseSharedCompilation=false /nodeReuse:false
+Result:
+- Build succeeded
+- Warnings: 0
+- Errors: 0
+
+Diagnostics note:
+- `lsp_diagnostics` unavailable because `csharp-ls` is not installed in the environment.

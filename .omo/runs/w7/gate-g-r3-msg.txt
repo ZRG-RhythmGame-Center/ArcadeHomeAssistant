@@ -1,0 +1,51 @@
+gate-g round 3: I3 + I7 + I11 + I12 + I13 + I21 close, full R2 closure
+
+Closes the remaining 6 R2 Important findings flagged by F2 round 2:
+
+I3 (LoadingCard / EmptyCard / ErrorCard on Files screen):
+- FilesScreen renders LoadingCard when listing == null && isRefreshing.
+- FilesScreen renders ErrorCard when errorMessage != null && listing == null.
+- (EmptyCard already existed for empty directory in round 2.)
+- Imports the shared LoadingCard / EmptyCard / ErrorCard composables
+  from ConnectionScreen.
+
+I7 (action sheet leading icons):
+- Files action sheet entries (download / rename / move / delete) now use
+  ActionSheetButtonContent helper which renders an icon + text Row.
+- Icons: Download, Edit, AutoMirrored.DriveFileMove, Delete (red tint).
+
+I11 (truncation banner total + advice):
+- New `files_truncated_format` string takes BOTH limit (%1$d) AND total
+  (%2$d), e.g. "目录结果已截断：共 N 项，仅显示前 K 项。请进入子目录或缩小范围。"
+- FilesScreen passes both values via stringResource.
+
+I12 (capability chips):
+- ConnectionInfoCard renders the 5 capabilities as AssistChip widgets in
+  two rows (3+2). Each chip carries a Check / Close icon + label and
+  uses primary tint for enabled, surface variant for disabled.
+- Replaced the historical "能力：音量 ✓ / 静音 ✓ / ..." flat string.
+- Avoided FlowRow because Compose 1.7 BOM and 1.8 transitive flow have a
+  binary-incompatible signature (NoSuchMethodError under Robolectric).
+
+I13 (DiscoveredService.version):
+- DiscoveredService gains optional `version: String? = null`.
+- DiscoveryService.suspendResolve now reads `attributes["version"]` from
+  the resolved NsdServiceInfo (mDNS TXT record).
+- Discovered service card renders "版本：v1.2.3" line when present.
+
+I21 (discovery hint copy + intro paragraph):
+- ConnectionScreen now renders an intro paragraph above the address form
+  guiding users to either type the LAN address or scan.
+- Discovery empty hint extended with second clause guiding the user to
+  verify the agent is running and on the same LAN.
+
+Test updates:
+- ConnectionScreenTest.emptyDiscoveryShowsEmptyCardCopy uses substring
+  match on "暂无发现结果" because the full copy now includes the second
+  clause.
+- FilesScreenTest.truncationBannerShowsCorrectLimit uses substring match
+  on "仅显示前 123 项" since the format now also includes total.
+
+Verification: 155 unit tests pass on debug. 0 failed.
+
+Closes Gate G F2 R2 Important findings I3, I7, I11, I12, I13, I21.

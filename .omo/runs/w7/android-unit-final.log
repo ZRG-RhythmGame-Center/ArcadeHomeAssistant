@@ -1,0 +1,29 @@
+W7.49 final test evidence captured at 2026-05-31 18:32:06
+
+Tasks: gradlew :app:testDebugUnitTest :app:testReleaseUnitTest :app:jacocoTestReport
+
+DEBUG variant: 155 tests, 0 failed, 0 errored
+RELEASE variant: 155 tests, 0 failed, 0 errored
+
+Per-class breakdown (debug variant):  TEST-com.maimai.home.data.AgentClientCancellationTest.xml: tests=2 failures=0 errors=0
+  TEST-com.maimai.home.data.AgentClientDispatcherTest.xml: tests=1 failures=0 errors=0
+  TEST-com.maimai.home.data.AgentClientMockWebServerTest.xml: tests=28 failures=0 errors=0
+  TEST-com.maimai.home.data.AgentClientNetworkErrorSpecificityTest.xml: tests=2 failures=0 errors=0
+  TEST-com.maimai.home.data.AgentClientTest.xml: tests=1 failures=0 errors=0
+  TEST-com.maimai.home.data.AgentPreferencesTest.xml: tests=6 failures=0 errors=0
+  TEST-com.maimai.home.data.DiscoveryServiceMultiTest.xml: tests=4 failures=0 errors=0
+  TEST-com.maimai.home.data.DiscoveryServiceTest.xml: tests=2 failures=0 errors=0
+  TEST-com.maimai.home.data.EventStreamMockServerTest.xml: tests=4 failures=0 errors=0
+  TEST-com.maimai.home.data.EventStreamTest.xml: tests=6 failures=0 errors=0
+  TEST-com.maimai.home.data.models.AgentStatusSerializationTest.xml: tests=5 failures=0 errors=0
+  TEST-com.maimai.home.MainDispatcherRuleTest.xml: tests=2 failures=0 errors=0
+  TEST-com.maimai.home.ManifestSecurityTest.xml: tests=5 failures=0 errors=0
+  TEST-com.maimai.home.RobolectricSmokeTest.xml: tests=1 failures=0 errors=0
+  TEST-com.maimai.home.ServiceLocatorTest.xml: tests=1 failures=0 errors=0
+  TEST-com.maimai.home.SmokeTest.xml: tests=1 failures=0 errors=0
+  TEST-com.maimai.home.ui.audio.AudioScreenTest.xml: tests=10 failures=0 errors=0
+  TEST-com.maimai.home.ui.audio.AudioViewModelTest.xml: tests=14 failures=0 errors=0
+  TEST-com.maimai.home.ui.connection.ConnectionScreenTest.xml: tests=9 failures=0 errors=0
+  TEST-com.maimai.home.ui.connection.ConnectionViewModelTest.xml: tests=13 failures=0 errors=0
+  TEST-com.maimai.home.ui.files.FilesScreenTest.xml: tests=13 failures=0 errors=0
+  TEST-com.maimai.home.ui.files.FilesViewModelTest.xml: tests=25 failures=0 errors=0

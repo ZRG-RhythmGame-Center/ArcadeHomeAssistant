@@ -1,0 +1,13 @@
+  姝ｅ湪纭畾瑕佽繕鍘熺殑椤圭洰鈥?
+  鎵€鏈夐」鐩潎鏄渶鏂扮殑锛屾棤娉曡繕鍘熴€?
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\Audio\AudioStaDispatcher.cs(59,9): warning CA1416: 鍙湪鎵€鏈夊钩鍙颁笂璁块棶姝よ皟鐢ㄧ珯鐐广€?Thread.SetApartmentState(ApartmentState)" 浠呭湪 'windows' 涓婂彈鏀寔銆?(https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1416) [D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\MaimaiHomeAgent.csproj]
+  MaimaiHomeAgent -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\bin\Debug\net9.0\MaimaiHomeAgent.dll
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\Discovery\MdnsAdvertiserTests.cs(57,47): warning CS8602: 瑙ｅ紩鐢ㄥ彲鑳藉嚭鐜扮┖寮曠敤銆?[D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\MaimaiHomeAgent.Tests.csproj]
+  MaimaiHomeAgent.Tests -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0\MaimaiHomeAgent.Tests.dll
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0\MaimaiHomeAgent.Tests.dll (.NETCoreApp,Version=v9.0)鐨勬祴璇曡繍琛?
+VSTest 鐗堟湰 17.14.1 (x64)
+
+姝ｅ湪鍚姩娴嬭瘯鎵ц锛岃绋嶅€?..
+鎬诲叡 1 涓祴璇曟枃浠朵笌鎸囧畾妯″紡鐩稿尮閰嶃€?
+
+宸查€氳繃! - 澶辫触:     0锛岄€氳繃:     3锛屽凡璺宠繃:     0锛屾€昏:     3锛屾寔缁椂闂? 1 s - MaimaiHomeAgent.Tests.dll (net9.0)

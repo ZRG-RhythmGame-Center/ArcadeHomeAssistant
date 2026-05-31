@@ -1,0 +1,37 @@
+W7.50 connectedDebugAndroidTest result captured at 2026-05-31 17:21:31
+
+STATUS: BLOCKED on environment
+
+Connected emulator details:
+- emulator-5554, ABI x86_64, SDK 28
+
+Build APK details:
+- app-arm64-v8a-debug.apk (only ABI variant produced, 23 MB)
+- app-debug-androidTest.apk (8.6 MB, the test APK is universal)
+
+Outcome: gradle test runner reports "Found 1 connected device(s), 0 of which were compatible."
+The test APK targets arm64-v8a per the production build's splits.abi config
+(the Resolved Decision #4 fallback step 3 assumed debug would be universal,
+but our build pins arm64-v8a for ALL variants because splits.abi is unconditional).
+
+Per Plan Resolved Decision #4 ladder step 4:
+  "If no AVD and no device, fail Wave 7.2 explicitly and ask the user to
+  attach a device. Do not silently skip."
+
+This is the same situation: an x86_64 device is attached but the build pins
+arm64-v8a. Two paths forward:
+  1. Boot an arm64 AVD via emulator -avd <name> -accel off (slow but
+     functional). Requires the user's local Android SDK to have an
+     arm64-v8a system image installed.
+  2. Add splits.abi.include("x86_64") to the debug variant override so
+     connectedDebugAndroidTest works on x86_64 emulators. This is a
+     plan deviation - record it in the learnings file before applying.
+
+This run does NOT execute the Compose UI test in androidTest. The
+ComposeSmokeTest (Wave 2.11) and any future Compose UI integration tests
+remain unverified on instrumentation. The unit test suite (testDebugUnitTest
+/ testReleaseUnitTest) covers all 154 Compose UI tests via Robolectric,
+which is the documented test path for Wave 5.
+
+Recommended action: ship Wave 7 with this gap documented; user adds an
+arm64 AVD (or x86_64 ABI override) when they want connected coverage.

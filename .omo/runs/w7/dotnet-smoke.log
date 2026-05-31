@@ -1,0 +1,38 @@
+W7.54 Windows Agent smoke test captured at 2026-05-31 17:24:44
+
+Started agent: dotnet run --project src/MaimaiHomeAgent (debug build, --no-build)
+
+Endpoints tested:
+1. GET /api/status -> 200 OK
+   Response: machineName=FRZ-XIAOXIN, version=1.0.0.0, baseUrl=http://localhost:8765,
+   capabilities all true.
+   PROVES: W6.48 baseUrl field is wired into production response.
+
+2. GET /api/audio/state -> 200 OK
+   Response: masterVolume=0.22, muted=false, defaultDeviceId=<guid>
+
+3. GET /api/audio/devices -> 200 OK
+   Response: 7 devices (active, unplugged, notpresent mix). The default
+   device is correctly flagged isDefault=true. Garbled Chinese chars in
+   the name field are PowerShell terminal encoding artifacts, not the
+   server response.
+
+4. GET /api/file-roots -> 200 OK
+   Response: [] (empty array - no file roots configured on this machine).
+
+5. POST /api/audio/volume body {"level":0.22} -> 200 OK
+   Response: AudioState with masterVolume reflecting the request.
+
+PROVES: real CoreAudio integration works end-to-end on Windows.
+
+Production startup issue caught + fixed:
+- The W6.42 IAudioStaDispatcher seam refactor introduced a DI registration
+  gap. DeviceChangeNotifier requires IAudioStaDispatcher but Program.cs
+  only registered the concrete AudioStaDispatcher class. Agent crashed
+  at startup with "Unable to resolve service for type IAudioStaDispatcher".
+- Fixed by adding services.AddSingleton<IAudioStaDispatcher>(sp =>
+  sp.GetRequiredService<AudioStaDispatcher>()) to Program.cs.
+- This bug was NOT caught by W6 tests because the test factories
+  (StatusEndpointTests, AudioEndpointsTests, etc.) strip hosted services
+  via services.Where(d => d.ServiceType == typeof(IHostedService)),
+  removing DeviceChangeNotifier from the validated graph.

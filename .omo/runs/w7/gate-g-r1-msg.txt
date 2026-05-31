@@ -1,0 +1,59 @@
+gate-g round 1: B8 file.* events + M5 silent verify navigates + F4 test/dep cleanup
+
+Reviewer Gate G round 1 produced 4 of 5 rejections:
+- F1 (R1 closure): M5/R1#6 OPEN - silent verify did not auto-navigate.
+- F2 (R2 parity): B8 OPEN - Android subscribed to "files.changed" but
+  Windows agent emits "file.created/deleted/renamed/moved" (concrete
+  producer/consumer mismatch) + 9 Important findings.
+- F3 (Security): APPROVED.
+- F4 (Code quality): actionSheetIsBottomSheet test had no assertion +
+  duplicate ui-test-manifest dep declarations.
+- F5 (Hands-on QA): missing surface artifacts + S11 connected gap +
+  no .omo/reviews/ markdowns.
+
+This commit closes the F1 + F2 B8 + F4 blockers in one bundle. F2 9
+Important findings and F5 surface artifacts are deferred to round 2.
+
+F1 (M5) fix:
+- ConnectionViewModel adds a one-shot Channel-backed `discoveryNavigation`
+  Flow. useDiscoveredService() emits on success in addition to setting
+  connectedStatus.
+- ConnectionScreen subscribes via LaunchedEffect(viewModel) and forwards
+  to onConnected(address, machineName).
+- ConnectionViewModelTest.useDiscoveredService_emitsDiscoveryNavigationEvent
+  uses Turbine's `test {}` to assert the one-shot emission.
+- Manual testConnection still requires the explicit "进入设备" button
+  (R2 B1 unchanged).
+
+F2 B8 fix:
+- FilesViewModel.subscribeToWsEvents() now filters on
+  type in {file.created, file.deleted, file.renamed, file.moved}.
+- The same filter is applied in FilesViewModel.start()'s production
+  EventStream collector.
+- Added handleFileEvent(event) helper that extracts rootId + tries
+  path/fromPath/toPath, refreshing the listing when the affected entry
+  is in (or directly inside) the current view.
+- Added parentDirOf() helper for "directly inside the current dir"
+  detection.
+- All existing FilesViewModelTest WS test cases updated to use
+  type = "file.created" so they keep covering the same logic.
+
+F4 fixes:
+- FilesScreenTest.actionSheetIsBottomSheet now asserts
+  composeRule.onNodeWithTag(FilesScreenTags.ACTION_SHEET).assertIsDisplayed().
+- app/build.gradle.kts: removed two duplicate
+  testImplementation("androidx.compose.ui:ui-test-manifest") lines
+  (one with a stray testReleaseImplementation that never resolved).
+
+Reviews recorded:
+- .omo/reviews/w7-final-gate-g/round-1-verdicts.md captures all 5
+  reviewer verdicts + the open round-2 items (F2 9 Important +
+  F5 hands-on QA gaps).
+
+Verification:
+- 155 Android unit tests pass on debug, 0 failed (was 154; +1 for the
+  new discoveryNavigation event test).
+- Both debug + release variants GREEN.
+
+Closes Gate G F1 (M5) + F2 (B8) + F4 (test/dep hygiene). F2 Important +
+F5 surface artifacts deferred to round 2.

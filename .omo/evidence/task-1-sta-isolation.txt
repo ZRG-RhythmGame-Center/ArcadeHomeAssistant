@@ -1,0 +1,22 @@
+  姝ｅ湪纭畾瑕佽繕鍘熺殑椤圭洰鈥?
+  鎵€鏈夐」鐩潎鏄渶鏂扮殑锛屾棤娉曡繕鍘熴€?
+  MaimaiHomeAgent -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\src\MaimaiHomeAgent\bin\Debug\net9.0\MaimaiHomeAgent.dll
+  MaimaiHomeAgent.Tests -> D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0\MaimaiHomeAgent.Tests.dll
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0\MaimaiHomeAgent.Tests.dll (.NETCoreApp,Version=v9.0)鐨勬祴璇曡繍琛?
+VSTest 鐗堟湰 17.14.1 (x64)
+
+姝ｅ湪鍚姩娴嬭瘯鎵ц锛岃绋嶅€?..
+鎬诲叡 1 涓祴璇曟枃浠朵笌鎸囧畾妯″紡鐩稿尮閰嶃€?
+D:\UserFiles\Development\Projects\ZRC\maimai-home-assistant\services\windows-agent\tests\MaimaiHomeAgent.Tests\bin\Debug\net9.0\MaimaiHomeAgent.Tests.dll
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 9.0.16)
+[xUnit.net 00:00:00.05]   Discovering: MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.07]   Discovered:  MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.07]   Starting:    MaimaiHomeAgent.Tests
+[xUnit.net 00:00:00.12]   Finished:    MaimaiHomeAgent.Tests
+  宸查€氳繃 MaimaiHomeAgent.Tests.Audio.AudioStaDispatcherTests.InvokeAsync_AllWorkSharesSameManagedThreadId [14 ms]
+  宸查€氳繃 MaimaiHomeAgent.Tests.Audio.AudioStaDispatcherTests.InvokeAsync_RunsWorkOnStaThread [4 ms]
+
+娴嬭瘯杩愯鎴愬姛銆?
+娴嬭瘯鎬绘暟: 2
+     閫氳繃鏁? 2
+鎬绘椂闂? 0.4255 绉?

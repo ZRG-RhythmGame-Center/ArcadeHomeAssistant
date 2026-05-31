@@ -1,0 +1,73 @@
+w2: test stack: JUnit5 + Truth + Turbine + MockK + MockWebServer + Robolectric + JaCoCo + Compose UI test (GREEN)
+
+Wave 2 (tasks 7-12) - introduce a real test stack on top of the skeletal
+kotlin-test/Mockito setup that shipped with Wave 1.
+
+Plugins:
+- Bump Kotlin to 2.3.0 (android, plugin.compose, plugin.serialization).
+  Required because Kotlin 2.0.21 K2 type checker crashes on JUnit 5.14.x's
+  ExtensionContext interface (KT-75035 family) and trips on the
+  kotlin-stdlib 2.3.0 metadata pulled in transitively by the new test deps.
+- Add de.mannodermaus.android-junit5 2.0.1 (root + app) to drive the JUnit
+  Platform via android-junit5's variant integration.
+- Apply the bundled jacoco plugin.
+- Migrate kotlinOptions to kotlin { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }
+  (Kotlin 2.3 hard-deprecation).
+- Disable the plugin's auto jacocoTestReport with junitPlatform { jacocoOptions
+  .taskGenerationEnabled.set(false) } so our explicit JacocoReport task in
+  the same project does not collide on the task name.
+
+Dependencies (testImplementation):
+- platform(org.junit:junit-bom:5.14.1) + jupiter-api/params + jupiter-engine
+  + junit-vintage-engine 5.14.1 (bridges the Wave 1 JUnit 4 / Robolectric tests).
+- com.google.truth:truth:1.4.2 + app.cash.turbine:turbine:1.2.1 for new
+  Wave 2+ assertions and Flow tests.
+- io.mockk:mockk:1.13.14 + mockk-agent:1.13.14 for Kotlin-native mocking
+  (additive; the Mockito setup is preserved for the existing AgentClientTest
+  + DiscoveryServiceTest until they migrate).
+- com.squareup.okhttp3:mockwebserver:4.12.0, org.robolectric:robolectric:4.13,
+  androidx.test:core 1.6.1, androidx.test.ext:junit 1.2.1.
+- org.jetbrains.kotlin:kotlin-test:2.3.0,
+  org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2.
+- Kept org.mockito:mockito-core:5.14.2 because two existing tests still call
+  Mockito.mock / Mockito.when. New tests should use MockK.
+- Dropped kotlin-test-junit (conflicts with kotlin-test-junit5 on the
+  kotlin-test-framework-impl capability).
+
+Instrumentation (androidTestImplementation):
+- androidx.test:runner 1.6.2, espresso-core 3.6.1, ext-junit 1.2.1,
+  ui-test-junit4 (from compose BOM), io.mockk:mockk-android 1.13.14.
+
+JaCoCo (Wave 2.12):
+- toolVersion 0.8.12.
+- jacocoTestReport (XML + HTML) + jacocoVerification with 70% line coverage
+  rule on com/maimai/home/data/ and com/maimai/home/ui/, excluding screen
+  Composables, theme, MainActivity, App, BuildConfig, Manifest, *Test*
+  (per Resolved Decision #2 in the plan).
+- check task depends on jacocoVerification.
+- The W2 deliverable is the wired, runnable threshold; the threshold itself
+  goes green as W3-W5 add the corresponding tests.
+
+Scaffold tests (W2.8-2.11):
+- MainDispatcherRule + MainDispatcherRuleTest. JUnit5 Extension that swaps
+  Dispatchers.Main for a TestDispatcher; verified by scheduling
+  launch(Dispatchers.Main) and observing it only runs after runCurrent().
+- SmokeTest. Jupiter @Test + Truth assertion - confirms the platform engine
+  is wired.
+- RobolectricSmokeTest. JUnit 4 + Robolectric, runs through the Vintage
+  engine; confirms Robolectric boots and exposes the test ApplicationContext
+  - asserted with startsWith com.maimai.home so debug applicationIdSuffix
+  does not break it.
+- ComposeSmokeTest in androidTest. createComposeRule + setContent +
+  onNodeWithText.assertIsDisplayed; runs against an emulator/device per
+  Wave 7.2.
+
+Verification:
+- 20 unit tests pass (17 W1 vintage tests + 3 new W2 tests).
+  Evidence: .omo/runs/w2/w2-testDebugUnitTest-GREEN.log.
+- jacocoTestReport runs successfully end-to-end.
+  Evidence: .omo/runs/w2/jacocoTestReport.xml (current ratio 22% line
+  coverage by design - W3 tests are the ones that move it above the
+  70% gate).
+
+Closes Wave 2 tasks 7, 8, 9, 10, 11, 12.

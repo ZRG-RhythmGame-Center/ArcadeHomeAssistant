@@ -1,0 +1,20 @@
+W3 Gate C v2 release-variant evidence captured at 2026-05-31 14:28:24
+
+Ran: gradlew :app:testReleaseUnitTest
+
+Result: 68 unit tests pass on the RELEASE variant.
+0 failures, 0 errors.
+
+Key proof: AgentPreferencesTest.debugBuild_defaultIsHistoricLanSample
+ran under BuildConfig.DEBUG == false. Its else branch asserts
+ssertThat(AgentPreferences.DEFAULT_AGENT_ADDRESS).isEmpty(). The
+test PASSED on release, which proves:
+
+1. The Gradle release variant's uildConfigField "DEFAULT_AGENT_ADDRESS"
+   = "" wired correctly.
+2. AgentPreferences.DEFAULT_AGENT_ADDRESS reads from BuildConfig (not
+   a hardcoded literal) - if it were still hardcoded to "192.168.1.100:8765",
+   this branch on the release run would have failed.
+
+Combined with the previously captured debug-variant GREEN log, both
+buildConfigField wirings are now verified.

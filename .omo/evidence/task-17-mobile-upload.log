@@ -1,0 +1,54 @@
+00:00 +0: loading D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart
+00:00 +0: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: (setUpAll)
+00:00 +0: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.normalizeBaseUrl prepends http:// when scheme is missing
+00:00 +1: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.normalizeBaseUrl preserves http:// scheme
+00:00 +2: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.normalizeBaseUrl preserves https:// scheme
+00:00 +3: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.normalizeBaseUrl returns null for empty input
+00:00 +4: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.normalizeBaseUrl returns null for unparseable host
+00:00 +5: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.fetchStatus returns AgentStatus on 200 response
+00:00 +6: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.fetchStatus maps timeout DioException to AgentException.network
+00:00 +7: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.fetchStatus maps connectionError DioException to AgentException.network
+00:00 +8: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.fetchStatus maps 401 badResponse to AgentException.unauthorized
+00:00 +9: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.fetchStatus maps other badResponse to AgentException.unknown
+00:00 +10: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.fetchStatus maps null response data to AgentException.unknown
+00:00 +11: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: AgentClient.fetchStatus throws when baseUrl is unparseable
+00:00 +12: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/services/agent_client_test.dart: (tearDownAll)
+00:00 +12: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/audio_controller_test.dart: audioStateProvider reads state from AgentClient
+00:00 +13: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/audio_controller_test.dart: audioDevicesProvider reads devices from AgentClient
+00:00 +14: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/audio_controller_test.dart: audioControllerProvider setVolume calls AgentClient and invalidates audioStateProvider
+00:00 +15: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/audio_controller_test.dart: audioControllerProvider setMute calls AgentClient and invalidates audioStateProvider
+00:00 +16: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/audio_controller_test.dart: audioControllerProvider switchDevice calls AgentClient and invalidates audioDevicesProvider
+00:00 +17: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/audio_controller_test.dart: audioControllerProvider setVolume surfaces AgentClientException as AsyncError
+00:00 +18: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/connection_provider_test.dart: (setUpAll)
+00:00 +18: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/connection_provider_test.dart: connectionStateProvider initial state is idle
+00:00 +19: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/connection_provider_test.dart: connectionStateProvider connect() transitions idle -> connecting -> connected on success
+00:00 +20: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/connection_provider_test.dart: connectionStateProvider connect() transitions to error on 401
+00:00 +21: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/connection_provider_test.dart: connectionStateProvider connect() rejects empty/invalid address with unknown error
+00:00 +22: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/connection_provider_test.dart: connectionStateProvider connect() maps timeout to network error
+00:00 +23: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/connection_provider_test.dart: agentAddressProvider default value is 192.168.1.100:8765
+00:00 +24: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/connection_provider_test.dart: agentAddressProvider can be updated
+00:00 +25: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/connection_provider_test.dart: (tearDownAll)
+00:00 +25: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/files_provider_test.dart: (setUpAll)
+00:00 +25: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/files_provider_test.dart: fileRootsProvider returns roots from client.fetchFileRoots()
+00:00 +26: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/files_provider_test.dart: fileRootsProvider propagates AgentClientException on failure
+00:00 +27: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/files_provider_test.dart: fileListingProvider fetchListing returns entries
+00:00 +28: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/files_provider_test.dart: fileListingProvider returns truncated=true when listing is large
+00:00 +29: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/files_provider_test.dart: fileMutationsProvider delete invalidates listing
+00:00 +30: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/files_provider_test.dart: fileMutationsProvider rename invalidates listing
+00:00 +31: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/files_provider_test.dart: fileMutationsProvider move invalidates source and destination listings
+00:00 +32: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/files_provider_test.dart: fileMutationsProvider upload invalidates listing on the destination directory
+00:00 +33: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/state/files_provider_test.dart: (tearDownAll)
+00:00 +33: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget/audio_page_test.dart: (setUpAll)
+00:00 +33: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget/audio_page_test.dart: renders default device name and current volume after load
+00:01 +34: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget/files_page_test.dart: renders root list when fetchFileRoots succeeds
+00:01 +35: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget_test.dart: renders agent connection page
+00:01 +36: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget_test.dart: renders agent connection page
+00:01 +37: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget_test.dart: renders agent connection page
+00:01 +38: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget/files_page_test.dart: breadcrumb navigates back to parent directory
+00:01 +39: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget/files_page_test.dart: breadcrumb navigates back to parent directory
+00:01 +40: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget/audio_page_test.dart: error from /api/audio/state shows retry button
+00:01 +41: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget/files_page_test.dart: delete shows confirmation dialog and calls deleteFile on confirm
+00:01 +42: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget/files_page_test.dart: delete shows confirmation dialog and calls deleteFile on confirm
+00:02 +43: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget/files_page_test.dart: truncated banner appears when listing.truncated is true
+00:02 +44: D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile/test/widget/files_page_test.dart: (tearDownAll)
+00:02 +44: All tests passed!

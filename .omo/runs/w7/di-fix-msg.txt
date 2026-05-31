@@ -1,0 +1,40 @@
+w6: hotfix: register IAudioStaDispatcher in production DI container
+
+Wave 6's IAudioStaDispatcher seam refactor (commit 08e92be) introduced a
+production startup crash: DeviceChangeNotifier requires IAudioStaDispatcher
+but Program.cs only registered the concrete AudioStaDispatcher class. The
+agent crashed at boot with:
+
+    Unable to resolve service for type IAudioStaDispatcher while
+    attempting to activate DeviceChangeNotifier.
+
+Caught during Wave 7.54 manual smoke (`dotnet run` against the local
+Windows machine).
+
+Why W6 tests didn't catch it:
+  All WAF-based test factories strip hosted services via
+  `services.Where(d => d.ServiceType == typeof(IHostedService))`,
+  removing DeviceChangeNotifier from the validated graph. The unit tests
+  for DeviceChangeNotifier itself construct it directly with an
+  InlineDispatcher, bypassing DI entirely. So neither suite exercised
+  the production registration path.
+
+Fix:
+  Program.cs now registers BOTH the concrete singleton and an interface
+  alias that forwards to it:
+
+    services.AddSingleton<AudioStaDispatcher>();
+    services.AddSingleton<IAudioStaDispatcher>(sp =>
+        sp.GetRequiredService<AudioStaDispatcher>());
+    services.AddHostedService(sp => sp.GetRequiredService<AudioStaDispatcher>());
+
+  All three resolve to the same instance (single STA thread).
+
+Verification:
+- Agent now boots clean.
+- W7.54 smoke against /api/status, /api/audio/state, /api/audio/devices,
+  /api/file-roots, POST /api/audio/volume all return 200 with expected
+  payloads. Evidence: .omo/runs/w7/dotnet-smoke.log.
+- 171 .NET tests still GREEN.
+
+Closes a Wave 6 production regression caught in Wave 7 hands-on QA.

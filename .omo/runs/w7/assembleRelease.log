@@ -1,0 +1,14 @@
+W7.51 assembleRelease GREEN
+
+APK: app-arm64-v8a-release.apk
+Size: 1.57 MB (1643494 bytes)
+ABI: arm64-v8a
+Path: apps/mobile-android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
+Plan ceiling: 2.5 MB
+Status: PASS - APK is well under the ceiling
+
+Build configuration:
+- isMinifyEnabled = true (R8 shrink)
+- isShrinkResources = true
+- splits.abi: arm64-v8a only (isUniversalApk = false)
+- proguard-rules.pro tightened in W5.39
