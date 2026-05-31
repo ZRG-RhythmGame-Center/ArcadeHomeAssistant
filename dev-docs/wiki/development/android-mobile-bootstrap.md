@@ -105,7 +105,7 @@
 - 音频：`fetchAudioState`、`fetchAudioDevices`、`setVolume`、`setMute`、`switchDevice`
 - 文件：`fetchFileRoots`、`fetchFiles`、`uploadFile`（两个重载：`File` 和 `ContentResolver+Uri`）、`downloadFile`、`deleteFile`、`renameFile`、`moveFile`
 
-地址规范化：无 scheme 时自动补 `http://`。
+地址规范化：无 scheme 时自动补 `http://`；所有地址在发起请求前经 `LanAddressPolicy` 校验，非 RFC1918 / loopback / `.local` / IPv6 link-local 地址会抛出 `IllegalArgumentException`。
 
 ### DiscoveryService
 
@@ -117,11 +117,19 @@
 
 ### EventStream
 
-基于 OkHttp WebSocket，连接 `ws://<address>/api/events`：
+基于 OkHttp WebSocket，连接 `ws://<address>/api/events`；地址在建立连接前同样经 `LanAddressPolicy` 校验（与 `AgentClient` 共用同一策略）：
 
 - 指数退避重连（初始 1 s，最大 30 s）
 - 暴露 `events: SharedFlow<EventEnvelope>` 和 `connectionState: StateFlow<ConnectionState>`
 - 重连成功后触发 `onReconnect` 回调（供 ViewModel 刷新状态）
+
+### LanAddressPolicy
+
+应用层 LAN 允许列表，在 `AgentClient` 和 `EventStream` 的地址规范化路径中强制执行：
+
+- 允许：`127.0.0.0/8`（loopback）、`10.0.0.0/8`、`172.16.0.0/12`、`192.168.0.0/16`、`localhost`、`.local` mDNS 主机名、IPv6 loopback（`::1`）、IPv6 link-local（`fe80:`）
+- 拒绝：公网 IP 和任意公共主机名，抛出 `IllegalArgumentException`
+- 主要方法：`requireLanHost(host)`（校验，不通过则抛出）、`isLanHost(host): Boolean`（纯判断）、`extractHost(address): String?`（从含 scheme 或裸 host:port 的地址中提取 host）
 
 ## UI 层关键接口
 

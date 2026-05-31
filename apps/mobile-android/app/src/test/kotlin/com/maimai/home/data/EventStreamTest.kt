@@ -29,7 +29,7 @@ class EventStreamTest {
 
     @Test
     fun httpsAddressBecomesWss() {
-        assertEquals("wss://example.com", normalizedWsBase("https://example.com"))
+        assertEquals("wss://10.0.0.5", normalizedWsBase("https://10.0.0.5"))
     }
 
     @Test
@@ -39,12 +39,64 @@ class EventStreamTest {
 
     @Test
     fun wssAddressPreserved() {
-        assertEquals("wss://secure.example.com", normalizedWsBase("wss://secure.example.com"))
+        assertEquals("wss://192.168.0.42", normalizedWsBase("wss://192.168.0.42"))
     }
 
     @Test
     fun wsAddressPreserved() {
-        assertEquals("ws://plain.example.com", normalizedWsBase("ws://plain.example.com"))
+        assertEquals("ws://maimai-host.local", normalizedWsBase("ws://maimai-host.local"))
+    }
+
+    // ── LAN allowlist (Wave 1 Gate A C1 follow-up) ───────────────────────────
+
+    @Test
+    fun rejectsPublicHostname() {
+        try {
+            normalizedWsBase("http://example.com:8765")
+            org.junit.Assert.fail("expected IllegalArgumentException for non-LAN host")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(e.message!!.contains("Refusing non-LAN address"))
+        }
+    }
+
+    @Test
+    fun rejectsPublicIpv4() {
+        try {
+            normalizedWsBase("http://8.8.8.8:8765")
+            org.junit.Assert.fail("expected IllegalArgumentException for public IPv4")
+        } catch (e: IllegalArgumentException) {
+            assertTrue(e.message!!.contains("Refusing non-LAN address"))
+        }
+    }
+
+    @Test
+    fun acceptsLoopback() {
+        assertEquals("ws://127.0.0.1:8765", normalizedWsBase("127.0.0.1:8765"))
+    }
+
+    @Test
+    fun acceptsMdnsLocal() {
+        assertEquals("ws://maimai-host.local:8765", normalizedWsBase("http://maimai-host.local:8765"))
+    }
+
+    @Test
+    fun acceptsAllRfc1918Octets() {
+        assertEquals("ws://10.1.2.3:8765", normalizedWsBase("10.1.2.3:8765"))
+        assertEquals("ws://172.20.0.1:8765", normalizedWsBase("172.20.0.1:8765"))
+        assertEquals("ws://192.168.255.1:8765", normalizedWsBase("192.168.255.1:8765"))
+    }
+
+    @Test
+    fun rejectsBoundary172Outside1631() {
+        // 172.15.x.x and 172.32.x.x are NOT in 172.16.0.0/12
+        try {
+            normalizedWsBase("http://172.15.0.1:8765")
+            org.junit.Assert.fail("expected IllegalArgumentException for 172.15.x.x")
+        } catch (_: IllegalArgumentException) {}
+        try {
+            normalizedWsBase("http://172.32.0.1:8765")
+            org.junit.Assert.fail("expected IllegalArgumentException for 172.32.x.x")
+        } catch (_: IllegalArgumentException) {}
     }
 
     // ── Reconnect job tracking ────────────────────────────────────────────────

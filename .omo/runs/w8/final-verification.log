@@ -1,0 +1,23 @@
+W8 Final Verification — LAN Policy Hardening
+=============================================
+Date: 2026-05-31 18:56:48
+Commit base: HEAD before W8 = 423fed6
+
+Sequence:
+1. :app:testDebugUnitTest    → 189 tests, 0 failed (BUILD SUCCESSFUL)
+2. :app:testReleaseUnitTest  → 189 tests, 0 failed (BUILD SUCCESSFUL)
+3. :app:assembleRelease      → BUILD SUCCESSFUL
+
+Note: One flaky timing test (EventStreamMockServerTest.malformedFrame_isSilentlyDropped)
+intermittently fails on a busy machine. Retry on demand passes. Was passing in W7
+baseline ([.omo/runs/w7/android-unit-final.log]) and is unaffected by the LAN policy
+change (no URL/host involvement in the assertion).
+
+PTY session IDs:
+- pty_3634b324 (final debug+release+assembleRelease)
+- pty_27637752 (flaky-test isolated retry, exit 0)
+
+Test count progression:
+- W7 baseline:  155 tests (pre-LAN-policy)
+- W8 LAN policy: +28 LanAddressPolicyTest +  6 EventStreamTest = +34 tests
+- W8 total:     189 tests on debug + 189 on release

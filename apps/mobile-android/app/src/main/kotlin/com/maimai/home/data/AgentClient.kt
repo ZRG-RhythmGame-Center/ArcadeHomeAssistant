@@ -240,7 +240,11 @@ class AgentClient(
     private fun normalizedBaseUrl(raw: String): String {
         val trimmed = raw.trim()
         require(trimmed.isNotBlank()) { "empty address" }
-        return if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) trimmed else "http://$trimmed"
+        val withScheme = if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) trimmed else "http://$trimmed"
+        val host = LanAddressPolicy.extractHost(withScheme)
+            ?: throw IllegalArgumentException("Refusing unparseable address \"$raw\"")
+        LanAddressPolicy.requireLanHost(host)
+        return withScheme
     }
 
     private fun queryDisplayName(contentResolver: ContentResolver, uri: Uri): String? {

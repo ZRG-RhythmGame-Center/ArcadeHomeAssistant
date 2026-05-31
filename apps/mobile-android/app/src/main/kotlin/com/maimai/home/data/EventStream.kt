@@ -119,11 +119,15 @@ class EventStream(
  */
 internal fun normalizedWsBase(address: String): String {
     val trimmed = address.trim()
-    return when {
+    val wsUrl = when {
         trimmed.startsWith("wss://") -> trimmed
         trimmed.startsWith("ws://") -> trimmed
         trimmed.startsWith("https://") -> "wss://" + trimmed.removePrefix("https://")
         trimmed.startsWith("http://") -> "ws://" + trimmed.removePrefix("http://")
         else -> "ws://$trimmed"
     }
+    val host = LanAddressPolicy.extractHost(wsUrl)
+        ?: throw IllegalArgumentException("Refusing unparseable address \"$address\"")
+    LanAddressPolicy.requireLanHost(host)
+    return wsUrl
 }
