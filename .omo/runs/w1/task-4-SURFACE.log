@@ -1,0 +1,19 @@
+SURFACE Phase - W1.4 DiscoveryService: MulticastLock + suspend resolution
+Run: 2026-05-31 12:16:44
+
+assembleDebug: SUCCESS
+  APK: app-arm64-v8a-debug.apk (built at 05/31/2026 12:15:57)
+
+testDebugUnitTest: 13 tests, 4 failed (pre-existing W1.1-W1.3 failures, not regressions)
+
+DiscoveryServiceTest (from GREEN run - cached, no changes):
+  PASS: acquiresAndReleasesMulticastLock
+  PASS: doesNotRunBlockingInside
+
+Pre-existing failures (not in scope of W1.4):
+  FAIL: ManifestSecurityTest.initializationError (Robolectric SDK 35 > maxSdk 34 - W1.1)
+  FAIL: AgentClientCancellationTest.cancelDuringSlowResponse_throwsCancellation (W1.3)
+  FAIL: AgentClientDispatcherTest.executesOnIoDispatcher (W1.3)
+  FAIL: AgentClientTest.downloadFile_nullBody_throws (W1.3)
+
+W1.4 scope: CLEAN - 2/2 DiscoveryServiceTest PASS, no new failures introduced.
