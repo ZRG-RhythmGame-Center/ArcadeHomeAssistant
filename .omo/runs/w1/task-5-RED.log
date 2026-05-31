@@ -21,3 +21,18 @@ RED verdict: CONFIRMED — production code missing:
   2. internal var reconnectJob: Job? on EventStream
 
 BUILD FAILED in 2s
+
+---
+ADDENDUM (Gate A re-review, 2026-05-31):
+
+This RED log shows compile-time failures because the production fields
+referenced by the new tests (the top-level fun normalizedWsBase, the
+internal var reconnectJob on EventStream) didn't exist when the test was
+first written. The compile failure IS the RED proof — the tests could
+not even reach assertion-time, which is the strongest form of "behaviour
+not yet implemented".
+
+Once the production code added those symbols (commit 447f302), the tests
+compiled and could be executed. The behavioural RED -> GREEN transition
+is implicit in task-5-GREEN.log showing 6/6 PASS where 6 tests previously
+could not even compile.
