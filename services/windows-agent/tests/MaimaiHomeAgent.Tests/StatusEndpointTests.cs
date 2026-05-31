@@ -1,6 +1,9 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Xunit;
 
 namespace MaimaiHomeAgent.Tests;
@@ -10,17 +13,30 @@ namespace MaimaiHomeAgent.Tests;
 /// <see cref="WebApplicationFactory{TEntryPoint}"/> to spin up the full
 /// ASP.NET Core pipeline in-process.
 ///
+/// Joined to the "WafProgramTests" collection so it shares the same
+/// serialization context as the other WAF-based test classes and avoids
+/// Serilog static-logger conflicts.
+///
 /// Finding: the current /api/status response does not include a <c>baseUrl</c>
 /// field. If the mobile client requires it, a follow-up task should add it to
 /// Program.cs and update this test.
 /// </summary>
-public class StatusEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+[Collection("WafProgramTests")]
+public class StatusEndpointTests : IDisposable
 {
+    private readonly StatusTestFactory _factory;
     private readonly HttpClient _client;
 
-    public StatusEndpointTests(WebApplicationFactory<Program> factory)
+    public StatusEndpointTests()
     {
-        _client = factory.CreateClient();
+        _factory = new StatusTestFactory();
+        _client = _factory.CreateClient();
+    }
+
+    public void Dispose()
+    {
+        _client.Dispose();
+        _factory.Dispose();
     }
 
     [Fact]
@@ -157,7 +173,6 @@ public class StatusEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     [Fact]
     public async Task GetStatus_UptimeSeconds_IsNonNegative()
     {
-        // Two calls in quick succession; second uptime must be >= first.
         var r1 = await _client.GetAsync("/api/status");
         var j1 = await r1.Content.ReadAsStringAsync();
         using var d1 = JsonDocument.Parse(j1);
@@ -172,5 +187,31 @@ public class StatusEndpointTests : IClassFixture<WebApplicationFactory<Program>>
 
         Assert.True(uptime2 >= uptime1,
             $"Expected uptime to be non-decreasing but got {uptime1} then {uptime2}.");
+    }
+
+    // ------------------------------------------------------------------ //
+    //  Factory                                                             //
+    // ------------------------------------------------------------------ //
+
+    private sealed class StatusTestFactory : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            builder.UseEnvironment("Testing");
+
+            // Strip background hosted services (mDNS, heartbeat, STA dispatcher,
+            // TrayApp, DeviceChangeNotifier) so the test host doesn't open sockets,
+            // spin up COM, or create Win32 windows.
+            builder.ConfigureServices(services =>
+            {
+                var hosted = services
+                    .Where(d => d.ServiceType == typeof(IHostedService))
+                    .ToList();
+                foreach (var d in hosted)
+                {
+                    services.Remove(d);
+                }
+            });
+        }
     }
 }

@@ -58,11 +58,13 @@ public class ProcessRunnerTests
     [Fact]
     public async Task RunAsync_CancellationToken_KillsProcess()
     {
-        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(300));
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
 
-        // "timeout /t 30" sleeps for 30 seconds — cancellation should kill it.
+        // ping -n 30 sends 30 ICMP pings with 1s delay each (~30s total).
+        // With redirected stdin/stdout it does not exit early, so cancellation
+        // fires before the process finishes and WaitForExitAsync throws.
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
-            await _runner.RunAsync("cmd.exe", "/c timeout /t 30 /nobreak", cts.Token));
+            await _runner.RunAsync("ping.exe", "-n 30 127.0.0.1", cts.Token));
     }
 
     [Fact]
