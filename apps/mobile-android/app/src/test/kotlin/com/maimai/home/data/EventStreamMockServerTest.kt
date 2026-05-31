@@ -1,6 +1,8 @@
 package com.maimai.home.data
 
 import com.google.common.truth.Truth.assertThat
+import com.maimai.home.data.models.EventEnvelope
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
@@ -118,7 +120,7 @@ class EventStreamMockServerTest {
         server.start()
         try {
             val okHttp = OkHttpClient.Builder()
-                .readTimeout(2, TimeUnit.SECONDS)
+                .readTimeout(5, TimeUnit.SECONDS)
                 .build()
             val stream = EventStream(
                 okHttpClient = okHttp,
@@ -127,6 +129,24 @@ class EventStreamMockServerTest {
                 onReconnect = {},
             )
             try {
+                // Start collecting BEFORE connecting so we don't miss emissions.
+                val receivedLatch = CountDownLatch(1)
+                val receivedRef = arrayOfNulls<EventEnvelope>(1)
+                val collectThread = Thread {
+                    runBlocking {
+                        kotlinx.coroutines.withTimeoutOrNull(5_000) {
+                            stream.events.collect { event ->
+                                receivedRef[0] = event
+                                receivedLatch.countDown()
+                                // Stop after first valid event
+                                throw kotlinx.coroutines.CancellationException("got one")
+                            }
+                        }
+                    }
+                }
+                collectThread.isDaemon = true
+                collectThread.start()
+
                 stream.connect()
                 assertTrue(serverConnected.await(2, TimeUnit.SECONDS))
 
@@ -136,13 +156,11 @@ class EventStreamMockServerTest {
                 serverSocket[0]!!.send("""{"type":"ok","payload":{},"timestamp":"t"}""")
                 serverSocket[0]!!.send("{not even close")
 
-                val received = runBlocking {
-                    kotlinx.coroutines.withTimeoutOrNull(2_000) {
-                        stream.events.first()
-                    }
-                }
-                assertTrue("a valid frame must come through despite garbage neighbours", received != null)
-                assertEquals("ok", received!!.type)
+                assertTrue(
+                    "a valid frame must come through despite garbage neighbours",
+                    receivedLatch.await(5, TimeUnit.SECONDS),
+                )
+                assertEquals("ok", receivedRef[0]!!.type)
             } finally {
                 stream.disconnect()
                 serverSocket[0]?.close(1000, "test done")

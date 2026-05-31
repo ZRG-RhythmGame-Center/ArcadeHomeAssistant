@@ -1,0 +1,7 @@
+W4 Release Unit Test Run - GREEN
+Date: 2026-05-31 14:51:27
+Result: BUILD SUCCESSFUL
+Tests: 117 completed, 0 failed
+Variants: release
+
+Same 117 tests pass on release variant (BuildConfig.DEFAULT_AGENT_ADDRESS = "" for release).

@@ -1,0 +1,18 @@
+W4 Debug Unit Test Run - GREEN
+Date: 2026-05-31 14:51:20
+Result: BUILD SUCCESSFUL
+Tests: 117 completed, 0 failed
+Variants: debug
+
+New test classes added:
+  - ConnectionViewModelTest (12 tests)
+  - AudioViewModelTest (14 tests)
+  - FilesViewModelTest (23 tests)
+
+Production changes:
+  - ConnectionViewModel: injectable constructor + useDiscoveredService fix (task 21)
+  - AudioViewModel: injectable constructor + refreshDevices error surface + isVolumeBusy + drag gate (task 23)
+  - FilesViewModel: injectable constructor + canMutate derived state + WS files.changed subscription (task 25)
+
+Stability fix:
+  - EventStreamMockServerTest.malformedFrame_isSilentlyDropped: start collector before sending frames (race condition fix)
