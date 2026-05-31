@@ -32,6 +32,12 @@ data class FileListingResult(
     val entries: List<FileEntry>,
     val total: Int,
     val truncated: Boolean,
+    /**
+     * Server-reported listing limit. Older agents omit this field; the
+     * default mirrors the historical AgentClient.fetchFiles default so
+     * older servers keep working. Closes plan task 19 / R1 #16 / R2 I11.
+     */
+    val limit: Int = 200,
 )
 
 class AgentClient(

@@ -38,12 +38,24 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // Release builds ship with no pre-filled agent address. The
+            // user must enter the LAN host:port themselves; an empty default
+            // makes the input field show its placeholder hint instead of a
+            // wrong-network 192.168.x.x address (R1 #17 / Plan task 17).
+            buildConfigField("String", "DEFAULT_AGENT_ADDRESS", "\"\"")
         }
         debug {
             applicationIdSuffix = ".debug"
             // JaCoCo coverage instrumentation runs against the debug variant.
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
+            // Debug builds keep the historic LAN sample so developers can
+            // sideload + connect immediately without retyping the address.
+            buildConfigField(
+                "String",
+                "DEFAULT_AGENT_ADDRESS",
+                "\"192.168.1.100:8765\"",
+            )
         }
     }
 
