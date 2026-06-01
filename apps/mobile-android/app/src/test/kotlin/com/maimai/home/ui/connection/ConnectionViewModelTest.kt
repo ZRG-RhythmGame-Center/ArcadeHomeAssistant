@@ -172,6 +172,35 @@ class ConnectionViewModelTest {
         assertThat(state.isScanning).isFalse()
     }
 
+    @Test
+    fun init_autoScanOnStartTrue_kicksOffDiscovery() = runTest {
+        // Arrange a fresh VM with autoScanOnStart enabled.
+        val services = listOf(
+            DiscoveredService("PC-Auto", "192.168.1.10", 8765),
+        )
+        coEvery { discoveryService.discover(any()) } returns services
+
+        val autoVm = ConnectionViewModel(
+            preferences = preferences,
+            agentClient = agentClient,
+            discoveryService = discoveryService,
+            autoScanOnStart = true,
+        )
+        advanceUntilIdle()
+
+        coVerify { discoveryService.discover(any()) }
+        assertThat(autoVm.uiState.value.discovered).isEqualTo(services)
+    }
+
+    @Test
+    fun init_autoScanOnStartFalse_doesNotKickOffDiscovery() = runTest {
+        // The default test VM (set up in @BeforeEach) uses autoScanOnStart=false,
+        // so init must NOT call discover(). This pins the test-only escape hatch.
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { discoveryService.discover(any()) }
+    }
+
     // ── useDiscoveredService (Task 21 RED → GREEN) ────────────────────────────
 
     /**

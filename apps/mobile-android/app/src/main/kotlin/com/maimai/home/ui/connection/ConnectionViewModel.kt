@@ -50,6 +50,12 @@ class ConnectionViewModel(
     private val preferences: AgentPreferences,
     private val agentClient: AgentClient,
     private val discoveryService: DiscoveryService,
+    /**
+     * Wave 8 follow-up: when true, the ViewModel kicks off a one-shot LAN
+     * scan as part of [init]. Set false in unit tests so behaviour stays
+     * deterministic and the in-flight scan does not race with per-test stubs.
+     */
+    autoScanOnStart: Boolean = false,
 ) : ViewModel() {
 
     /** Production no-arg secondary constructor — delegates to ServiceLocator. */
@@ -57,6 +63,7 @@ class ConnectionViewModel(
         preferences = ServiceLocator.preferences,
         agentClient = ServiceLocator.agentClient,
         discoveryService = ServiceLocator.discoveryService,
+        autoScanOnStart = true,
     )
 
     private val _uiState = MutableStateFlow(ConnectionUiState())
@@ -76,6 +83,12 @@ class ConnectionViewModel(
             preferences.agentAddressFlow.collect { address ->
                 _uiState.update { it.copy(address = address) }
             }
+        }
+        // Wave 8 follow-up: kick off LAN discovery automatically on app start
+        // so the user lands on Connection with a populated list instead of an
+        // empty card. Manual ``scanLan()`` taps still work for re-scans.
+        if (autoScanOnStart) {
+            scanLan()
         }
     }
 
