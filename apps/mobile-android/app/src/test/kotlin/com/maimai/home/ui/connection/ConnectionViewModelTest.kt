@@ -130,13 +130,15 @@ class ConnectionViewModelTest {
     }
 
     @Test
-    fun testConnection_nonAgentException_fallsBackToNetworkError() = runTest {
+    fun testConnection_nonAgentException_surfacesActualMessage() = runTest {
         coEvery { agentClient.fetchStatus(any()) } throws RuntimeException("boom")
 
         vm.testConnection()
         advanceUntilIdle()
 
-        assertThat(vm.uiState.value.errorMessage).isEqualTo("网络错误")
+        // After the W8 round-12 error-mapping fix, non-AgentRequestException
+        // surfaces the actual exception message instead of the blanket "网络错误".
+        assertThat(vm.uiState.value.errorMessage).isEqualTo("boom")
     }
 
     // ── scanLan ───────────────────────────────────────────────────────────────

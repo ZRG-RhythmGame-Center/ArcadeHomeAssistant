@@ -93,6 +93,11 @@ class AgentClient(
     }
 
     suspend fun uploadFile(address: String, rootId: String, path: String, contentResolver: ContentResolver, uri: Uri): Unit {
+        // Tempfile copy + multipart upload must NOT run on the main thread.
+        withContext(kotlinx.coroutines.Dispatchers.IO) { uploadFileBlocking(address, rootId, path, contentResolver, uri) }
+    }
+
+    private suspend fun uploadFileBlocking(address: String, rootId: String, path: String, contentResolver: ContentResolver, uri: Uri) {
         val temp = File.createTempFile("upload-", ".bin")
         contentResolver.openInputStream(uri)?.use { input ->
             FileOutputStream(temp).use { output -> input.copyTo(output) }
@@ -118,11 +123,15 @@ class AgentClient(
             .url("${normalizedBaseUrl(address)}/api/files/download?rootId=${Uri.encode(rootId)}&path=${Uri.encode(path)}")
             .get()
             .build()
-        execute(request).use { response ->
-            if (!response.isSuccessful) throw mapError(response.code, response.body?.string())
-            val body = response.body ?: throw AgentRequestException(ApiError(ApiError.Kind.Network, "响应为空"))
-            target.outputStream().use { output ->
-                body.byteStream().use { input -> input.copyTo(output) }
+        // Stream the body on Dispatchers.IO — byteStream().copyTo() must not
+        // run on the main thread (NetworkOnMainThreadException).
+        withContext(kotlinx.coroutines.Dispatchers.IO) {
+            execute(request).use { response ->
+                if (!response.isSuccessful) throw mapError(response.code, response.body?.string())
+                val body = response.body ?: throw AgentRequestException(ApiError(ApiError.Kind.Network, "响应为空"))
+                target.outputStream().use { output ->
+                    body.byteStream().use { input -> input.copyTo(output) }
+                }
             }
         }
     }
@@ -159,17 +168,26 @@ class AgentClient(
 
     private suspend fun requestUnit(url: String, method: String, body: okhttp3.RequestBody?) {
         val request = Request.Builder().url(url).method(method, body).build()
-        execute(request).use { response ->
-            if (!response.isSuccessful) throw mapError(response.code, response.body?.string())
+        // Run the entire response read on Dispatchers.IO. Android's StrictMode
+        // (and the platform on UI-thread coroutines) flags response.body.string()
+        // as NetworkOnMainThread because the body stream may still be reading
+        // chunked-encoded data from the socket when string() is called.
+        withContext(kotlinx.coroutines.Dispatchers.IO) {
+            execute(request).use { response ->
+                if (!response.isSuccessful) throw mapError(response.code, response.body?.string())
+            }
         }
     }
 
     private suspend fun <T> request(url: String, method: String, body: okhttp3.RequestBody?, serializer: kotlinx.serialization.KSerializer<T>): T {
         val request = Request.Builder().url(url).method(method, body).build()
-        execute(request).use { response ->
-            val text = response.body?.string().orEmpty()
-            if (!response.isSuccessful) throw mapError(response.code, text)
-            return json.decodeFromString(serializer, text)
+        // Stay on Dispatchers.IO for the body.string() read — see requestUnit().
+        return withContext(kotlinx.coroutines.Dispatchers.IO) {
+            execute(request).use { response ->
+                val text = response.body?.string().orEmpty()
+                if (!response.isSuccessful) throw mapError(response.code, text)
+                json.decodeFromString(serializer, text)
+            }
         }
     }
 

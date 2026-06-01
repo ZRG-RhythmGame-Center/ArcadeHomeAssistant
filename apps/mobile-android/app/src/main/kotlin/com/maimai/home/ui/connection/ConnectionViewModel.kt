@@ -1,5 +1,6 @@
 package com.maimai.home.ui.connection
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerializationException
 
 data class ConnectionUiState(
     val address: String = AgentPreferences.DEFAULT_AGENT_ADDRESS,
@@ -91,7 +93,8 @@ class ConnectionViewModel(
                     _uiState.update { it.copy(isTesting = false, connectedStatus = status) }
                 }
                 .onFailure { error ->
-                    val message = (error as? AgentRequestException)?.apiError?.message ?: "网络错误"
+                    Log.w(TAG, "testConnection failed for address=$address", error)
+                    val message = describeError(error)
                     _uiState.update { it.copy(isTesting = false, errorMessage = message) }
                 }
         }
@@ -134,7 +137,8 @@ class ConnectionViewModel(
                     )
                 }
                 .onFailure { error ->
-                    val message = (error as? AgentRequestException)?.apiError?.message ?: "网络错误"
+                    Log.w(TAG, "discovered service verify failed", error)
+                    val message = describeError(error)
                     _uiState.update { it.copy(errorMessage = message) }
                 }
         }
@@ -144,7 +148,20 @@ class ConnectionViewModel(
         _uiState.update { it.copy(connectedStatus = null) }
     }
 
+    /**
+     * Maps any [Throwable] from agentClient/discovery to a localised, actionable
+     * message. The earlier blanket "网络错误" hid root causes (LAN guard rejection,
+     * serialization mismatch, DNS, timeout, etc.) and made field debugging impossible.
+     */
+    private fun describeError(error: Throwable): String = when {
+        error is AgentRequestException -> error.apiError.message
+        error is IllegalArgumentException -> "地址被拒绝：${error.message ?: "请使用局域网地址"}"
+        error is SerializationException -> "服务器返回的数据不可识别：${error.message ?: "JSON 解析失败"}"
+        else -> error.message ?: error.javaClass.simpleName
+    }
+
     companion object {
+        private const val TAG = "ConnectionViewModel"
         val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: Class<T>): T = ConnectionViewModel() as T
         }
