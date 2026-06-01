@@ -187,8 +187,10 @@ class AudioScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("音频控制").assertIsDisplayed()
-        // machineName must NOT appear in the top bar title.
+        // New design uses unified "Arcade Assistant" top-bar title; the agent
+        // identity moved into the status card. machineName must NOT appear
+        // in the top bar.
+        composeRule.onNodeWithText("Arcade Assistant").assertIsDisplayed()
         assertThat(
             composeRule.onAllNodesWithText("TestPC").fetchSemanticsNodes().size,
         ).isEqualTo(0)
@@ -215,7 +217,9 @@ class AudioScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("已连接：192.168.1.10:8765").assertIsDisplayed()
+        // New status-card format: "<machineName> (<address>)"; passes machineName via the
+        // public AudioScreenContent overload. defaultState carries 192.168.1.10:8765.
+        composeRule.onNodeWithText("192.168.1.10:8765", substring = true).assertIsDisplayed()
     }
 
     /**

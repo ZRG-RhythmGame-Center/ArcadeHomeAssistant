@@ -1,35 +1,46 @@
 package com.maimai.home.ui.audio
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cast
+import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SettingsRemote
+import androidx.compose.material.icons.filled.SignalCellularAlt
+import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material3.Card
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -41,19 +52,18 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.maimai.home.R
 import com.maimai.home.data.models.AudioDevice
+import com.maimai.home.ui.common.BentoCard
+import com.maimai.home.ui.common.BentoCardTitle
 
 /**
- * Test tags for the AudioScreen — used by Compose UI tests so we don't have
- * to rely on brittle text matching for the slider, mute toggle, and refresh
- * button.
+ * Test tags preserved for Compose UI tests.
  */
 object AudioScreenTags {
     const val MUTE_TOGGLE = "audio.mute.toggle"
@@ -64,15 +74,10 @@ object AudioScreenTags {
 }
 
 /**
- * Wave 5 task 28: AudioScreen rewrite.
- *  - DisposableEffect keyed by viewModel (stable identity).
- *  - SnackBarHost surfaces transient errorMessage values.
- *  - Mute renders as IconToggleButton(VolumeOff/VolumeUp) (R2 I4).
- *  - Slider gated by isRefreshing + isVolumeBusy + drag flag (W4.23).
- *  - Refresh icon button in the top bar (R2 I16).
- *  - Fixed top-bar title "音频控制" (R2 I1).
- *  - _ConnectionBar showing "已连接：<address>" beneath the top bar (R2 I2).
- *  - 48dp volume-percent column LEFT of the slider (R2 P6).
+ * Wave 8 redesign matching apps/design/2.html.
+ *  - Status card: agent name + IP + sync indicator + latency.
+ *  - Volume card: large display-lg percent + mute toggle + slider.
+ *  - Output devices: card list with leading icon + state label + radio dot.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,8 +91,6 @@ fun AudioScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val updatedError = rememberUpdatedState(uiState.errorMessage)
 
-    // Lifecycle tied to the ViewModel identity, not to Unit. Keeps re-launches
-    // from happening on every recomposition.
     DisposableEffect(viewModel) {
         viewModel.start()
         onDispose { viewModel.stop() }
@@ -109,11 +112,12 @@ fun AudioScreen(
         onSwitchDevice = viewModel::switchDevice,
         onVolumeDragStart = viewModel::onVolumeDragStart,
         onVolumeDragEnd = viewModel::onVolumeDragEnd,
+        machineName = machineName,
     )
 }
 
 /**
- * Stateless inner composable for tests. Drives [AudioUiState] + callbacks.
+ * Stateless inner Composable for tests.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,32 +132,50 @@ internal fun AudioScreenContent(
     onSwitchDevice: (String) -> Unit,
     onVolumeDragStart: () -> Unit,
     onVolumeDragEnd: () -> Unit,
+    machineName: String = "",
 ) {
     val masterVolume = (state.audioState?.masterVolume ?: 0.0).toFloat() * 100f
     var sliderValue by remember(masterVolume) { mutableFloatStateOf(masterVolume) }
-    // Local drag flag — true while finger is on the slider track.
     var localDragging by remember { mutableStateOf(false) }
-    // Slider is gated when the screen is refreshing OR the VM is busy with a
-    // setVolume request. While the user is actively dragging we keep it
-    // enabled so the gesture stays responsive (W4.23 + R2 I-3).
     val sliderEnabled = !state.isRefreshing && (!state.isVolumeBusy || localDragging)
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.audio_title)) },
+            CenterAlignedTopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.SettingsRemote,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Arcade Assistant",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                },
                 actions = {
                     IconButton(
                         onClick = onRefresh,
                         modifier = Modifier.testTag(AudioScreenTags.REFRESH_BUTTON),
                     ) {
+                        Icon(Icons.Filled.Refresh, contentDescription = "刷新")
+                    }
+                    IconButton(onClick = {}) {
                         Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = stringResource(R.string.audio_refresh_cd),
+                            Icons.Filled.SignalCellularAlt,
+                            contentDescription = "信号",
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     }
-                    TextButton(onClick = onOpenFiles) { Text(stringResource(R.string.audio_files_action)) }
                 },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
             )
         },
         snackbarHost = {
@@ -162,167 +184,297 @@ internal fun AudioScreenContent(
                 modifier = Modifier.testTag(AudioScreenTags.SNACKBAR_HOST),
             )
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            // Connection bar (R2 I2): "已连接：<address>" stripe beneath top bar.
-            ConnectionBar(state.address)
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item {
-                    val deviceLabel = state.devices.firstOrNull { it.isDefault }?.name
-                        ?: stringResource(R.string.audio_current_device_unknown)
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text(
-                                stringResource(R.string.audio_volume_section_title),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(stringResource(R.string.audio_current_device_format, deviceLabel))
-
-                            // Volume row: 48dp percent label LEFT of slider (R2 P6).
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Text(
-                                    text = stringResource(
-                                        R.string.audio_volume_percent_format,
-                                        sliderValue.toInt(),
-                                    ),
-                                    modifier = Modifier
-                                        .width(48.dp)
-                                        .testTag(AudioScreenTags.VOLUME_PERCENT),
-                                    textAlign = TextAlign.End,
-                                )
-                                Slider(
-                                    value = sliderValue,
-                                    onValueChange = {
-                                        // Started dragging — gate WS pushes via VM.
-                                        if (!localDragging) {
-                                            localDragging = true
-                                            onVolumeDragStart()
-                                        }
-                                        sliderValue = it
-                                        onVolumeChange(it)
-                                    },
-                                    onValueChangeFinished = {
-                                        if (localDragging) {
-                                            localDragging = false
-                                            onVolumeDragEnd()
-                                        }
-                                        onSetVolume(sliderValue)
-                                    },
-                                    valueRange = 0f..100f,
-                                    enabled = sliderEnabled,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .testTag(AudioScreenTags.VOLUME_SLIDER),
-                                )
-                            }
-
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(stringResource(R.string.audio_mute_label))
-                                val muted = state.audioState?.muted == true
-                                IconToggleButton(
-                                    checked = muted,
-                                    onCheckedChange = onSetMuted,
-                                    modifier = Modifier.testTag(AudioScreenTags.MUTE_TOGGLE),
-                                ) {
-                                    if (muted) {
-                                        Icon(
-                                            Icons.Filled.VolumeOff,
-                                            contentDescription = stringResource(R.string.audio_mute_on_cd),
-                                        )
-                                    } else {
-                                        Icon(
-                                            Icons.Filled.VolumeUp,
-                                            contentDescription = stringResource(R.string.audio_mute_off_cd),
-                                        )
-                                    }
-                                }
-                            }
+            item {
+                StatusCard(
+                    machineName = machineName,
+                    address = state.address,
+                    isLive = !state.isRefreshing,
+                )
+            }
+            item {
+                MasterVolumeCard(
+                    sliderValue = sliderValue,
+                    enabled = sliderEnabled,
+                    muted = state.audioState?.muted == true,
+                    onSliderChange = {
+                        if (!localDragging) {
+                            localDragging = true
+                            onVolumeDragStart()
                         }
-                    }
-                }
-                item {
-                    Text(
-                        stringResource(R.string.audio_devices_section_title),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                }
-                items(state.devices, key = { it.id }) { device ->
-                    DeviceCard(device, onSwitchDevice)
-                }
-                item { Spacer(Modifier.height(24.dp)) }
+                        sliderValue = it
+                        onVolumeChange(it)
+                    },
+                    onSliderChangeFinished = {
+                        if (localDragging) {
+                            localDragging = false
+                            onVolumeDragEnd()
+                        }
+                        onSetVolume(sliderValue)
+                    },
+                    onSetMuted = onSetMuted,
+                )
+            }
+            item {
+                Text(
+                    "输出设备",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(start = 4.dp, top = 4.dp),
+                )
+            }
+            items(state.devices, key = { it.id }) { device ->
+                DeviceCard(device = device, onSwitchDevice = onSwitchDevice)
+            }
+            item { Spacer(Modifier.height(24.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun StatusCard(
+    machineName: String,
+    address: String,
+    isLive: Boolean,
+) {
+    BentoCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Dns,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = if (machineName.isNotBlank()) "$machineName ($address)" else address,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            if (isLive) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    "实时同步",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            } else {
+                Text(
+                    "刷新中…",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ConnectionBar(address: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.audio_connected_format, address),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall,
-        )
+private fun MasterVolumeCard(
+    sliderValue: Float,
+    enabled: Boolean,
+    muted: Boolean,
+    onSliderChange: (Float) -> Unit,
+    onSliderChangeFinished: () -> Unit,
+    onSetMuted: (Boolean) -> Unit,
+) {
+    BentoCard(contentPadding = PaddingValues(horizontal = 24.dp, vertical = 28.dp)) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                "主音量",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "${sliderValue.toInt()}%",
+                style = MaterialTheme.typography.displayLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.testTag(AudioScreenTags.VOLUME_PERCENT),
+            )
+            Spacer(Modifier.height(20.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                IconToggleButton(
+                    checked = muted,
+                    onCheckedChange = onSetMuted,
+                    modifier = Modifier.testTag(AudioScreenTags.MUTE_TOGGLE),
+                ) {
+                    Icon(
+                        imageVector = if (muted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                        contentDescription = if (muted) "已静音" else "未静音",
+                        tint = if (muted) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+                Slider(
+                    value = sliderValue,
+                    onValueChange = onSliderChange,
+                    onValueChangeFinished = onSliderChangeFinished,
+                    valueRange = 0f..100f,
+                    enabled = enabled,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag(AudioScreenTags.VOLUME_SLIDER),
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                    ),
+                )
+                Icon(
+                    imageVector = Icons.Filled.VolumeUp,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
     }
 }
 
 @Composable
 private fun DeviceCard(device: AudioDevice, onSwitchDevice: (String) -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        ListItem(
-            headlineContent = { Text(device.name) },
-            supportingContent = {
-                Text(
-                    if (device.isDefault) {
-                        stringResource(R.string.audio_default_device_format, describeDeviceState(device.state))
-                    } else {
-                        describeDeviceState(device.state)
-                    },
-                )
-            },
-            trailingContent = {
-                if (device.isDefault) {
-                    Text(stringResource(R.string.audio_default_marker))
+    val isDisconnected = device.state.equals("unplugged", ignoreCase = true) ||
+        device.state.equals("notpresent", ignoreCase = true)
+    val clickable = !device.isDefault && !isDisconnected
+
+    BentoCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .let {
+                if (clickable) {
+                    it.clickable { onSwitchDevice(device.id) }
                 } else {
-                    TextButton(onClick = { onSwitchDevice(device.id) }) {
-                        Text(stringResource(R.string.audio_switch_marker))
-                    }
+                    it
+                }
+            }
+            .let {
+                if (device.isDefault) {
+                    it.border(1.dp, MaterialTheme.colorScheme.primary, MaterialTheme.shapes.large)
+                } else {
+                    it
                 }
             },
-        )
+        contentPadding = PaddingValues(16.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = if (device.isDefault) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainer
+                        },
+                        shape = CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = iconForDevice(device),
+                    contentDescription = null,
+                    tint = if (device.isDefault) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    device.name,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (isDisconnected) {
+                        MaterialTheme.colorScheme.outline
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+                Text(
+                    text = describeDeviceState(device),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = when {
+                        device.isDefault -> MaterialTheme.colorScheme.primary
+                        isDisconnected -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+            // Radio dot indicator
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .border(
+                        width = 2.dp,
+                        color = when {
+                            device.isDefault -> MaterialTheme.colorScheme.primary
+                            isDisconnected -> MaterialTheme.colorScheme.outlineVariant
+                            else -> MaterialTheme.colorScheme.outlineVariant
+                        },
+                        shape = CircleShape,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (device.isDefault) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun iconForDevice(device: AudioDevice): ImageVector {
+    val name = device.name.lowercase()
+    return when {
+        "headset" in name || "headphone" in name || "耳机" in device.name -> Icons.Filled.Headset
+        "virtual" in name || "cast" in name -> Icons.Filled.Cast
+        else -> Icons.Filled.Speaker
     }
 }
 
 @Composable
-private fun describeDeviceState(state: String): String = when (state.lowercase()) {
-    "active" -> stringResource(R.string.audio_state_active)
-    "disabled" -> stringResource(R.string.audio_state_disabled)
-    "unplugged" -> stringResource(R.string.audio_state_unplugged)
-    "notpresent" -> stringResource(R.string.audio_state_notpresent)
-    else -> state
+private fun describeDeviceState(device: AudioDevice): String = when {
+    device.isDefault -> "默认设备"
+    device.state.equals("active", ignoreCase = true) -> "就绪"
+    device.state.equals("disabled", ignoreCase = true) -> "已禁用"
+    device.state.equals("unplugged", ignoreCase = true) -> "已断开"
+    device.state.equals("notpresent", ignoreCase = true) -> "不可用"
+    else -> device.state
 }
-

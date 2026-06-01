@@ -7,6 +7,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -430,7 +431,10 @@ class FilesScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("/").performClick()
+        // The breadcrumb capsule renders a Home icon button at the start of the path
+        // (replacing the old assistChip text). Use the content description to target it.
+        composeRule.onNodeWithContentDescription("根目录").performClick()
+        assertThat(navigatedTo).isEqualTo("")
         assertThat(navigatedTo).isEqualTo("")
     }
 }

@@ -75,8 +75,10 @@ class ConnectionScreenTest {
             }
         }
 
-        // Success card metadata is shown.
-        composeRule.onNodeWithText("机器名：DESKTOP-PC").assertIsDisplayed()
+        // Success card displays an info row "机器" with the machine name as value.
+        // Scroll to the success card before asserting (it sits below the auto-discovery
+        // and manual-connect cards in the new bento layout).
+        composeRule.onNodeWithText("DESKTOP-PC").performScrollTo().assertIsDisplayed()
 
         // The "进入设备" button is present and enabled.
         // Scroll to it first (it's inside a LazyColumn).
@@ -133,12 +135,9 @@ class ConnectionScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("连接中…").assertIsDisplayed()
-        composeRule.onNodeWithText("扫描中…").assertIsDisplayed()
-
-        // The buttons that wrap these labels are disabled while loading.
-        composeRule.onNodeWithText("连接中…").assertIsNotEnabled()
-        composeRule.onNodeWithText("扫描中…").assertIsNotEnabled()
+        // Manual connect button shows in-progress copy and is disabled while testing.
+        composeRule.onNodeWithText("测试中…").assertIsDisplayed()
+        composeRule.onNodeWithText("测试中…").assertIsNotEnabled()
     }
 
     @Test
@@ -156,8 +155,8 @@ class ConnectionScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("测试连接").assertIsEnabled()
-        composeRule.onNodeWithText("扫描局域网").assertIsEnabled()
+        // Manual connect button is shown in resting state.
+        composeRule.onNodeWithText("发起连接").assertIsEnabled()
     }
 
     @Test
@@ -175,7 +174,8 @@ class ConnectionScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("暂无发现结果", substring = true).assertIsDisplayed()
+        // New design swaps the empty-state copy.
+        composeRule.onNodeWithText("未发现任何 Agent", substring = true).assertIsDisplayed()
     }
 
     @Test

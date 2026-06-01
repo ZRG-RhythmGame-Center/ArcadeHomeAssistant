@@ -74,7 +74,7 @@
     <string name="files_root_picker_title">选择文件根</string>
     <string name="files_roots_empty">未发现任何文件根</string>
     <string name="files_empty_directory">此目录为空</string>
-    <string name="files_breadcrumb_root">/</string>
+    <string name="files_breadcrumb_root">根目录</string>
     <string name="files_kind_directory">文件夹</string>
     <string name="files_kind_directory_cd">文件夹</string>
     <string name="files_kind_file_cd">文件</string>

@@ -1,87 +1,130 @@
 package com.maimai.home.ui.nav
 
-import android.net.Uri
-import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.navigation.NavType
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import com.maimai.home.ServiceLocator
 import com.maimai.home.ui.audio.AudioScreen
+import com.maimai.home.ui.audio.AudioTabUnconnected
 import com.maimai.home.ui.connection.ConnectionScreen
 import com.maimai.home.ui.files.FilesScreen
-
-private object Routes {
-    const val Connection = "connection"
-    const val Audio = "audio/{address}/{machineName}"
-    const val Files = "files/{address}/{machineName}"
-
-    fun audio(address: String, machineName: String) = "audio/${Uri.encode(address)}/${Uri.encode(machineName)}"
-    fun files(address: String, machineName: String) = "files/${Uri.encode(address)}/${Uri.encode(machineName)}"
-}
+import com.maimai.home.ui.files.FilesTabUnconnected
 
 /**
- * Wave 5 task 36: MaimaiNavHost.
- *  - Dynamic machineName title passed to AudioScreen / FilesScreen.
- *  - BackHandler in AudioScreen and FilesScreen clears connectedStatus on
- *    back-navigation to ConnectionScreen.
+ * Wave 8 redesign: three top-level tabs (Connection / Audio / Files) live
+ * side-by-side in a [NavigationBar]. Connection is the entry tab; the other
+ * two render an empty state until [ServiceLocator.connectionHandle] is set.
+ *
+ * The earlier linear "Connection -> Audio -> Files" stack was replaced because
+ * the new design (apps/design/N.html) treats all three as siblings: the user
+ * should be able to switch between them at any time while connected.
  */
 @Composable
 fun MaimaiNavHost() {
     val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = Routes.Connection) {
-        composable(Routes.Connection) {
-            ConnectionScreen(
-                onConnected = { address, machineName ->
-                    navController.navigate(Routes.audio(address, machineName))
-                },
-            )
-        }
-        composable(
-            route = Routes.Audio,
-            arguments = listOf(
-                navArgument("address") { type = NavType.StringType },
-                navArgument("machineName") { type = NavType.StringType },
-            ),
-        ) { backStackEntry ->
-            val address = backStackEntry.arguments?.getString("address").orEmpty()
-            val machineName = backStackEntry.arguments?.getString("machineName").orEmpty()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
+    val connectionHandle by ServiceLocator.connectionHandle.collectAsState()
 
-            // Task 36: back from AudioScreen pops to ConnectionScreen.
-            BackHandler {
-                navController.popBackStack(Routes.Connection, inclusive = false)
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                AppDestination.entries.forEach { destination ->
+                    val selected = destination.route == currentRoute
+                    NavigationBarItem(
+                        selected = selected,
+                        onClick = {
+                            navController.navigate(destination.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = if (selected) destination.filledIcon else destination.outlinedIcon,
+                                contentDescription = destination.label,
+                            )
+                        },
+                        label = { Text(destination.label) },
+                    )
+                }
             }
-
-            AudioScreen(
-                address = address,
-                machineName = machineName,
-                onOpenFiles = { addr, mn -> navController.navigate(Routes.files(addr, mn)) },
-            )
-        }
-        composable(
-            route = Routes.Files,
-            arguments = listOf(
-                navArgument("address") { type = NavType.StringType },
-                navArgument("machineName") { type = NavType.StringType },
-            ),
-        ) { backStackEntry ->
-            val address = backStackEntry.arguments?.getString("address").orEmpty()
-            val machineName = backStackEntry.arguments?.getString("machineName").orEmpty()
-
-            // Task 36: back from FilesScreen pops to AudioScreen.
-            BackHandler {
-                navController.popBackStack()
+        },
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = AppDestination.Connection.route,
+            modifier = Modifier.padding(innerPadding),
+        ) {
+            composable(AppDestination.Connection.route) {
+                ConnectionScreen(
+                    onConnected = { address, machineName ->
+                        ServiceLocator.setConnectionHandle(
+                            com.maimai.home.ConnectionHandle(address, machineName),
+                        )
+                        navController.navigate(AppDestination.Audio.route) {
+                            popUpTo(AppDestination.Connection.route) { saveState = true }
+                            launchSingleTop = true
+                        }
+                    },
+                )
             }
-
-            FilesScreen(
-                address = address,
-                machineName = machineName,
-            )
+            composable(AppDestination.Audio.route) {
+                val handle = connectionHandle
+                if (handle == null) {
+                    AudioTabUnconnected(onGoToConnection = {
+                        navController.navigate(AppDestination.Connection.route) {
+                            popUpTo(AppDestination.Connection.route) { saveState = true }
+                            launchSingleTop = true
+                        }
+                    })
+                } else {
+                    AudioScreen(
+                        address = handle.address,
+                        machineName = handle.machineName,
+                        onOpenFiles = { _, _ ->
+                            navController.navigate(AppDestination.Files.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
+                }
+            }
+            composable(AppDestination.Files.route) {
+                val handle = connectionHandle
+                if (handle == null) {
+                    FilesTabUnconnected(onGoToConnection = {
+                        navController.navigate(AppDestination.Connection.route) {
+                            popUpTo(AppDestination.Connection.route) { saveState = true }
+                            launchSingleTop = true
+                        }
+                    })
+                } else {
+                    FilesScreen(
+                        address = handle.address,
+                        machineName = handle.machineName,
+                    )
+                }
+            }
         }
     }
 }

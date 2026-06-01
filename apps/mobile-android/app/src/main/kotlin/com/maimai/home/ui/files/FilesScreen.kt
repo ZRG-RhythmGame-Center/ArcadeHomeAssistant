@@ -4,10 +4,15 @@ import android.app.Application
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,24 +20,38 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.SettingsRemote
+import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -42,7 +61,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -55,17 +74,23 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maimai.home.R
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maimai.home.data.models.FileEntry
 import com.maimai.home.data.models.FileRoot
+import com.maimai.home.ui.common.BentoCard
+import com.maimai.home.ui.common.BentoCardTitle
 import com.maimai.home.ui.connection.EmptyCard
 import com.maimai.home.ui.connection.ErrorCard
 import com.maimai.home.ui.connection.LoadingCard
@@ -202,15 +227,45 @@ internal fun FilesScreenContent(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        stringResource(
-                            R.string.files_title_format,
-                            state.machineName,
-                        ),
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.SettingsRemote,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Arcade Assistant",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 },
+                actions = {
+                    IconButton(
+                        onClick = { showRootPicker = true },
+                        modifier = Modifier.testTag(FilesScreenTags.ROOT_PICKER_BUTTON),
+                    ) {
+                        Icon(
+                            Icons.Filled.Folder,
+                            contentDescription = stringResource(R.string.files_select_root),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    IconButton(onClick = {}) {
+                        Icon(
+                            Icons.Filled.SignalCellularAlt,
+                            contentDescription = "信号",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
             )
         },
         snackbarHost = {
@@ -223,6 +278,9 @@ internal fun FilesScreenContent(
             if (state.canMutate) {
                 FloatingActionButton(
                     onClick = onUpload,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.testTag(FilesScreenTags.UPLOAD_FAB),
                 ) {
                     Icon(
@@ -232,6 +290,7 @@ internal fun FilesScreenContent(
                 }
             }
         },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
@@ -240,81 +299,103 @@ internal fun FilesScreenContent(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(horizontal = 16.dp),
+                contentPadding = PaddingValues(vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                // Root selector button.
-                Button(
-                    onClick = { showRootPicker = true },
-                    modifier = Modifier.testTag(FilesScreenTags.ROOT_PICKER_BUTTON),
-                ) {
-                    Text(state.selectedRoot?.name ?: stringResource(R.string.files_select_root))
-                }
-
-                state.errorMessage?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error)
-                }
-
-                // Breadcrumb chip row (R2 I6).
-                BreadcrumbChipRow(
-                    rootName = state.selectedRoot?.name ?: "",
-                    segments = breadcrumbSegments,
-                    onNavigate = onNavigateToPath,
-                )
-
-                // Truncation banner (W3.19 / R1 #16).
-                state.listing?.takeIf { it.truncated }?.let { listing ->
+                // Storage roots header + horizontal card scroll
+                item {
                     Text(
-                        text = stringResource(R.string.files_truncated_format, listing.limit, listing.total),
-                        style = MaterialTheme.typography.bodySmall,
+                        "存储位置",
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                }
+                item {
+                    if (state.roots.isEmpty()) {
+                        EmptyCard(text = "尚未检测到可用的存储位置")
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(bottom = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            state.roots.forEach { root ->
+                                StorageRootCard(
+                                    root = root,
+                                    selected = root.id == state.selectedRoot?.id,
+                                    onClick = { onSelectRoot(root) },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Breadcrumb capsule
+                item {
+                    BreadcrumbCapsule(
+                        rootName = state.selectedRoot?.name ?: "",
+                        segments = breadcrumbSegments,
+                        onNavigate = onNavigateToPath,
                     )
                 }
 
-                // I3 fix: show LoadingCard for initial fetch (no listing yet)
-                // and ErrorCard for non-transient errors. Snackbars still
-                // handle mutation feedback.
+                state.listing?.takeIf { it.truncated }?.let { listing ->
+                    item {
+                        Text(
+                            text = stringResource(R.string.files_truncated_format, listing.limit, listing.total),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
+                    }
+                }
+
                 if (state.listing == null && state.isRefreshing) {
-                    LoadingCard(modifier = Modifier.fillMaxWidth())
+                    item { LoadingCard(modifier = Modifier.fillMaxWidth()) }
                 }
                 if (state.errorMessage != null && state.listing == null) {
-                    ErrorCard(
-                        text = state.errorMessage,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    item {
+                        ErrorCard(
+                            text = state.errorMessage,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
 
-                // I10 fix: when the listing is loaded but empty, show a
-                // friendly empty-state message instead of an empty LazyColumn.
                 val entries = state.listing?.entries ?: emptyList()
                 if (state.listing != null && entries.isEmpty() && !state.isRefreshing) {
-                    EmptyCard(
-                        text = stringResource(R.string.files_empty_directory),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag(FilesScreenTags.EMPTY_DIRECTORY),
-                    )
+                    item {
+                        EmptyCard(
+                            text = stringResource(R.string.files_empty_directory),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(FilesScreenTags.EMPTY_DIRECTORY),
+                        )
+                    }
                 }
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(state.listing?.entries ?: emptyList(), key = { it.name }) { entry ->
-                        FileEntryRow(
-                            entry = entry,
+
+                // File list bento card
+                if (entries.isNotEmpty()) {
+                    item {
+                        FileListCard(
+                            entries = entries,
                             canMutate = state.canMutate,
-                            onOpen = {
+                            onOpen = { entry ->
                                 if (entry.isDirectory) onOpenFolder(entry)
                                 else onDownload(entry)
                             },
-                            onLongClick = { selectedEntry = entry },
+                            onLongClick = { entry -> selectedEntry = entry },
                         )
                     }
-                    item { Spacer(Modifier.height(80.dp)) }
                 }
+                item { Spacer(Modifier.height(80.dp)) }
             }
         }
     }
@@ -577,7 +658,225 @@ internal fun FilesScreenContent(
     }
 }
 
-// ── File entry row ────────────────────────────────────────────────────────────
+// ── Storage root card (3.html style) ───────────────────────────────────────
+
+@Composable
+private fun StorageRootCard(
+    root: FileRoot,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+    val containerColor = if (selected) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.10f)
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerLow
+    }
+    Column(
+        modifier = Modifier
+            .width(160.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(containerColor)
+            .border(if (selected) 1.5.dp else 1.dp, borderColor, RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+        ) {
+            Icon(
+                imageVector = iconForRoot(root),
+                contentDescription = null,
+                tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(28.dp),
+            )
+            RootBadge(readOnly = root.readOnly)
+        }
+        Column {
+            Text(
+                text = root.name,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
+            Text(
+                text = root.id,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RootBadge(readOnly: Boolean) {
+    val (text, container, content) = if (readOnly) {
+        Triple("只读", MaterialTheme.colorScheme.surfaceDim, MaterialTheme.colorScheme.outline)
+    } else {
+        Triple(
+            "可写",
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+            MaterialTheme.colorScheme.primary,
+        )
+    }
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(container)
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelMedium,
+            color = content,
+        )
+    }
+}
+
+private fun iconForRoot(root: FileRoot): ImageVector {
+    val name = root.name.lowercase()
+    return when {
+        "download" in name || "下载" in root.name -> Icons.Filled.Download
+        "music" in name || "音乐" in root.name || "media" in name -> Icons.Filled.MusicNote
+        root.readOnly -> Icons.Filled.Lock
+        else -> Icons.Filled.Work
+    }
+}
+
+// ── Breadcrumb capsule (3.html style) ──────────────────────────────────────
+
+@Composable
+private fun BreadcrumbCapsule(
+    rootName: String,
+    segments: List<String>,
+    onNavigate: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                RoundedCornerShape(12.dp),
+            )
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .testTag(FilesScreenTags.BREADCRUMB_ROW),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(
+            onClick = { onNavigate("") },
+            modifier = Modifier.size(24.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Home,
+                contentDescription = stringResource(R.string.files_breadcrumb_root),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        if (rootName.isNotBlank()) {
+            BreadcrumbDivider()
+            Text(
+                rootName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (segments.isEmpty()) {
+                    MaterialTheme.colorScheme.onBackground
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                fontWeight = if (segments.isEmpty()) FontWeight.Medium else FontWeight.Normal,
+            )
+        }
+        var current = ""
+        segments.forEachIndexed { index, segment ->
+            BreadcrumbDivider()
+            current = listOf(current.takeIf { it.isNotBlank() }, segment)
+                .filterNotNull()
+                .joinToString("/")
+            val path = current
+            val isLast = index == segments.lastIndex
+            Text(
+                text = segment,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isLast) {
+                    MaterialTheme.colorScheme.onBackground
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                fontWeight = if (isLast) FontWeight.Medium else FontWeight.Normal,
+                modifier = Modifier.clickable(onClick = { onNavigate(path) }),
+            )
+        }
+    }
+}
+
+@Composable
+private fun BreadcrumbDivider() {
+    Text(
+        text = "/",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.outlineVariant,
+    )
+}
+
+// ── File list card (3.html style) ────────────────────────────────────────
+
+@Composable
+private fun FileListCard(
+    entries: List<FileEntry>,
+    canMutate: Boolean,
+    onOpen: (FileEntry) -> Unit,
+    onLongClick: (FileEntry) -> Unit,
+) {
+    BentoCard(contentPadding = PaddingValues(0.dp)) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            FileListHeader()
+            entries.forEachIndexed { index, entry ->
+                FileEntryRow(
+                    entry = entry,
+                    canMutate = canMutate,
+                    onOpen = { onOpen(entry) },
+                    onLongClick = { onLongClick(entry) },
+                    showDivider = index != entries.lastIndex,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FileListHeader() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.5f))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Spacer(Modifier.size(36.dp)) // matches leading icon width
+        Text(
+            "名称",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f).padding(start = 12.dp),
+        )
+        Text(
+            "大小",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(80.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+        )
+    }
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -586,89 +885,82 @@ private fun FileEntryRow(
     canMutate: Boolean,
     onOpen: () -> Unit,
     onLongClick: () -> Unit,
+    showDivider: Boolean = true,
 ) {
-    androidx.compose.material3.Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = onOpen,
-                // Long-click opens the action sheet only for mutable roots.
-                // Read-only roots do not support rename/move/delete, so the
-                // action sheet would only show "下载" - we surface that via
-                // the trailing chevron + tap navigation instead.
-                onLongClick = if (canMutate) onLongClick else null,
-            ),
-    ) {
-        ListItem(
-            leadingContent = {
-                Icon(
-                    imageVector = if (entry.isDirectory) Icons.Filled.Folder else Icons.Filled.InsertDriveFile,
-                    contentDescription = if (entry.isDirectory) {
-                        stringResource(R.string.files_kind_directory_cd)
-                    } else {
-                        stringResource(R.string.files_kind_file_cd)
-                    },
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onOpen,
+                    onLongClick = if (canMutate) onLongClick else null,
                 )
-            },
-            headlineContent = { Text(entry.name) },
-            supportingContent = {
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = iconForEntry(entry),
+                contentDescription = if (entry.isDirectory) {
+                    stringResource(R.string.files_kind_directory_cd)
+                } else {
+                    stringResource(R.string.files_kind_file_cd)
+                },
+                tint = if (entry.isDirectory) {
+                    MaterialTheme.colorScheme.tertiary
+                } else {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+                },
+                modifier = Modifier.size(28.dp),
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    listOf(
-                        if (entry.isDirectory) stringResource(R.string.files_kind_directory)
-                        else FilesViewModel.humanSize(entry.size),
-                        FilesViewModel.formatDate(entry.modified),
-                    ).filter { it.isNotBlank() }.joinToString(" · "),
+                    text = entry.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = if (entry.isDirectory) FontWeight.Medium else FontWeight.Normal,
+                    maxLines = 1,
                 )
-            },
-            trailingContent = {
-                if (entry.isDirectory) {
-                    Icon(
-                        imageVector = Icons.Filled.ChevronRight,
-                        contentDescription = stringResource(R.string.files_open_directory_cd),
-                    )
-                }
-                // Files have no trailing content — download is via long-press action sheet.
-            },
-        )
+                Text(
+                    text = FilesViewModel.formatDate(entry.modified),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = if (entry.isDirectory) "--" else FilesViewModel.humanSize(entry.size),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.width(80.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            )
+            if (entry.isDirectory) {
+                Spacer(Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = stringResource(R.string.files_open_directory_cd),
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+        if (showDivider) {
+            androidx.compose.material3.HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                thickness = 1.dp,
+            )
+        }
     }
 }
 
-// ── Breadcrumb chip row (R2 I6) ───────────────────────────────────────────────
-
-@Composable
-private fun BreadcrumbChipRow(
-    rootName: String,
-    segments: List<String>,
-    onNavigate: (String) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .testTag(FilesScreenTags.BREADCRUMB_ROW),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AssistChip(
-            onClick = { onNavigate("") },
-            label = { Text(stringResource(R.string.files_breadcrumb_root)) },
-        )
-        var current = ""
-        segments.forEach { segment ->
-            Icon(
-                imageVector = Icons.Filled.ChevronRight,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-            )
-            current = listOf(current.takeIf { it.isNotBlank() }, segment)
-                .filterNotNull()
-                .joinToString("/")
-            val path = current
-            AssistChip(
-                onClick = { onNavigate(path) },
-                label = { Text(segment) },
-            )
-        }
+private fun iconForEntry(entry: FileEntry): ImageVector {
+    if (entry.isDirectory) return Icons.Filled.Folder
+    val ext = entry.name.substringAfterLast('.', "").lowercase()
+    return when (ext) {
+        "png", "jpg", "jpeg", "gif", "webp", "bmp" -> Icons.Filled.Image
+        "pdf", "txt", "md", "doc", "docx" -> Icons.Filled.Description
+        "json", "xml", "yaml", "yml", "toml", "kt", "java", "py", "js", "ts", "cs", "go", "rs" -> Icons.Filled.Code
+        else -> Icons.Filled.InsertDriveFile
     }
 }
 
