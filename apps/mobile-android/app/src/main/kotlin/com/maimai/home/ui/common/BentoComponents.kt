@@ -6,19 +6,29 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.SettingsRemote
+import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -93,6 +103,126 @@ fun BentoCardTitle(
 }
 
 /**
+ * Compact app bar shared by all top-level tabs.
+ *
+ * Material 3 keeps the app structure predictable when one app-level identity
+ * bar is reused and per-screen actions are supplied via [actions]. The default
+ * signal icon remains present for visual continuity with the Wave 8 design.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MaimaiTopAppBar(
+    modifier: Modifier = Modifier,
+    actions: @Composable () -> Unit = {},
+) {
+    CenterAlignedTopAppBar(
+        modifier = modifier,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.SettingsRemote,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Arcade Assistant",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        },
+        actions = {
+            actions()
+            IconButton(onClick = {}) {
+                Icon(
+                    Icons.Filled.SignalCellularAlt,
+                    contentDescription = "信号",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        windowInsets = WindowInsets(0.dp),
+    )
+}
+
+/**
+ * Standard Material screen shell for the three top-level destinations.
+ *
+ * Keeps the app identity bar, optional actions, snackbar/FAB slots and Scaffold
+ * padding contract in one place so screen bodies only decide how to render
+ * their own content.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MaimaiScreenScaffold(
+    modifier: Modifier = Modifier,
+    topBarActions: @Composable () -> Unit = {},
+    snackbarHost: @Composable () -> Unit = {},
+    floatingActionButton: @Composable () -> Unit = {},
+    content: @Composable (PaddingValues) -> Unit,
+) {
+    Scaffold(
+        modifier = modifier,
+        topBar = { MaimaiTopAppBar(actions = topBarActions) },
+        snackbarHost = snackbarHost,
+        floatingActionButton = floatingActionButton,
+        containerColor = MaterialTheme.colorScheme.background,
+        content = content,
+    )
+}
+
+/**
+ * Shared current-device affordance used by task pages.
+ *
+ * The card keeps potentially destructive actions (especially file mutations)
+ * anchored to a visible target machine and provides a single route back to the
+ * device management page.
+ */
+@Composable
+fun CurrentDeviceCard(
+    machineName: String,
+    address: String,
+    onSwitchDevice: () -> Unit,
+    modifier: Modifier = Modifier,
+    statusText: String = "已连接",
+) {
+    BentoCard(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Dns,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.tertiary,
+            )
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = if (machineName.isNotBlank()) "$machineName · $address" else address,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            TextButton(onClick = onSwitchDevice) {
+                Text("切换设备")
+            }
+        }
+    }
+}
+
+/**
  * Empty state shown when a tab needs an active connection but none is set.
  */
 @Composable
@@ -128,7 +258,7 @@ fun NotConnectedEmptyState(
             )
             Spacer(Modifier.height(8.dp))
             Button(onClick = onGoToConnection) {
-                Text("前往连接")
+                Text("前往设备")
             }
         }
     }

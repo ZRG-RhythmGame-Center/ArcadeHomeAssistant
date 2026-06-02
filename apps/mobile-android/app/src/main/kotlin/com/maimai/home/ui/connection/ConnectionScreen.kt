@@ -28,23 +28,18 @@ import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SettingsRemote
-import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,6 +55,7 @@ import com.maimai.home.data.DiscoveredService
 import com.maimai.home.data.models.AgentStatus
 import com.maimai.home.ui.common.BentoCard
 import com.maimai.home.ui.common.BentoCardTitle
+import com.maimai.home.ui.common.MaimaiScreenScaffold
 
 /**
  * ConnectionScreen wires the ViewModel and forwards the manual "进入设备"
@@ -107,41 +103,7 @@ internal fun ConnectionScreenContent(
     onUseDiscoveredService: (DiscoveredService) -> Unit,
     onEnterDevice: (String, String) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Filled.SettingsRemote,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Arcade Assistant",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {}) {
-                        Icon(
-                            Icons.Filled.SignalCellularAlt,
-                            contentDescription = "信号",
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
-    ) { padding ->
+    MaimaiScreenScaffold { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -150,6 +112,20 @@ internal fun ConnectionScreenContent(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            Text(
+                text = "设备管理",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 4.dp),
+            )
+            state.connectedStatus?.let { status ->
+                ConnectedStatusCard(
+                    status = status,
+                    address = state.address,
+                    onEnterDevice = onEnterDevice,
+                )
+            }
             AutoDiscoveryCard(
                 isScanning = state.isScanning,
                 discovered = state.discovered,
@@ -163,14 +139,6 @@ internal fun ConnectionScreenContent(
                 onUpdateAddress = onUpdateAddress,
                 onTestConnection = onTestConnection,
             )
-            // Connection result card (shown after a successful test).
-            state.connectedStatus?.let { status ->
-                ConnectedStatusCard(
-                    status = status,
-                    address = state.address,
-                    onEnterDevice = onEnterDevice,
-                )
-            }
             // Generic error card (when no connectedStatus to show alongside).
             if (state.connectedStatus == null && !state.errorMessage.isNullOrBlank()) {
                 BentoCard {
@@ -195,7 +163,7 @@ private fun AutoDiscoveryCard(
 ) {
     BentoCard {
         BentoCardTitle(
-            text = "自动发现",
+            text = "发现设备",
             leadingIcon = Icons.Filled.Radar,
             trailing = {
                 if (isScanning) {
@@ -363,7 +331,7 @@ private fun ManualConnectCard(
 ) {
     BentoCard {
         BentoCardTitle(
-            text = "手动连接",
+            text = "手动添加设备",
             leadingIcon = Icons.Filled.Keyboard,
             leadingIconTint = MaterialTheme.colorScheme.secondary,
         )
@@ -412,12 +380,12 @@ private fun ConnectedStatusCard(
 ) {
     BentoCard {
         BentoCardTitle(
-            text = "已连接",
+            text = "当前设备",
             leadingIcon = Icons.Filled.Check,
             leadingIconTint = MaterialTheme.colorScheme.primary,
         )
         Spacer(Modifier.height(12.dp))
-        InfoRow("机器", status.machineName)
+        InfoRow("设备", status.machineName)
         InfoRow("版本", status.version)
         InfoRow("已运行", "${status.uptimeSeconds} s")
         Spacer(Modifier.height(12.dp))
@@ -445,7 +413,7 @@ private fun ConnectedStatusCard(
         ) {
             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
-            Text("进入设备")
+            Text("开始使用")
         }
     }
 }

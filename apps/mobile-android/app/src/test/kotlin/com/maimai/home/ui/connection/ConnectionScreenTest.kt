@@ -47,7 +47,7 @@ class ConnectionScreenTest {
     )
 
     /**
-     * RED→GREEN (Task 26): success card must show "进入设备" button and tapping it
+     * RED→GREEN (Task 26): success card must show "开始使用" button and tapping it
      * must invoke onEnterDevice with the active address + machineName. Auto-
      * navigation must NOT happen — the button is the ONLY navigation trigger.
      */
@@ -80,10 +80,10 @@ class ConnectionScreenTest {
         // and manual-connect cards in the new bento layout).
         composeRule.onNodeWithText("DESKTOP-PC").performScrollTo().assertIsDisplayed()
 
-        // The "进入设备" button is present and enabled.
+        // The "开始使用" button is present and enabled.
         // Scroll to it first (it's inside a LazyColumn).
-        composeRule.onNodeWithText("进入设备").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("进入设备").performClick()
+        composeRule.onNodeWithText("开始使用").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("开始使用").performClick()
 
         // Manual navigate fired with the active address + machineName.
         assertThat(capturedAddress).isEqualTo("192.168.1.42:8765")
@@ -91,7 +91,7 @@ class ConnectionScreenTest {
     }
 
     /**
-     * Without a connectedStatus there is no "进入设备" button — the user must
+     * Without a connectedStatus there is no "开始使用" button — the user must
      * test or scan first. Pins the absence of auto-navigation.
      */
     @Test
@@ -109,7 +109,7 @@ class ConnectionScreenTest {
             }
         }
 
-        assertThat(composeRule.onAllNodesWithText("进入设备").fetchSemanticsNodes()).isEmpty()
+        assertThat(composeRule.onAllNodesWithText("开始使用").fetchSemanticsNodes()).isEmpty()
     }
 
     /**
@@ -136,7 +136,7 @@ class ConnectionScreenTest {
         }
 
         // Manual connect button shows in-progress copy and is disabled while testing.
-        composeRule.onNodeWithText("测试中…").assertIsDisplayed()
+        composeRule.onNodeWithText("测试中…").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("测试中…").assertIsNotEnabled()
     }
 
