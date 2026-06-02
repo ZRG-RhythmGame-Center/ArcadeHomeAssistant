@@ -1,7 +1,7 @@
 # Android 移动端启动骨架说明
 
 > 创建日期: 2026-05-31
-> 最后更新: 2026-05-31（补充 Wave 5 release 变体测试配置：testRelease source set、release manifest overlay、robolectric.properties）
+> 最后更新: 2026-06-01（更新路由表与联调说明，反映三 Tab 导航结构与无参数路由；补充 AudioScreenTags 和 AudioScreen 公开接口）
 > 作者: Adsicmes
 > 状态: 草稿
 
@@ -83,11 +83,15 @@
 
 ### 路由（`MaimaiNavHost`）
 
-| 路由 | 页面 | 说明 |
+底部导航三 Tab，路由均无参数，连接信息通过 `ServiceLocator.connectionHandle` 传递：
+
+| 路由（`AppDestination`） | 页面 | 说明 |
 |---|---|---|
-| `connection` | `ConnectionScreen` | 起始页，输入/发现 Agent 地址，连接成功后跳转 |
-| `audio/{address}/{machineName}` | `AudioScreen` | 音频控制页 |
-| `files/{address}/{machineName}` | `FilesScreen` | 文件管理页 |
+| `connection`（`Device`） | `ConnectionScreen` / 设备页 | 连接与设备管理；未连接时为默认启动页 |
+| `audio`（`Audio`） | `AudioScreen` / `AudioTabUnconnected` | 音频控制页；已连接时为默认启动页 |
+| `files`（`Files`） | `FilesScreen` / `FilesTabUnconnected` | 文件管理页 |
+
+启动默认页规则：`connectionHandle == null` → Device，否则 → Audio。未连接时 Audio/Files Tab 展示空状态页（`AudioTabUnconnected` / `FilesTabUnconnected`），提供"前往设备"入口。
 
 ## 数据层
 
@@ -159,6 +163,30 @@ OkHttp `Dns` 接口的内部实现（`internal class LanDns`），作为连接�
 | `EmptyCard(text, modifier)` | 空状态卡片 |
 | `ErrorCard(text, modifier)` | 错误状态卡片（红色文字） |
 
+### AudioScreen 公开 Composable
+
+`AudioScreen` 的完整签名（Wave 8 重设计）：
+
+```kotlin
+fun AudioScreen(
+    address: String,
+    machineName: String,
+    onOpenDevice: () -> Unit,          // 跳转到设备页
+    onOpenFiles: (String, String) -> Unit, // 跳转到文件页（address/machineName 由 NavHost 忽略，仅导航）
+    viewModel: AudioViewModel = ...,
+)
+```
+
+未连接时由 `MaimaiNavHost` 渲染 `AudioTabUnconnected(onGoToConnection)`，不进入 `AudioScreen`。
+
+以下三个 Composable 定义在 `ConnectionScreen.kt`，可被其他页面（Audio、Files）复用：
+
+| Composable | 说明 |
+|---|---|
+| `LoadingCard(text, modifier)` | 带旋转指示器的加载卡片 |
+| `EmptyCard(text, modifier)` | 空状态卡片 |
+| `ErrorCard(text, modifier)` | 错误状态卡片（红色文字） |
+
 ### FilesScreenTags
 
 `FilesScreenTags` 是定义在 `FilesScreen.kt` 的公开 `object`，提供 Compose UI 测试所需的 `testTag` 常量：
@@ -177,6 +205,17 @@ OkHttp `Dns` 接口的内部实现（`internal class LanDns`），作为连接�
 | `SNACKBAR_HOST` | Snackbar 宿主 |
 | `EMPTY_DIRECTORY` | 空目录提示卡片 |
 
+### AudioScreenTags
+
+`AudioScreenTags` 是定义在 `AudioScreen.kt` 的公开 `object`，提供 Compose UI 测试所需的 `testTag` 常量：
+
+| 常量 | 说明 |
+|---|---|
+| `MUTE_TOGGLE` | 静音切换按钮 |
+| `VOLUME_SLIDER` | 音量滑条 |
+| `VOLUME_PERCENT` | 音量百分比文字 |
+| `REFRESH_BUTTON` | 顶部栏刷新按钮 |
+| `SNACKBAR_HOST` | Snackbar 宿主 |
 ### FilesViewModel
 
 - `start()` / `stop()`：生命周期方法，由 Screen 通过 `DisposableEffect` 调用；`start()` 创建真实 `EventStream` 并订阅文件事件，`stop()` 断开连接并取消协程
@@ -273,9 +312,9 @@ ABI 拆分已启用，仅输出 `arm64-v8a`，不生成 universal APK。
 
 1. 确认 Windows Agent 已运行并监听 `0.0.0.0:8765`
 2. 手机与 Windows 电脑连接同一局域网
-3. 在 `ConnectionScreen` 输入 Windows 机器 IP，如 `192.168.x.x:8765`，或点击"扫描局域网"自动发现
-4. 连接成功后进入 `AudioScreen`，可切换设备、调节音量
-5. 从 `AudioScreen` 导航到 `FilesScreen` 进行文件管理
+3. App 启动后进入设备页（`ConnectionScreen`），输入 Windows 机器 IP（如 `192.168.x.x:8765`）或点击"扫描局域网"自动发现
+4. 连接成功后自动跳转到音频页（`AudioScreen`），可切换设备、调节音量
+5. 通过底部 Tab 切换到文件页（`FilesScreen`）进行文件管理；未连接时两个页面均展示空状态并提供"前往设备"入口
 
 ## 注意事项
 

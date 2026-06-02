@@ -1,7 +1,7 @@
 # maimai-home-assistant 文档
 
 > 创建日期: 2026-05-11 20:42
-> 最后更新: 2026-05-31
+> 最后更新: 2026-06-01 17:51
 > 作者: Adsicmes
 > 状态: 草稿
 
@@ -10,6 +10,7 @@
 | 功能 | 需求 | 设计 | 状态 |
 |---|---|---|---|
 | maimai 家用机辅助工具 | [需求](features/2026-05-11-maimai-home-assistant/需求.md) | [初始技术方案](features/2026-05-11-maimai-home-assistant/设计-初始技术方案.md)、[实现规划](features/2026-05-11-maimai-home-assistant/实现.md) | 草稿 |
+| Android 端页面分配与操作逻辑优化 | 暂无 | [UI 修改方案](features/2026-06-01-android-ui-navigation-redesign/设计-Android端页面分配与操作逻辑优化方案.md) | 草稿 |
 
 ## ADR
 
@@ -28,6 +29,8 @@
 
 | 时间 | 内容 |
 |---|---|
+| 2026-06-01 17:51 | 更新 Android 端页面分配与操作逻辑优化方案，补充连接状态单一真相模型、后续扩展原则和实时状态显示约束。 |
+| 2026-06-01 17:47 | 新增 Android 端页面分配与操作逻辑优化方案，规划将“连接”升级为“设备”，统一当前设备状态条，并调整启动默认页和 Material 3 页面职责。 |
 | 2026-05-31 | 新增 Android Manifest 安全验证脚本（`scripts/verify-manifest.ps1`）和 Robolectric 单元测试（`ManifestSecurityTest.kt`）；更新 Android 移动端 wiki，补充 `NEARBY_WIFI_DEVICES` 权限、`networkSecurityConfig` 配置说明及 Manifest 验证工作流。 |
 | 2026-05-31 | 新增 Android 原生移动端（`apps/mobile-android`）骨架：Kotlin + Jetpack Compose，ServiceLocator 架构，OkHttp HTTP/WebSocket，三页面（连接页、音频页、文件页）全部就绪；新增 Android 移动端 wiki。 |
 | 2026-05-30 | 补充 Windows Agent 文件安全路径基础设施（`IFileRootService`、`PathGuard`、`PathSafetyError`、`FileRoots` 配置键）；新增 PC Web 阶段 4 wiki；更新 Flutter 移动端 wiki（Riverpod 引入、`AgentClient` 抽出、`web_socket_channel` 就绪）。 |
