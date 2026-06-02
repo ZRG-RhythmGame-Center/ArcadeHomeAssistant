@@ -213,6 +213,20 @@ class AgentClientMockWebServerTest {
     }
 
     @Test
+    fun fetchAudioState_503_usesServerMessageWhenPresent() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(503)
+                .setBody("""{"error":"service_busy","message":"Audio dispatcher is busy. Retry shortly."}"""),
+        )
+
+        val ex = assertAgentException { client.fetchAudioState(address()) }
+
+        assertThat(ex.apiError.kind).isEqualTo(ApiError.Kind.Busy)
+        assertThat(ex.apiError.message).isEqualTo("Audio dispatcher is busy. Retry shortly.")
+    }
+
+    @Test
     fun fetchStatus_502_mapsToDeviceUnavailable() = runBlocking {
         server.enqueue(MockResponse().setResponseCode(502).setBody(""))
 
@@ -221,6 +235,20 @@ class AgentClientMockWebServerTest {
         assertThat(ex.apiError.kind).isEqualTo(ApiError.Kind.DeviceUnavailable)
         assertThat(ex.apiError.statusCode).isEqualTo(502)
         assertThat(ex.apiError.message).isEqualTo("设备不可用")
+    }
+
+    @Test
+    fun fetchAudioState_502_usesServerMessageWhenPresent() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(502)
+                .setBody("""{"error":"device_unavailable","message":"音频设备不可用：A task was canceled."}"""),
+        )
+
+        val ex = assertAgentException { client.fetchAudioState(address()) }
+
+        assertThat(ex.apiError.kind).isEqualTo(ApiError.Kind.DeviceUnavailable)
+        assertThat(ex.apiError.message).isEqualTo("音频设备不可用：A task was canceled.")
     }
 
     @Test

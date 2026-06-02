@@ -237,10 +237,11 @@ class AgentClient(
 
     private fun mapError(statusCode: Int, body: String?): AgentRequestException {
         val code = parseErrorCode(body)
+        val serverMessage = parseErrorMessage(body)
         val error = when {
-            statusCode == 404 -> ApiError(ApiError.Kind.NotFound, "未找到 Agent（404）", statusCode, code)
-            statusCode == 503 -> ApiError(ApiError.Kind.Busy, "服务忙，请稍后重试", statusCode, code)
-            statusCode == 502 -> ApiError(ApiError.Kind.DeviceUnavailable, "设备不可用", statusCode, code)
+            statusCode == 404 -> ApiError(ApiError.Kind.NotFound, serverMessage ?: "未找到 Agent（404）", statusCode, code)
+            statusCode == 503 -> ApiError(ApiError.Kind.Busy, serverMessage ?: "服务忙，请稍后重试", statusCode, code)
+            statusCode == 502 -> ApiError(ApiError.Kind.DeviceUnavailable, serverMessage ?: "设备不可用", statusCode, code)
             statusCode == 413 -> ApiError(ApiError.Kind.FileTooLarge, "文件过大（超 100 MB）", statusCode, code)
             statusCode == 409 -> ApiError(ApiError.Kind.Conflict, "文件已存在", statusCode, code)
             else -> ApiError(ApiError.Kind.Unknown, body ?: "请求失败", statusCode, code)
@@ -252,6 +253,13 @@ class AgentClient(
         if (body.isNullOrBlank()) return null
         return runCatching {
             json.decodeFromString(ErrorResponse.serializer(), body).error
+        }.getOrNull()
+    }
+
+    private fun parseErrorMessage(body: String?): String? {
+        if (body.isNullOrBlank()) return null
+        return runCatching {
+            json.decodeFromString(ErrorResponse.serializer(), body).message?.takeIf { it.isNotBlank() }
         }.getOrNull()
     }
 
@@ -279,4 +287,4 @@ class AgentClient(
 @Serializable private data class DeleteRequest(val rootId: String, val path: String, val confirm: Boolean)
 @Serializable private data class RenameRequest(val rootId: String, val path: String, val newName: String, val confirm: Boolean, val overwrite: Boolean)
 @Serializable private data class MoveRequest(val rootId: String, val fromPath: String, val toPath: String, val confirm: Boolean, val overwrite: Boolean)
-@Serializable private data class ErrorResponse(val error: String)
+@Serializable private data class ErrorResponse(val error: String, val message: String? = null)

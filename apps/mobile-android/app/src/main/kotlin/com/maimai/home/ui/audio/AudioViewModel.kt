@@ -11,6 +11,7 @@ import com.maimai.home.data.models.AudioDevice
 import com.maimai.home.data.models.AudioState
 import com.maimai.home.data.models.EventEnvelope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.serialization.json.decodeFromJsonElement
 
@@ -73,6 +75,11 @@ class AudioViewModel(
 
     private val _uiState = MutableStateFlow(AudioUiState(machineName = machineName, address = address))
     val uiState: StateFlow<AudioUiState> = _uiState.asStateFlow()
+
+    private fun describeError(error: Throwable): String =
+        (error as? AgentRequestException)?.apiError?.message
+            ?: error.message?.takeIf { it.isNotBlank() }
+            ?: "网络错误"
 
     init {
         // Subscribe to the injected flows immediately (test path).
@@ -153,14 +160,28 @@ class AudioViewModel(
     fun refresh() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
-            runCatching {
-                val state = agentClient.fetchAudioState(address)
-                val devices = agentClient.fetchAudioDevices(address)
-                state to devices
-            }.onSuccess { (state, devices) ->
-                _uiState.update { it.copy(audioState = state, devices = devices, isRefreshing = false, errorMessage = null) }
-            }.onFailure { error ->
-                _uiState.update { it.copy(isRefreshing = false, errorMessage = (error as? AgentRequestException)?.apiError?.message ?: "网络错误") }
+
+            supervisorScope {
+                val stateRequest = async { agentClient.fetchAudioState(address) }
+                val devicesRequest = async { agentClient.fetchAudioDevices(address) }
+
+                val stateResult = runCatching { stateRequest.await() }
+                stateResult.onSuccess { state ->
+                    _uiState.update { it.copy(audioState = state, errorMessage = null) }
+                }
+
+                val devicesResult = runCatching { devicesRequest.await() }
+                devicesResult.onSuccess { devices ->
+                    _uiState.update { it.copy(devices = devices, errorMessage = null) }
+                }
+
+                val error = stateResult.exceptionOrNull() ?: devicesResult.exceptionOrNull()
+                _uiState.update {
+                    it.copy(
+                        isRefreshing = false,
+                        errorMessage = error?.let(::describeError),
+                    )
+                }
             }
         }
     }
@@ -174,7 +195,7 @@ class AudioViewModel(
                 .onSuccess { devices -> _uiState.update { it.copy(devices = devices) } }
                 .onFailure { error ->
                     _uiState.update {
-                        it.copy(errorMessage = (error as? AgentRequestException)?.apiError?.message ?: "网络错误")
+                        it.copy(errorMessage = describeError(error))
                     }
                 }
         }
@@ -192,7 +213,7 @@ class AudioViewModel(
                     _uiState.update {
                         it.copy(
                             isVolumeBusy = false,
-                            errorMessage = (error as? AgentRequestException)?.apiError?.message ?: "网络错误",
+                            errorMessage = describeError(error),
                         )
                     }
                 }
@@ -203,7 +224,7 @@ class AudioViewModel(
         viewModelScope.launch {
             runCatching { agentClient.setMute(address, muted) }
                 .onSuccess { state -> _uiState.update { it.copy(audioState = state, errorMessage = null) } }
-                .onFailure { error -> _uiState.update { it.copy(errorMessage = (error as? AgentRequestException)?.apiError?.message ?: "网络错误") } }
+                .onFailure { error -> _uiState.update { it.copy(errorMessage = describeError(error)) } }
         }
     }
 
@@ -216,7 +237,7 @@ class AudioViewModel(
             }.onSuccess { (state, devices) ->
                 _uiState.update { it.copy(audioState = state, devices = devices, errorMessage = null) }
             }.onFailure { error ->
-                _uiState.update { it.copy(errorMessage = (error as? AgentRequestException)?.apiError?.message ?: "网络错误") }
+                _uiState.update { it.copy(errorMessage = describeError(error)) }
             }
         }
     }

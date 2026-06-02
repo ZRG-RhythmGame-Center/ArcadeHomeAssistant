@@ -94,6 +94,28 @@ class AudioViewModelTest {
     }
 
     @Test
+    fun refresh_updatesAudioStateBeforeSlowDeviceListCompletes() = runTest {
+        val slowDevices = kotlinx.coroutines.CompletableDeferred<List<AudioDevice>>()
+        coEvery { agentClient.fetchAudioDevices(address) } coAnswers { slowDevices.await() }
+
+        vm.refresh()
+        runCurrent()
+
+        assertThat(vm.uiState.value.audioState).isEqualTo(defaultState)
+        assertThat(vm.uiState.value.devices).isEmpty()
+        assertThat(vm.uiState.value.isRefreshing).isTrue()
+
+        slowDevices.complete(defaultDevices)
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertThat(state.audioState).isEqualTo(defaultState)
+        assertThat(state.devices).isEqualTo(defaultDevices)
+        assertThat(state.isRefreshing).isFalse()
+        assertThat(state.errorMessage).isNull()
+    }
+
+    @Test
     fun refresh_failure_setsErrorMessage() = runTest {
         coEvery { agentClient.fetchAudioState(address) } throws
             AgentRequestException(ApiError(ApiError.Kind.Network, "网络错误"))
@@ -104,6 +126,17 @@ class AudioViewModelTest {
         val state = vm.uiState.value
         assertThat(state.errorMessage).isEqualTo("网络错误")
         assertThat(state.isRefreshing).isFalse()
+    }
+
+    @Test
+    fun refresh_failure_withoutApiError_surfacesThrowableMessage() = runTest {
+        coEvery { agentClient.fetchAudioState(address) } throws
+            IllegalStateException("Audio dispatcher is shutting down")
+
+        vm.refresh()
+        advanceUntilIdle()
+
+        assertThat(vm.uiState.value.errorMessage).isEqualTo("Audio dispatcher is shutting down")
     }
 
     // ── refreshDevices error surface (RED before task 23) ─────────────────────
