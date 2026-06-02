@@ -23,13 +23,8 @@ import com.maimai.home.ui.files.FilesScreen
 import com.maimai.home.ui.files.FilesTabUnconnected
 
 /**
- * Wave 8 redesign: three top-level tabs (Connection / Audio / Files) live
- * side-by-side in a [NavigationBar]. Connection is the entry tab; the other
- * two render an empty state until [ServiceLocator.connectionHandle] is set.
- *
- * The earlier linear "Connection -> Audio -> Files" stack was replaced because
- * the new design (apps/design/N.html) treats all three as siblings: the user
- * should be able to switch between them at any time while connected.
+ * Three top-level tabs live side-by-side in a [NavigationBar]. Audio and Files
+ * are primary task surfaces; Device owns connection setup and switching.
  */
 @Composable
 fun MaimaiNavHost() {
@@ -68,17 +63,17 @@ fun MaimaiNavHost() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = AppDestination.Connection.route,
+            startDestination = if (connectionHandle == null) AppDestination.Device.route else AppDestination.Audio.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(AppDestination.Connection.route) {
+            composable(AppDestination.Device.route) {
                 ConnectionScreen(
                     onConnected = { address, machineName ->
                         ServiceLocator.setConnectionHandle(
                             com.maimai.home.ConnectionHandle(address, machineName),
                         )
                         navController.navigate(AppDestination.Audio.route) {
-                            popUpTo(AppDestination.Connection.route) { saveState = true }
+                            popUpTo(AppDestination.Device.route) { saveState = true }
                             launchSingleTop = true
                         }
                     },
@@ -88,8 +83,8 @@ fun MaimaiNavHost() {
                 val handle = connectionHandle
                 if (handle == null) {
                     AudioTabUnconnected(onGoToConnection = {
-                        navController.navigate(AppDestination.Connection.route) {
-                            popUpTo(AppDestination.Connection.route) { saveState = true }
+                        navController.navigate(AppDestination.Device.route) {
+                            popUpTo(AppDestination.Device.route) { saveState = true }
                             launchSingleTop = true
                         }
                     })
@@ -97,6 +92,15 @@ fun MaimaiNavHost() {
                     AudioScreen(
                         address = handle.address,
                         machineName = handle.machineName,
+                        onOpenDevice = {
+                            navController.navigate(AppDestination.Device.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
                         onOpenFiles = { _, _ ->
                             navController.navigate(AppDestination.Files.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
@@ -113,8 +117,8 @@ fun MaimaiNavHost() {
                 val handle = connectionHandle
                 if (handle == null) {
                     FilesTabUnconnected(onGoToConnection = {
-                        navController.navigate(AppDestination.Connection.route) {
-                            popUpTo(AppDestination.Connection.route) { saveState = true }
+                        navController.navigate(AppDestination.Device.route) {
+                            popUpTo(AppDestination.Device.route) { saveState = true }
                             launchSingleTop = true
                         }
                     })
@@ -122,6 +126,15 @@ fun MaimaiNavHost() {
                     FilesScreen(
                         address = handle.address,
                         machineName = handle.machineName,
+                        onSwitchDevice = {
+                            navController.navigate(AppDestination.Device.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
                     )
                 }
             }
