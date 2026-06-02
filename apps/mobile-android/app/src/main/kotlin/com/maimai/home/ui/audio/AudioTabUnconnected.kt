@@ -11,7 +11,7 @@ import com.maimai.home.ui.common.NotConnectedEmptyState
 fun AudioTabUnconnected(onGoToConnection: () -> Unit) {
     NotConnectedEmptyState(
         title = "尚未连接 Agent",
-        description = "请先在「连接」页选择并测试一台 Agent，再返回这里调节音频。",
+        description = "请先在「设备」页选择并测试一台 Agent，再返回这里调节音频。",
         onGoToConnection = onGoToConnection,
     )
 }

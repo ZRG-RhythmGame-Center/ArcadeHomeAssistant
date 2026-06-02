@@ -217,9 +217,32 @@ class AudioScreenTest {
             }
         }
 
-        // New status-card format: "<machineName> (<address>)"; passes machineName via the
-        // public AudioScreenContent overload. defaultState carries 192.168.1.10:8765.
+        // Shared current-device card includes the active address.
         composeRule.onNodeWithText("192.168.1.10:8765", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun switchDeviceButtonFiresCallback() {
+        var switchCalled = false
+        composeRule.setContent {
+            MaterialTheme {
+                AudioScreenContent(
+                    state = defaultState,
+                    onOpenFiles = {},
+                    onRefresh = {},
+                    onVolumeChange = {},
+                    onSetVolume = {},
+                    onSetMuted = {},
+                    onSwitchDevice = {},
+                    onVolumeDragStart = {},
+                    onVolumeDragEnd = {},
+                    onOpenDevice = { switchCalled = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("切换设备").performClick()
+        assertThat(switchCalled).isTrue()
     }
 
     /**

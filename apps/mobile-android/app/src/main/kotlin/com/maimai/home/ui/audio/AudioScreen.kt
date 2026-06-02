@@ -23,24 +23,19 @@ import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.SettingsRemote
-import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -61,6 +56,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.maimai.home.data.models.AudioDevice
 import com.maimai.home.ui.common.BentoCard
 import com.maimai.home.ui.common.BentoCardTitle
+import com.maimai.home.ui.common.CurrentDeviceCard
+import com.maimai.home.ui.common.MaimaiScreenScaffold
 
 /**
  * Test tags preserved for Compose UI tests.
@@ -84,6 +81,7 @@ object AudioScreenTags {
 fun AudioScreen(
     address: String,
     machineName: String,
+    onOpenDevice: () -> Unit,
     onOpenFiles: (String, String) -> Unit,
     viewModel: AudioViewModel = viewModel(factory = AudioViewModel.factory(address, machineName)),
 ) {
@@ -113,6 +111,7 @@ fun AudioScreen(
         onVolumeDragStart = viewModel::onVolumeDragStart,
         onVolumeDragEnd = viewModel::onVolumeDragEnd,
         machineName = machineName,
+        onOpenDevice = onOpenDevice,
     )
 }
 
@@ -133,50 +132,21 @@ internal fun AudioScreenContent(
     onVolumeDragStart: () -> Unit,
     onVolumeDragEnd: () -> Unit,
     machineName: String = "",
+    onOpenDevice: () -> Unit = {},
 ) {
     val masterVolume = (state.audioState?.masterVolume ?: 0.0).toFloat() * 100f
     var sliderValue by remember(masterVolume) { mutableFloatStateOf(masterVolume) }
     var localDragging by remember { mutableStateOf(false) }
     val sliderEnabled = !state.isRefreshing && (!state.isVolumeBusy || localDragging)
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Filled.SettingsRemote,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Arcade Assistant",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = onRefresh,
-                        modifier = Modifier.testTag(AudioScreenTags.REFRESH_BUTTON),
-                    ) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "刷新")
-                    }
-                    IconButton(onClick = {}) {
-                        Icon(
-                            Icons.Filled.SignalCellularAlt,
-                            contentDescription = "信号",
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
-            )
+    MaimaiScreenScaffold(
+        topBarActions = {
+            IconButton(
+                onClick = onRefresh,
+                modifier = Modifier.testTag(AudioScreenTags.REFRESH_BUTTON),
+            ) {
+                Icon(Icons.Filled.Refresh, contentDescription = "刷新")
+            }
         },
         snackbarHost = {
             SnackbarHost(
@@ -184,7 +154,6 @@ internal fun AudioScreenContent(
                 modifier = Modifier.testTag(AudioScreenTags.SNACKBAR_HOST),
             )
         },
-        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -195,10 +164,11 @@ internal fun AudioScreenContent(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                StatusCard(
+                CurrentDeviceCard(
                     machineName = machineName,
                     address = state.address,
-                    isLive = !state.isRefreshing,
+                    onSwitchDevice = onOpenDevice,
+                    statusText = if (state.isRefreshing) "正在刷新" else "已连接",
                 )
             }
             item {
