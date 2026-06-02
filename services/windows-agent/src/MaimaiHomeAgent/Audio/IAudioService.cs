@@ -2,9 +2,6 @@ namespace MaimaiHomeAgent.Audio;
 
 /// <summary>
 /// Abstraction over the Windows Core Audio default playback endpoint.
-/// All implementations MUST funnel COM access through a single STA thread
-/// (see <see cref="AudioStaDispatcher"/>); never call from the request thread
-/// pool directly.
 /// </summary>
 public interface IAudioService
 {
@@ -35,4 +32,10 @@ public interface IAudioService
     /// default playback role.
     /// </summary>
     Task SetDefaultDeviceAsync(Guid deviceId);
+}
+
+public interface IAudioDeviceCacheInvalidator
+{
+    void InvalidateDeviceCache();
+    bool TryUpdateDefaultDeviceCache(string? endpointId, out IReadOnlyList<AudioDevice> devices);
 }

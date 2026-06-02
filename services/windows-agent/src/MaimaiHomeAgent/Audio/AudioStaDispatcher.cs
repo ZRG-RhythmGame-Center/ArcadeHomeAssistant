@@ -7,11 +7,9 @@ namespace MaimaiHomeAgent.Audio;
 /// <summary>
 /// Dispatches audio work onto a single dedicated STA thread.
 ///
-/// AudioSwitcher.AudioApi.CoreAudio is a thin wrapper over Windows Core Audio
-/// COM. Some Core Audio interfaces require the calling thread to live in an
-/// STA, and reusing the same thread across calls avoids cross-apartment
-/// marshalling and recursive COM init costs. We therefore funnel all calls
-/// through one long-lived STA worker.
+/// Legacy dispatcher for audio work that needs a dedicated STA thread. The
+/// current NAudio service does not use this type, but tests and older builds may
+/// still reference the abstraction.
 ///
 /// A bounded <see cref="Channel{T}"/> (capacity 5) gives us flow control:
 /// when the queue is full we fail fast with

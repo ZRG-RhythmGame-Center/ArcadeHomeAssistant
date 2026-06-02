@@ -17,8 +17,8 @@ namespace MaimaiHomeAgent.Tests.Audio;
 [Trait("Category", "Windows")]
 public class CoreAudioServiceTests : IAsyncLifetime
 {
-    private AudioStaDispatcher _dispatcher = null!;
     private CoreAudioService _service = null!;
+    private AudioStaDispatcher _dispatcher = null!;
 
     public async Task InitializeAsync()
     {
@@ -30,7 +30,7 @@ public class CoreAudioServiceTests : IAsyncLifetime
     public async Task DisposeAsync()
     {
         _service.Dispose();
-        await _dispatcher.StopAsync(CancellationToken.None);
+        await _dispatcher.DisposeAsync();
     }
 
     [Fact]
