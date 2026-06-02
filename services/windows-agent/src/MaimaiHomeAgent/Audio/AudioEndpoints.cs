@@ -13,10 +13,8 @@ namespace MaimaiHomeAgent.Audio;
 /// </list>
 /// </summary>
 /// <remarks>
-/// Every mutating call goes through <see cref="IAudioService"/>, which funnels
-/// the underlying COM access onto a single STA thread via
-/// <see cref="AudioStaDispatcher"/>; endpoint handlers MUST NOT touch Core Audio
-/// directly. After a successful set we fetch the fresh state and broadcast an
+/// Every mutating call goes through <see cref="IAudioService"/>; endpoint
+/// handlers MUST NOT touch Core Audio directly. After a successful set we fetch the fresh state and broadcast an
 /// <see cref="EventTypes.AudioState"/> envelope over the EventHub so connected
 /// WebSocket clients reconcile without polling. Failures map to:
 /// <list type="bullet">
@@ -41,9 +39,17 @@ public static class AudioEndpoints
             {
                 return BusyResult();
             }
-            catch (AudioOperationException)
+            catch (OperationCanceledException ex)
             {
-                return DeviceUnavailableResult();
+                return DeviceUnavailableResult(ex.Message);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                return DeviceUnavailableResult(ex.Message);
+            }
+            catch (AudioOperationException ex)
+            {
+                return DeviceUnavailableResult(ex.Message);
             }
         });
 
@@ -79,9 +85,17 @@ public static class AudioEndpoints
             {
                 return BusyResult();
             }
-            catch (AudioOperationException)
+            catch (OperationCanceledException ex)
             {
-                return DeviceUnavailableResult();
+                return DeviceUnavailableResult(ex.Message);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                return DeviceUnavailableResult(ex.Message);
+            }
+            catch (AudioOperationException ex)
+            {
+                return DeviceUnavailableResult(ex.Message);
             }
         });
 
@@ -107,9 +121,17 @@ public static class AudioEndpoints
             {
                 return BusyResult();
             }
-            catch (AudioOperationException)
+            catch (OperationCanceledException ex)
             {
-                return DeviceUnavailableResult();
+                return DeviceUnavailableResult(ex.Message);
+            }
+            catch (ObjectDisposedException ex)
+            {
+                return DeviceUnavailableResult(ex.Message);
+            }
+            catch (AudioOperationException ex)
+            {
+                return DeviceUnavailableResult(ex.Message);
             }
         });
 
@@ -124,10 +146,15 @@ public static class AudioEndpoints
             new { error = "validation_error", message },
             statusCode: StatusCodes.Status400BadRequest);
 
-    private static IResult DeviceUnavailableResult()
+    private static IResult DeviceUnavailableResult(string? detail = null)
         => Results.Json(
-            new { error = "device_unavailable" },
+            new { error = "device_unavailable", message = FormatDeviceUnavailableMessage(detail) },
             statusCode: StatusCodes.Status502BadGateway);
+
+    private static string FormatDeviceUnavailableMessage(string? detail)
+        => string.IsNullOrWhiteSpace(detail)
+            ? "音频设备不可用"
+            : $"音频设备不可用：{detail}";
 
     /// <summary>
     /// 503 Service Unavailable with <c>Retry-After: 1</c>. The header tells

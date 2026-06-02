@@ -171,6 +171,41 @@ public class DeviceEndpointsTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetDevices_CanceledOperation_Returns502WithMessage()
+    {
+        _audioMock
+            .Setup(s => s.ListDevicesAsync())
+            .ThrowsAsync(new TaskCanceledException("A task was canceled."));
+
+        var response = await _client.GetAsync("/api/audio/devices");
+
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("device_unavailable", doc.RootElement.GetProperty("error").GetString());
+        Assert.Equal("音频设备不可用：A task was canceled.", doc.RootElement.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task PostDefaultDevice_CanceledOperation_Returns502WithMessage()
+    {
+        var deviceId = Guid.NewGuid();
+        _audioMock
+            .Setup(s => s.SetDefaultDeviceAsync(deviceId))
+            .ThrowsAsync(new TaskCanceledException("A task was canceled."));
+
+        var response = await _client.PostAsJsonAsync(
+            "/api/audio/default-device",
+            new { deviceId = deviceId.ToString() });
+
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("device_unavailable", doc.RootElement.GetProperty("error").GetString());
+        Assert.Equal("音频设备不可用：A task was canceled.", doc.RootElement.GetProperty("message").GetString());
+    }
+
+    [Fact]
     public void Project_MapsAllDeviceStatesToLowerInvariantStrings()
     {
         var devices = new[]

@@ -201,6 +201,23 @@ public class AudioEndpointsTests : IAsyncLifetime
         var json = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(json);
         Assert.Equal("device_unavailable", doc.RootElement.GetProperty("error").GetString());
+        Assert.Equal("音频设备不可用：no default device", doc.RootElement.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task GetState_CanceledOperation_Returns502WithMessage()
+    {
+        _audioMock
+            .Setup(s => s.GetStateAsync())
+            .ThrowsAsync(new TaskCanceledException("A task was canceled."));
+
+        var response = await _client.GetAsync("/api/audio/state");
+
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("device_unavailable", doc.RootElement.GetProperty("error").GetString());
+        Assert.Equal("音频设备不可用：A task was canceled.", doc.RootElement.GetProperty("message").GetString());
     }
 
     [Fact]
