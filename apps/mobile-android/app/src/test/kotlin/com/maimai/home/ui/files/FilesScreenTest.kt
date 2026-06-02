@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.longClick
 import com.google.common.truth.Truth.assertThat
@@ -82,7 +83,7 @@ class FilesScreenTest {
         }
 
         // Long-press the file entry to open the action sheet.
-        composeRule.onNodeWithText("report.txt").performTouchInput { longClick() }
+        composeRule.onNodeWithText("report.txt").performScrollTo().performTouchInput { longClick() }
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.waitForIdle()
 
@@ -115,7 +116,7 @@ class FilesScreenTest {
         }
 
         // Long-press the directory entry.
-        composeRule.onNodeWithText("subdir").performTouchInput { longClick() }
+        composeRule.onNodeWithText("subdir").performScrollTo().performTouchInput { longClick() }
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.waitForIdle()
 
@@ -164,7 +165,7 @@ class FilesScreenTest {
         // Long-click on a file. Because canMutate==false, the row's
         // combinedClickable disables onLongClick (passes null). The action
         // sheet must NOT open.
-        composeRule.onNodeWithText("report.txt").performTouchInput { longClick() }
+        composeRule.onNodeWithText("report.txt").performScrollTo().performTouchInput { longClick() }
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.waitForIdle()
 
@@ -272,7 +273,7 @@ class FilesScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("仅显示前 123 项", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("仅显示前 123 项", substring = true).performScrollTo().assertIsDisplayed()
     }
 
     // ── Task 35: ModalBottomSheet root selector ───────────────────────────────
@@ -300,6 +301,35 @@ class FilesScreenTest {
 
         composeRule.onNodeWithTag(FilesScreenTags.ROOT_PICKER_BUTTON).performClick()
         composeRule.onNodeWithTag(FilesScreenTags.ROOT_PICKER_SHEET).assertIsDisplayed()
+    }
+
+    @Test
+    fun currentDeviceCardShowsSwitchAction() {
+        var switchCalled = false
+        composeRule.setContent {
+            MaterialTheme {
+                FilesScreenContent(
+                    state = defaultState,
+                    breadcrumbSegments = emptyList(),
+                    currentEntryPath = { it.name },
+                    onRefresh = {},
+                    onSelectRoot = {},
+                    onOpenFolder = {},
+                    onNavigateToPath = {},
+                    onDownload = {},
+                    onUpload = {},
+                    onDelete = {},
+                    onRename = { _, _ -> },
+                    onMove = { _, _ -> },
+                    onSwitchDevice = { switchCalled = true },
+                    showCurrentDeviceCard = true,
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("TestPC", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("切换设备").performClick()
+        assertThat(switchCalled).isTrue()
     }
 
     @Test

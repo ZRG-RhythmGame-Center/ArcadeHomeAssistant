@@ -40,14 +40,11 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.SettingsRemote
-import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -56,12 +53,10 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -91,6 +86,8 @@ import com.maimai.home.data.models.FileEntry
 import com.maimai.home.data.models.FileRoot
 import com.maimai.home.ui.common.BentoCard
 import com.maimai.home.ui.common.BentoCardTitle
+import com.maimai.home.ui.common.CurrentDeviceCard
+import com.maimai.home.ui.common.MaimaiScreenScaffold
 import com.maimai.home.ui.connection.EmptyCard
 import com.maimai.home.ui.connection.ErrorCard
 import com.maimai.home.ui.connection.LoadingCard
@@ -135,6 +132,7 @@ object FilesScreenTags {
 fun FilesScreen(
     address: String,
     machineName: String,
+    onSwitchDevice: () -> Unit,
 ) {
     val context = LocalContext.current.applicationContext as Application
     val viewModel: FilesViewModel = viewModel(factory = FilesViewModel.factory(context, address, machineName))
@@ -196,6 +194,10 @@ fun FilesScreen(
                 { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
             )
         },
+        machineName = machineName,
+        address = address,
+        onSwitchDevice = onSwitchDevice,
+        showCurrentDeviceCard = true,
     )
 }
 
@@ -218,6 +220,10 @@ internal fun FilesScreenContent(
     onDelete: (FileEntry) -> Unit,
     onRename: (FileEntry, String) -> Unit,
     onMove: (FileEntry, String) -> Unit,
+    machineName: String = state.machineName,
+    address: String = state.address,
+    onSwitchDevice: () -> Unit = {},
+    showCurrentDeviceCard: Boolean = false,
 ) {
     var selectedEntry by remember { mutableStateOf<FileEntry?>(null) }
     var renameEntry by remember { mutableStateOf<FileEntry?>(null) }
@@ -225,48 +231,18 @@ internal fun FilesScreenContent(
     var deleteEntry by remember { mutableStateOf<FileEntry?>(null) }
     var showRootPicker by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Filled.SettingsRemote,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Arcade Assistant",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { showRootPicker = true },
-                        modifier = Modifier.testTag(FilesScreenTags.ROOT_PICKER_BUTTON),
-                    ) {
-                        Icon(
-                            Icons.Filled.Folder,
-                            contentDescription = stringResource(R.string.files_select_root),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    IconButton(onClick = {}) {
-                        Icon(
-                            Icons.Filled.SignalCellularAlt,
-                            contentDescription = "信号",
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                ),
-            )
+    MaimaiScreenScaffold(
+        topBarActions = {
+            IconButton(
+                onClick = { showRootPicker = true },
+                modifier = Modifier.testTag(FilesScreenTags.ROOT_PICKER_BUTTON),
+            ) {
+                Icon(
+                    Icons.Filled.Folder,
+                    contentDescription = stringResource(R.string.files_select_root),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
         },
         snackbarHost = {
             SnackbarHost(
@@ -290,7 +266,6 @@ internal fun FilesScreenContent(
                 }
             }
         },
-        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
@@ -306,8 +281,17 @@ internal fun FilesScreenContent(
                 contentPadding = PaddingValues(vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                if (showCurrentDeviceCard) {
+                    item(key = "current-device") {
+                        CurrentDeviceCard(
+                            machineName = machineName,
+                            address = address,
+                            onSwitchDevice = onSwitchDevice,
+                        )
+                    }
+                }
                 // Storage roots header + horizontal card scroll
-                item {
+                item(key = "storage-title") {
                     Text(
                         "存储位置",
                         style = MaterialTheme.typography.labelLarge,
@@ -315,7 +299,7 @@ internal fun FilesScreenContent(
                         modifier = Modifier.padding(start = 4.dp),
                     )
                 }
-                item {
+                item(key = "storage-roots") {
                     if (state.roots.isEmpty()) {
                         EmptyCard(text = "尚未检测到可用的存储位置")
                     } else {
@@ -338,7 +322,7 @@ internal fun FilesScreenContent(
                 }
 
                 // Breadcrumb capsule
-                item {
+                item(key = "breadcrumb") {
                     BreadcrumbCapsule(
                         rootName = state.selectedRoot?.name ?: "",
                         segments = breadcrumbSegments,
@@ -347,7 +331,7 @@ internal fun FilesScreenContent(
                 }
 
                 state.listing?.takeIf { it.truncated }?.let { listing ->
-                    item {
+                    item(key = "truncated-banner") {
                         Text(
                             text = stringResource(R.string.files_truncated_format, listing.limit, listing.total),
                             style = MaterialTheme.typography.bodySmall,
@@ -358,10 +342,10 @@ internal fun FilesScreenContent(
                 }
 
                 if (state.listing == null && state.isRefreshing) {
-                    item { LoadingCard(modifier = Modifier.fillMaxWidth()) }
+                    item(key = "loading") { LoadingCard(modifier = Modifier.fillMaxWidth()) }
                 }
                 if (state.errorMessage != null && state.listing == null) {
-                    item {
+                    item(key = "error") {
                         ErrorCard(
                             text = state.errorMessage,
                             modifier = Modifier.fillMaxWidth(),
@@ -371,7 +355,7 @@ internal fun FilesScreenContent(
 
                 val entries = state.listing?.entries ?: emptyList()
                 if (state.listing != null && entries.isEmpty() && !state.isRefreshing) {
-                    item {
+                    item(key = "empty-directory") {
                         EmptyCard(
                             text = stringResource(R.string.files_empty_directory),
                             modifier = Modifier
@@ -383,7 +367,7 @@ internal fun FilesScreenContent(
 
                 // File list bento card
                 if (entries.isNotEmpty()) {
-                    item {
+                    item(key = "file-list") {
                         FileListCard(
                             entries = entries,
                             canMutate = state.canMutate,
@@ -395,7 +379,7 @@ internal fun FilesScreenContent(
                         )
                     }
                 }
-                item { Spacer(Modifier.height(80.dp)) }
+                item(key = "bottom-spacer") { Spacer(Modifier.height(80.dp)) }
             }
         }
     }
