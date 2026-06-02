@@ -71,7 +71,8 @@ public static class PathGuard
 
         // 6. If the target itself exists, follow any symlink to its final
         //    target and ensure that, too, stays inside the root.
-        if (File.Exists(fullPath) || Directory.Exists(fullPath))
+        if (!fullPath.Equals(expandedRoot, StringComparison.OrdinalIgnoreCase) &&
+            (File.Exists(fullPath) || Directory.Exists(fullPath)))
         {
             FileSystemInfo info = Directory.Exists(fullPath)
                 ? new DirectoryInfo(fullPath)
@@ -143,8 +144,21 @@ public static class PathGuard
             return true;
         }
 
-        var prefix = expandedRoot + Path.DirectorySeparatorChar;
+        var prefix = EndsWithSeparator(expandedRoot)
+            ? expandedRoot
+            : expandedRoot + Path.DirectorySeparatorChar;
         return fullPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool EndsWithSeparator(string path)
+    {
+        if (path.Length == 0)
+        {
+            return false;
+        }
+
+        var last = path[^1];
+        return last == Path.DirectorySeparatorChar || last == Path.AltDirectorySeparatorChar;
     }
 
     private static string TrimTrailingSeparator(string path)

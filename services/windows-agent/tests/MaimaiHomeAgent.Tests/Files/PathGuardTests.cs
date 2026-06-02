@@ -132,6 +132,56 @@ public class PathGuardTests : IDisposable
     }
 
     [Fact]
+    public void ResolveSafe_AcceptsDriveRootItselfWhenEmpty()
+    {
+        var drive = DriveInfo.GetDrives().FirstOrDefault(static d => d.IsReady);
+        if (drive is null)
+        {
+            return;
+        }
+
+        var driveRoot = new FileRoot(
+            Id: "drive",
+            Name: "Drive Root",
+            Path: drive.RootDirectory.FullName,
+            ReadOnly: false);
+
+        var result = PathGuard.ResolveSafe(driveRoot, "");
+
+        Assert.True(result.IsOk);
+        Assert.NotNull(result.ResolvedPath);
+        Assert.Equal(drive.RootDirectory.FullName, result.ResolvedPath);
+    }
+
+    [Fact]
+    public void ResolveSafe_AcceptsDriveRootChildDirectory()
+    {
+        var drive = DriveInfo.GetDrives().FirstOrDefault(static d => d.IsReady);
+        if (drive is null)
+        {
+            return;
+        }
+
+        var child = drive.RootDirectory.EnumerateDirectories().FirstOrDefault();
+        if (child is null)
+        {
+            return;
+        }
+
+        var driveRoot = new FileRoot(
+            Id: "drive",
+            Name: "Drive Root",
+            Path: drive.RootDirectory.FullName,
+            ReadOnly: false);
+
+        var result = PathGuard.ResolveSafe(driveRoot, child.Name);
+
+        Assert.True(result.IsOk);
+        Assert.NotNull(result.ResolvedPath);
+        Assert.StartsWith(drive.RootDirectory.FullName, result.ResolvedPath, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void ResolveSafe_ExpandsEnvironmentVariablesInRoot()
     {
         // Use TEMP env var which definitely exists on Windows

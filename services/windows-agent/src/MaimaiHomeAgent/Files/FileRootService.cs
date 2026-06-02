@@ -19,8 +19,7 @@ public sealed class FileRootService : IFileRootService, IDisposable
         ArgumentNullException.ThrowIfNull(configuration);
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        var initial = new List<FileRoot>();
-        configuration.GetSection("FileRoots").Bind(initial);
+        var initial = LoadConfiguredRoots(configuration.GetSection("FileRoots"));
         _roots = NormalizeRoots(initial);
 
         _logger.LogInformation(
@@ -113,5 +112,73 @@ public sealed class FileRootService : IFileRootService, IDisposable
                 ReadOnly: raw.ReadOnly));
         }
         return result;
+    }
+
+    private static List<FileRoot> LoadConfiguredRoots(IConfigurationSection section)
+    {
+        var result = new List<FileRoot>();
+        foreach (var child in section.GetChildren())
+        {
+            if (child.GetChildren().Any())
+            {
+                var root = child.Get<FileRoot>();
+                if (root is not null)
+                {
+                    result.Add(root);
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(child.Value))
+            {
+                if (child.Value.Trim() == "*")
+                {
+                    return LoadMachineRoots();
+                }
+
+                result.Add(CreateRootFromPath(child.Value, result.Count + 1));
+            }
+        }
+
+        return result.Count == 0 ? LoadMachineRoots() : result;
+    }
+
+    private static List<FileRoot> LoadMachineRoots()
+    {
+        return DriveInfo.GetDrives()
+            .Where(static drive => drive.IsReady)
+            .Select(static drive =>
+            {
+                var rootPath = drive.RootDirectory.FullName;
+                var label = string.IsNullOrWhiteSpace(drive.VolumeLabel)
+                    ? rootPath
+                    : $"{drive.VolumeLabel} ({rootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)})";
+                var id = ToRootId(rootPath, 1);
+                return new FileRoot(id, label, rootPath, ReadOnly: false);
+            })
+            .ToList();
+    }
+
+    private static FileRoot CreateRootFromPath(string path, int fallbackIndex)
+    {
+        var expandedPath = Environment.ExpandEnvironmentVariables(path);
+        var trimmed = expandedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var name = Path.GetFileName(trimmed);
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = expandedPath;
+        }
+
+        var id = ToRootId(name, fallbackIndex);
+        return new FileRoot(id, name, path, ReadOnly: false);
+    }
+
+    private static string ToRootId(string name, int fallbackIndex)
+    {
+        var chars = name
+            .Trim()
+            .ToLowerInvariant()
+            .Select(static c => char.IsAsciiLetterOrDigit(c) ? c : '-')
+            .ToArray();
+        var id = new string(chars).Trim('-');
+        return string.IsNullOrWhiteSpace(id) ? $"root-{fallbackIndex}" : id;
     }
 }

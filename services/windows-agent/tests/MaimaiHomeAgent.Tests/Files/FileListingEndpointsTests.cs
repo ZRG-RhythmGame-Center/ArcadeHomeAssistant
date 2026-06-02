@@ -73,6 +73,45 @@ public sealed class FileListingEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task GetFileRoots_StringArrayConfig_ReturnsUsableRoots()
+    {
+        using var factory = new StringArrayRootFactory(_rootPath);
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/file-roots");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var roots = await response.Content.ReadFromJsonAsync<List<JsonElement>>();
+        Assert.NotNull(roots);
+        var root = Assert.Single(roots);
+        Assert.Equal(new DirectoryInfo(_rootPath).Name.ToLowerInvariant(), root.GetProperty("id").GetString());
+        Assert.Equal(new DirectoryInfo(_rootPath).Name, root.GetProperty("name").GetString());
+        Assert.False(root.GetProperty("readOnly").GetBoolean());
+        Assert.False(root.TryGetProperty("path", out _));
+    }
+
+    [Fact]
+    public async Task GetFileRoots_WildcardConfig_ReturnsReadyDriveRoots()
+    {
+        using var factory = new WildcardRootFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/file-roots");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var roots = await response.Content.ReadFromJsonAsync<List<JsonElement>>();
+        Assert.NotNull(roots);
+        Assert.NotEmpty(roots);
+        foreach (var root in roots)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(root.GetProperty("id").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(root.GetProperty("name").GetString()));
+            Assert.False(root.GetProperty("readOnly").GetBoolean());
+            Assert.False(root.TryGetProperty("path", out _));
+        }
+    }
+
+    [Fact]
     public async Task GetFiles_ValidPath_ReturnsEntriesAndShape()
     {
         // Seed: 1 dir + 2 files with deterministic content.
@@ -249,6 +288,60 @@ public sealed class FileListingEndpointsTests : IDisposable
             // Strip background hosted services (mDNS, heartbeat, STA dispatcher)
             // so test runs don't open sockets or pin threads. Auth has been
             // removed from the agent so no token store stubbing is needed.
+            builder.ConfigureServices(services =>
+            {
+                var hosted = services
+                    .Where(d => d.ServiceType == typeof(IHostedService))
+                    .ToList();
+                foreach (var d in hosted)
+                {
+                    services.Remove(d);
+                }
+            });
+        }
+    }
+
+    private sealed class StringArrayRootFactory(string rootPath) : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            builder.UseEnvironment("Testing");
+
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["FileRoots:0"] = rootPath,
+                });
+            });
+
+            builder.ConfigureServices(services =>
+            {
+                var hosted = services
+                    .Where(d => d.ServiceType == typeof(IHostedService))
+                    .ToList();
+                foreach (var d in hosted)
+                {
+                    services.Remove(d);
+                }
+            });
+        }
+    }
+
+    private sealed class WildcardRootFactory : WebApplicationFactory<Program>
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            builder.UseEnvironment("Testing");
+
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["FileRoots:0"] = "*",
+                });
+            });
+
             builder.ConfigureServices(services =>
             {
                 var hosted = services
