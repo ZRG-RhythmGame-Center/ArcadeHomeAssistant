@@ -9,21 +9,36 @@ public sealed partial class NAudioDeviceNotificationSource : IAudioDeviceNotific
     private readonly MMDeviceEnumerator _enumerator = new();
     private NotificationClient? _client;
     private int _registered;
+    private int _disposed;
 
     public void Register(IAudioDeviceNotificationSink sink)
     {
         ArgumentNullException.ThrowIfNull(sink);
+        ObjectDisposedException.ThrowIf(_disposed != 0, this);
+
         if (Interlocked.Exchange(ref _registered, 1) != 0)
         {
             throw new InvalidOperationException("Audio device notifications are already registered.");
         }
 
-        _client = new NotificationClient(sink);
-        _enumerator.RegisterEndpointNotificationCallback(_client);
+        var client = new NotificationClient(sink);
+        try
+        {
+            _enumerator.RegisterEndpointNotificationCallback(client);
+            _client = client;
+        }
+        catch
+        {
+            _client = null;
+            Interlocked.Exchange(ref _registered, 0);
+            throw;
+        }
     }
 
     public void Unregister(IAudioDeviceNotificationSink sink)
     {
+        ArgumentNullException.ThrowIfNull(sink);
+
         if (Interlocked.Exchange(ref _registered, 0) == 0)
         {
             return;
@@ -39,22 +54,28 @@ public sealed partial class NAudioDeviceNotificationSource : IAudioDeviceNotific
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        {
+            return;
+        }
+
+        Interlocked.Exchange(ref _registered, 0);
+        var client = _client;
+        _client = null;
         try
         {
-            if (_client is not null)
+            if (client is not null)
             {
-                _enumerator.UnregisterEndpointNotificationCallback(_client);
+                _enumerator.UnregisterEndpointNotificationCallback(client);
             }
         }
         catch
         {
         }
 
-        _client = null;
         _enumerator.Dispose();
     }
 
-    [System.Runtime.InteropServices.Marshalling.GeneratedComClass]
     private sealed partial class NotificationClient(IAudioDeviceNotificationSink sink) : IMMNotificationClient
     {
         public void OnDeviceStateChanged(string deviceId, NAudioDeviceState newState) => sink.OnDeviceStateChanged(deviceId);
@@ -63,7 +84,7 @@ public sealed partial class NAudioDeviceNotificationSource : IAudioDeviceNotific
 
         public void OnDefaultDeviceChanged(DataFlow flow, Role role, string defaultDeviceId)
         {
-            if (flow == DataFlow.Render)
+            if (flow == DataFlow.Render && role == Role.Multimedia)
             {
                 sink.OnDefaultDeviceChanged(defaultDeviceId);
             }

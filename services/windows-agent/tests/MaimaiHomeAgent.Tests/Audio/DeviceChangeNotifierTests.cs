@@ -10,11 +10,7 @@ namespace MaimaiHomeAgent.Tests.Audio;
 /// <summary>
 /// Unit tests for <see cref="DeviceChangeNotifier"/>. Verifies the hosted-service
 /// lifecycle (idempotent register/unregister, swallowed COMException on stop)
-/// and that callback paths funnel through <see cref="IAudioStaDispatcher"/> +
-/// <see cref="EventPublisher"/>.
-///
-/// Uses <see cref="InlineDispatcher"/> instead of the real AudioStaDispatcher
-/// to avoid spinning up an STA thread that can hang the test process.
+/// and that callback paths publish through <see cref="EventPublisher"/>.
 /// </summary>
 public class DeviceChangeNotifierTests
 {
@@ -103,7 +99,7 @@ public class DeviceChangeNotifierTests
     }
 
     [Fact]
-    public async Task OnDefaultDeviceChanged_FunnelsThroughDispatcher_AndPublishesAudioDeviceChanged()
+    public async Task OnDefaultDeviceChanged_PublishesAudioDeviceChanged()
     {
         var source = new Mock<IAudioDeviceNotificationSource>(MockBehavior.Strict);
         source.Setup(s => s.Register(It.IsAny<IAudioDeviceNotificationSink>()));
@@ -119,11 +115,8 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        var dispatcher = new InlineDispatcher();
-
         var notifier = new DeviceChangeNotifier(
             source.Object,
-            dispatcher,
             audio.Object,
             publisher,
             NullLogger<DeviceChangeNotifier>.Instance);
@@ -149,11 +142,8 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        var dispatcher = new InlineDispatcher();
-
         var notifier = new DeviceChangeNotifier(
             source.Object,
-            dispatcher,
             audio.Object,
             publisher,
             NullLogger<DeviceChangeNotifier>.Instance);
@@ -176,11 +166,8 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        var dispatcher = new InlineDispatcher();
-
         var notifier = new DeviceChangeNotifier(
             source.Object,
-            dispatcher,
             audio.Object,
             publisher,
             NullLogger<DeviceChangeNotifier>.Instance);
@@ -202,11 +189,8 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        var dispatcher = new InlineDispatcher();
-
         var notifier = new DeviceChangeNotifier(
             source.Object,
-            dispatcher,
             audio.Object,
             publisher,
             NullLogger<DeviceChangeNotifier>.Instance);
@@ -228,11 +212,8 @@ public class DeviceChangeNotifierTests
 
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        var dispatcher = new InlineDispatcher();
-
         var notifier = new DeviceChangeNotifier(
             source.Object,
-            dispatcher,
             audio.Object,
             publisher,
             NullLogger<DeviceChangeNotifier>.Instance);
@@ -251,26 +232,137 @@ public class DeviceChangeNotifierTests
     {
         var hub = new RecordingHub();
         var publisher = new EventPublisher(hub);
-        var dispatcher = new InlineDispatcher();
         var audio = new Mock<IAudioService>(MockBehavior.Loose).Object;
         return (
             new DeviceChangeNotifier(
                 source,
-                dispatcher,
                 audio,
                 publisher,
                 NullLogger<DeviceChangeNotifier>.Instance),
             hub);
     }
 
-    /// <summary>
-    /// Test-only dispatcher that executes work inline on the calling thread.
-    /// Implements <see cref="IAudioStaDispatcher"/> directly — no STA thread.
-    /// </summary>
-    private sealed class InlineDispatcher : IAudioStaDispatcher
+    [Fact]
+    public async Task OnDefaultDeviceChanged_DoesNotListDevicesInline()
     {
-        public Task<T> InvokeAsync<T>(Func<Task<T>> work) => work();
-        public Task InvokeAsync(Func<Task> work) => work();
+        var source = new Mock<IAudioDeviceNotificationSource>(MockBehavior.Strict);
+        var audio = new Mock<IAudioService>(MockBehavior.Strict);
+        var listStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        audio
+            .Setup(a => a.ListDevicesAsync())
+            .ReturnsAsync(() =>
+            {
+                listStarted.TrySetResult();
+                return Array.Empty<AudioDevice>();
+            });
+
+        var hub = new RecordingHub();
+        var notifier = new DeviceChangeNotifier(
+            source.Object,
+            audio.Object,
+            new EventPublisher(hub),
+            NullLogger<DeviceChangeNotifier>.Instance);
+
+        notifier.OnDefaultDeviceChanged("device-id");
+
+        Assert.False(listStarted.Task.IsCompleted);
+        await listStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+    }
+
+    [Fact]
+    public async Task MultipleCallbacks_AreCoalescedIntoSingleDeviceListRefresh()
+    {
+        var source = new Mock<IAudioDeviceNotificationSource>(MockBehavior.Strict);
+        var audio = new Mock<IAudioService>(MockBehavior.Strict);
+        audio
+            .Setup(a => a.ListDevicesAsync())
+            .ReturnsAsync(Array.Empty<AudioDevice>());
+
+        var hub = new RecordingHub();
+        var notifier = new DeviceChangeNotifier(
+            source.Object,
+            audio.Object,
+            new EventPublisher(hub),
+            NullLogger<DeviceChangeNotifier>.Instance);
+
+        notifier.OnDeviceAdded("new-id");
+        notifier.OnDeviceRemoved("gone-id");
+        notifier.OnDeviceStateChanged("state-id");
+        notifier.OnDefaultDeviceChanged("default-id");
+
+        await hub.WaitForBroadcastAsync(1, TimeSpan.FromSeconds(5));
+        await Task.Delay(300);
+
+        Assert.Single(hub.Broadcasts);
+        audio.Verify(a => a.ListDevicesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task Callback_InvalidatesDeviceCacheBeforeRefresh()
+    {
+        var source = new Mock<IAudioDeviceNotificationSource>(MockBehavior.Strict);
+        var audio = new CacheInvalidatingAudioService();
+        var hub = new RecordingHub();
+        var notifier = new DeviceChangeNotifier(
+            source.Object,
+            audio,
+            new EventPublisher(hub),
+            NullLogger<DeviceChangeNotifier>.Instance);
+
+        notifier.OnDeviceAdded("new-id");
+        await hub.WaitForBroadcastAsync(1, TimeSpan.FromSeconds(5));
+
+        Assert.Equal(1, audio.InvalidateCount);
+        Assert.Equal(1, audio.ListDevicesCount);
+        Assert.True(audio.InvalidatedBeforeListDevices);
+    }
+
+    [Fact]
+    public async Task DefaultDeviceChanged_WhenCached_UpdatesCacheWithoutRefreshingDevices()
+    {
+        var source = new Mock<IAudioDeviceNotificationSource>(MockBehavior.Strict);
+        var defaultDevice = Guid.NewGuid();
+        var audio = new CacheInvalidatingAudioService
+        {
+            CachedDevices = new[]
+            {
+                new AudioDevice(defaultDevice, "Speakers", false, DeviceState.Active),
+            },
+        };
+        var hub = new RecordingHub();
+        var notifier = new DeviceChangeNotifier(
+            source.Object,
+            audio,
+            new EventPublisher(hub),
+            NullLogger<DeviceChangeNotifier>.Instance);
+
+        notifier.OnDefaultDeviceChanged($"{{0.0.0.00000000}}.{{{defaultDevice}}}");
+        await hub.WaitForBroadcastAsync(1, TimeSpan.FromSeconds(5));
+
+        Assert.Equal(0, audio.InvalidateCount);
+        Assert.Equal(0, audio.ListDevicesCount);
+        var envelope = Assert.Single(hub.Broadcasts);
+        Assert.True(envelope.Payload[0].GetProperty("isDefault").GetBoolean());
+    }
+
+    [Fact]
+    public async Task DefaultDeviceChanged_WhenCacheMissing_DoesNotRefreshDevices()
+    {
+        var source = new Mock<IAudioDeviceNotificationSource>(MockBehavior.Strict);
+        var audio = new CacheInvalidatingAudioService();
+        var hub = new RecordingHub();
+        var notifier = new DeviceChangeNotifier(
+            source.Object,
+            audio,
+            new EventPublisher(hub),
+            NullLogger<DeviceChangeNotifier>.Instance);
+
+        notifier.OnDefaultDeviceChanged($"{{0.0.0.00000000}}.{{{Guid.NewGuid()}}}");
+        await Task.Delay(300);
+
+        Assert.Equal(0, audio.InvalidateCount);
+        Assert.Equal(0, audio.ListDevicesCount);
+        Assert.Empty(hub.Broadcasts);
     }
 
     private sealed class RecordingHub : EventHub
@@ -295,6 +387,51 @@ public class DeviceChangeNotifierTests
             }
             throw new TimeoutException(
                 $"Expected {count} broadcasts within {timeout}; got {Broadcasts.Count}.");
+        }
+    }
+
+    private sealed class CacheInvalidatingAudioService : IAudioService, IAudioDeviceCacheInvalidator
+    {
+        private bool _invalidated;
+
+        public int InvalidateCount { get; private set; }
+        public int ListDevicesCount { get; private set; }
+        public bool InvalidatedBeforeListDevices { get; private set; }
+        public IReadOnlyList<AudioDevice>? CachedDevices { get; init; }
+
+        public Task<AudioState> GetStateAsync() => throw new NotSupportedException();
+        public Task SetVolumeAsync(double level) => throw new NotSupportedException();
+        public Task SetMuteAsync(bool muted) => throw new NotSupportedException();
+        public Task SetDefaultDeviceAsync(Guid deviceId) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<AudioDevice>> ListDevicesAsync()
+        {
+            ListDevicesCount++;
+            InvalidatedBeforeListDevices = _invalidated;
+            return Task.FromResult<IReadOnlyList<AudioDevice>>(Array.Empty<AudioDevice>());
+        }
+
+        public void InvalidateDeviceCache()
+        {
+            InvalidateCount++;
+            _invalidated = true;
+        }
+
+        public bool TryUpdateDefaultDeviceCache(string? endpointId, out IReadOnlyList<AudioDevice> devices)
+        {
+            if (CachedDevices is null || string.IsNullOrWhiteSpace(endpointId))
+            {
+                devices = Array.Empty<AudioDevice>();
+                return false;
+            }
+
+            var start = endpointId.LastIndexOf('{');
+            var end = endpointId.LastIndexOf('}');
+            var defaultDeviceId = Guid.Parse(endpointId.Substring(start + 1, end - start - 1));
+            devices = CachedDevices
+                .Select(device => device with { IsDefault = device.Id == defaultDeviceId })
+                .ToArray();
+            return true;
         }
     }
 }

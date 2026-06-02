@@ -67,6 +67,15 @@ public class NAudioDeviceNotificationSourceTests
     }
 
     [Fact]
+    public void Register_AfterDispose_ThrowsObjectDisposedException()
+    {
+        var source = new NAudioDeviceNotificationSource();
+        source.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => source.Register(new RecordingSink()));
+    }
+
+    [Fact]
     public void Unregister_AfterRegister_DoesNotThrow()
     {
         using var source = new NAudioDeviceNotificationSource();
@@ -96,13 +105,13 @@ public class NAudioDeviceNotificationSourceTests
     /// only receives render-role default-device changes.
     /// </summary>
     [Fact]
-    public void OnDefaultDeviceChanged_RenderFlow_ForwardedToSink()
+    public void OnDefaultDeviceChanged_RenderMultimediaRole_ForwardedToSink()
     {
         var sink = new RecordingSink();
         var fakeSource = new FakeNotificationSource();
         fakeSource.Register(sink);
 
-        fakeSource.SimulateDefaultDeviceChanged(DataFlow.Render, "device-1");
+        fakeSource.SimulateDefaultDeviceChanged(DataFlow.Render, Role.Multimedia, "device-1");
 
         Assert.Single(sink.DefaultDeviceChangedIds);
         Assert.Equal("device-1", sink.DefaultDeviceChangedIds[0]);
@@ -115,7 +124,7 @@ public class NAudioDeviceNotificationSourceTests
         var fakeSource = new FakeNotificationSource();
         fakeSource.Register(sink);
 
-        fakeSource.SimulateDefaultDeviceChanged(DataFlow.Capture, "device-2");
+        fakeSource.SimulateDefaultDeviceChanged(DataFlow.Capture, Role.Multimedia, "device-2");
 
         Assert.Empty(sink.DefaultDeviceChangedIds);
     }
@@ -127,7 +136,19 @@ public class NAudioDeviceNotificationSourceTests
         var fakeSource = new FakeNotificationSource();
         fakeSource.Register(sink);
 
-        fakeSource.SimulateDefaultDeviceChanged(DataFlow.All, "device-3");
+        fakeSource.SimulateDefaultDeviceChanged(DataFlow.All, Role.Multimedia, "device-3");
+
+        Assert.Empty(sink.DefaultDeviceChangedIds);
+    }
+
+    [Fact]
+    public void OnDefaultDeviceChanged_RenderConsoleRole_NotForwardedToSink()
+    {
+        var sink = new RecordingSink();
+        var fakeSource = new FakeNotificationSource();
+        fakeSource.Register(sink);
+
+        fakeSource.SimulateDefaultDeviceChanged(DataFlow.Render, Role.Console, "device-console");
 
         Assert.Empty(sink.DefaultDeviceChangedIds);
     }
@@ -186,6 +207,7 @@ public class NAudioDeviceNotificationSourceTests
     /// the test does not need to reference NAudio directly.
     /// </summary>
     public enum DataFlow { Render = 0, Capture = 1, All = 2 }
+    public enum Role { Console = 0, Multimedia = 1, Communications = 2 }
 
     private sealed class RecordingSink : IAudioDeviceNotificationSink
     {
@@ -217,10 +239,10 @@ public class NAudioDeviceNotificationSourceTests
         public void Unregister(IAudioDeviceNotificationSink sink) => _sink = null;
 
         /// <summary>Simulates the NAudio IMMNotificationClient.OnDefaultDeviceChanged callback.</summary>
-        public void SimulateDefaultDeviceChanged(DataFlow flow, string deviceId)
+        public void SimulateDefaultDeviceChanged(DataFlow flow, Role role, string deviceId)
         {
-            // Mirrors the production guard: only forward for eRender (DataFlow.Render == 0).
-            if (flow == DataFlow.Render)
+            // Mirrors the production guard: only forward render multimedia default changes.
+            if (flow == DataFlow.Render && role == Role.Multimedia)
             {
                 _sink?.OnDefaultDeviceChanged(deviceId);
             }
