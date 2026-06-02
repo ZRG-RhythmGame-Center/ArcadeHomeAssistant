@@ -1,6 +1,6 @@
 # Windows Agent
 
-Windows Agent 是运行在目标 Windows 电脑上的本地服务，负责暴露局域网 HTTP API、记录日志，并在后续阶段接入音频控制与文件管理。
+Windows Agent 是运行在目标 Windows 电脑上的本地服务，负责暴露局域网 HTTP API、记录日志，并提供音频控制与文件管理功能。
 
 ## 当前已完成
 
@@ -13,6 +13,9 @@ Windows Agent 是运行在目标 Windows 电脑上的本地服务，负责暴露
 - `PathGuard.ResolveSafe`：安全路径解析，防止路径穿越、绝对路径、符号链接逃逸
 - `PathSafetyError` 枚举：`InvalidChar`、`Absolute`、`OutsideRoot`、`SymlinkEscape`、`ReparsePointInPath`
 - `PathGuardResult`：类型化结果，调用方映射到 HTTP 403/400，不使用异常驱动控制流
+- 音频控制 HTTP 接口：`GET /api/audio/state`、`POST /api/audio/volume`、`POST /api/audio/mute`
+- 音频设备接口：`GET /api/audio/devices`、`POST /api/audio/default-device`
+- `DeviceChangeNotifier`：监听 Windows Core Audio 设备变更事件，通过 EventHub WebSocket 广播 `audio_device_changed`
 ## 目录结构
 
 ```text
@@ -68,6 +71,11 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8765/api/status" -UseBasicParsing
 
 - `GET /api/status`
 - `GET /api/file-roots`（需配置 `FileRoots` 段，当前返回空列表）
+- `GET /api/audio/state`
+- `POST /api/audio/volume`
+- `POST /api/audio/mute`
+- `GET /api/audio/devices`
+- `POST /api/audio/default-device`
 
 返回示例：
 
@@ -137,17 +145,15 @@ New-NetFirewallRule -DisplayName "Maimai Home Agent" -Direction Inbound -LocalPo
 ## 当前已知限制
 
 - `AudioSwitcher.AudioApi.CoreAudio` 只声明了 .NET Framework target，因此项目里对 `NU1701` 做了显式豁免；当前已验证可构建，但真正音频功能接入后仍需做一次实机回归。
-- 目前仅实现状态接口和文件根目录安全路径基础设施，音频控制和文件管理 HTTP 接口还未接入。
+- 音频控制和设备切换 HTTP 接口已实现；`AudioSwitcher.AudioApi.CoreAudio` 只声明了 .NET Framework target，项目对 `NU1701` 做了显式豁免，已验证可构建，建议在实机上做一次音频功能回归。
 - `FileRoots` 默认为空数组，需在 `appsettings.json` 或 `config.json` 中手动配置根目录后文件管理才可用。
 
 ## 下一步
 
 按 [实现规划](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/dev-docs/features/2026-05-11-maimai-home-assistant/%E5%AE%9E%E7%8E%B0.md) 继续推进：
 
-1. 阶段 2：接入 `AudioSwitcher.AudioApi.CoreAudio`
-2. 实现 `GET /api/audio/state`
-3. 实现 `POST /api/audio/volume`
-4. 实现 `POST /api/audio/mute`
+1. 实现文件管理 HTTP 接口（`/api/files*`）
+2. 对音频功能做实机回归测试
 
 ## 构建与部署 PC Web
 

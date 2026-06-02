@@ -5,8 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- AudioSwitcher 只声明了 .NET Framework target，但底层是 Windows COM 互操作，在 net9.0 上能跑 -->
-    <NoWarn>$(NoWarn);NU1701;CA1416</NoWarn>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
     <ApplicationManifest>MaimaiHomeAgent.manifest</ApplicationManifest>
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
@@ -16,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AudioSwitcher.AudioApi.CoreAudio" Version="3.0.3" />
     <PackageReference Include="Makaretu.Dns.Multicast" Version="0.27.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.16" />
     <PackageReference Include="NAudio" Version="2.2.1" />
