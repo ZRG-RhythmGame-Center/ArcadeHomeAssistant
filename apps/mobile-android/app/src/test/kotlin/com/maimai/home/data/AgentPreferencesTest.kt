@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import com.maimai.home.BuildConfig
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
@@ -22,8 +23,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Real-instance unit tests for [AgentPreferences]. Wave 3 task 16 (and
- * characterizes 17 - `DEFAULT_AGENT_ADDRESS` reads `BuildConfig`).
+ * Real-instance unit tests for [AgentPreferences].
  *
  * Tests build a hand-rolled [DataStore] file under Robolectric's storage and
  * inject it through the test-only constructor, so this exercises the
@@ -39,6 +39,7 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
+@OptIn(ExperimentalCoroutinesApi::class)
 class AgentPreferencesTest {
 
     private val testScope = CoroutineScope(UnconfinedTestDispatcher() + SupervisorJob())
@@ -101,11 +102,10 @@ class AgentPreferencesTest {
 
     @Test
     fun defaultAgentAddress_equalsBuildConfigField() {
-        // Wave 3 task 17: DEFAULT_AGENT_ADDRESS must be sourced from the
-        // BuildConfig field that Gradle wires per-variant. A regression that
-        // re-introduced the hardcoded "192.168.1.100:8765" literal would make
+        // DEFAULT_AGENT_ADDRESS must be sourced from the BuildConfig field that
+        // Gradle wires per variant. A regression that re-introduced a hardcoded literal would make
         // the constant diverge from BuildConfig.DEFAULT_AGENT_ADDRESS and
-        // this test would flip RED.
+        // this test fail.
         assertThat(AgentPreferences.DEFAULT_AGENT_ADDRESS)
             .isEqualTo(BuildConfig.DEFAULT_AGENT_ADDRESS)
     }
@@ -113,7 +113,7 @@ class AgentPreferencesTest {
     @Test
     fun debugBuild_defaultIsHistoricLanSample() {
         // Tests run against the debug variant. The Gradle config wires the
-        // debug BuildConfig.DEFAULT_AGENT_ADDRESS to the historic LAN sample
+        // debug BuildConfig.DEFAULT_AGENT_ADDRESS to the LAN sample
         // so developers can sideload + connect immediately. Asserting the
         // debug-side value also implicitly verifies the buildConfigField
         // wiring landed on the debug variant.

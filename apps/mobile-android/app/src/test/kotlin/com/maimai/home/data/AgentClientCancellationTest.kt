@@ -22,10 +22,8 @@ import org.junit.Test
 import java.util.concurrent.TimeUnit
 
 /**
- * RED phase: cancellation must propagate as kotlinx.coroutines.CancellationException,
+ * Cancellation must propagate as kotlinx.coroutines.CancellationException,
  * not be swallowed/translated into AgentRequestException.
- *
- * Closes R1 #4 (Major - exception mapping breaks cancellation).
  */
 class AgentClientCancellationTest {
 

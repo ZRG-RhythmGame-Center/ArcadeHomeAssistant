@@ -107,7 +107,7 @@ fun BentoCardTitle(
  *
  * Material 3 keeps the app structure predictable when one app-level identity
  * bar is reused and per-screen actions are supplied via [actions]. The default
- * signal icon remains present for visual continuity with the Wave 8 design.
+ * signal icon remains present for visual continuity with the current design.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

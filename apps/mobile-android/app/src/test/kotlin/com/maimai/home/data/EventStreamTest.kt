@@ -47,7 +47,7 @@ class EventStreamTest {
         assertEquals("ws://maimai-host.local", normalizedWsBase("ws://maimai-host.local"))
     }
 
-    // ── LAN allowlist (Wave 1 Gate A C1 follow-up) ───────────────────────────
+    // LAN allowlist.
 
     @Test
     fun rejectsPublicHostname() {

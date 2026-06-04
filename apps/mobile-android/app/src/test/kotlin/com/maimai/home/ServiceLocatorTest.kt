@@ -7,11 +7,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Wave 5 task 37: ServiceLocator OkHttpClient upload/download timeout must be
- * 5 minutes (300 seconds), not 30 seconds (R2 B6).
- *
- * RED: fails before the ServiceLocator change (readTimeout was 30 s).
- * GREEN: passes after readTimeout is raised to 300 s.
+ * ServiceLocator OkHttpClient upload/download timeout must stay at 5 minutes
+ * for large file transfers.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -26,7 +23,7 @@ class ServiceLocatorTest {
 
         val client = ServiceLocator.okHttpClient
 
-        // readTimeout must be 5 minutes = 300_000 ms (R2 B6).
+        // readTimeout must be 5 minutes = 300_000 ms.
         assertThat(client.readTimeoutMillis).isEqualTo(300_000)
         // writeTimeout must also be 5 minutes (was already 300 s, keep it).
         assertThat(client.writeTimeoutMillis).isEqualTo(300_000)

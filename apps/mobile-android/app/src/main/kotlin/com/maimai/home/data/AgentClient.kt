@@ -10,6 +10,7 @@ import com.maimai.home.data.models.AudioDevice
 import com.maimai.home.data.models.AudioState
 import com.maimai.home.data.models.FileEntry
 import com.maimai.home.data.models.FileRoot
+import com.maimai.home.data.models.RemoteShutdownStatus
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -32,11 +33,7 @@ data class FileListingResult(
     val entries: List<FileEntry>,
     val total: Int,
     val truncated: Boolean,
-    /**
-     * Server-reported listing limit. Older agents omit this field; the
-     * default mirrors the historical AgentClient.fetchFiles default so
-     * older servers keep working. Closes plan task 19 / R1 #16 / R2 I11.
-     */
+    /** Server-reported listing limit; defaults to the request limit. */
     val limit: Int = 200,
 )
 
@@ -75,6 +72,18 @@ class AgentClient(
     )
 
     suspend fun fetchFileRoots(address: String): List<FileRoot> = get(address, "/api/file-roots", kotlinx.serialization.builtins.ListSerializer(FileRoot.serializer()))
+
+    suspend fun fetchRemoteShutdownStatus(address: String): RemoteShutdownStatus =
+        get(address, "/api/power/shutdown", RemoteShutdownStatus.serializer())
+
+    suspend fun executeRemoteShutdown(address: String, controlToken: String): RemoteShutdownStatus = postJson(
+        address,
+        "/api/power/shutdown",
+        RemoteShutdownRequest(confirm = true),
+        RemoteShutdownRequest.serializer(),
+        RemoteShutdownStatus.serializer(),
+        mapOf("Authorization" to "Bearer $controlToken"),
+    )
 
     suspend fun fetchFiles(address: String, rootId: String, path: String, offset: Int = 0, limit: Int = 200): FileListingResult {
         val url = "${normalizedBaseUrl(address)}/api/files?rootId=${Uri.encode(rootId)}&path=${Uri.encode(path)}&offset=$offset&limit=$limit"
@@ -156,9 +165,16 @@ class AgentClient(
         return request("${normalizedBaseUrl(address)}$path", "GET", null, serializer)
     }
 
-    private suspend fun <B, T> postJson(address: String, path: String, body: B, bodySerializer: kotlinx.serialization.KSerializer<B>, responseSerializer: kotlinx.serialization.KSerializer<T>): T {
+    private suspend fun <B, T> postJson(
+        address: String,
+        path: String,
+        body: B,
+        bodySerializer: kotlinx.serialization.KSerializer<B>,
+        responseSerializer: kotlinx.serialization.KSerializer<T>,
+        headers: Map<String, String> = emptyMap(),
+    ): T {
         val payload = json.encodeToString(bodySerializer, body).toRequestBody("application/json".toMediaType())
-        return request("${normalizedBaseUrl(address)}$path", "POST", payload, responseSerializer)
+        return request("${normalizedBaseUrl(address)}$path", "POST", payload, responseSerializer, headers)
     }
 
     private suspend fun <B> postJsonUnit(address: String, path: String, body: B, bodySerializer: kotlinx.serialization.KSerializer<B>) {
@@ -179,8 +195,16 @@ class AgentClient(
         }
     }
 
-    private suspend fun <T> request(url: String, method: String, body: okhttp3.RequestBody?, serializer: kotlinx.serialization.KSerializer<T>): T {
-        val request = Request.Builder().url(url).method(method, body).build()
+    private suspend fun <T> request(
+        url: String,
+        method: String,
+        body: okhttp3.RequestBody?,
+        serializer: kotlinx.serialization.KSerializer<T>,
+        headers: Map<String, String> = emptyMap(),
+    ): T {
+        val builder = Request.Builder().url(url).method(method, body)
+        headers.forEach { (name, value) -> builder.header(name, value) }
+        val request = builder.build()
         // Stay on Dispatchers.IO for the body.string() read — see requestUnit().
         return withContext(kotlinx.coroutines.Dispatchers.IO) {
             execute(request).use { response ->
@@ -239,11 +263,12 @@ class AgentClient(
         val code = parseErrorCode(body)
         val serverMessage = parseErrorMessage(body)
         val error = when {
+            statusCode == 401 -> ApiError(ApiError.Kind.Unauthorized, serverMessage ?: "未授权，请检查控制令牌", statusCode, code)
             statusCode == 404 -> ApiError(ApiError.Kind.NotFound, serverMessage ?: "未找到 Agent（404）", statusCode, code)
             statusCode == 503 -> ApiError(ApiError.Kind.Busy, serverMessage ?: "服务忙，请稍后重试", statusCode, code)
             statusCode == 502 -> ApiError(ApiError.Kind.DeviceUnavailable, serverMessage ?: "设备不可用", statusCode, code)
             statusCode == 413 -> ApiError(ApiError.Kind.FileTooLarge, "文件过大（超 100 MB）", statusCode, code)
-            statusCode == 409 -> ApiError(ApiError.Kind.Conflict, "文件已存在", statusCode, code)
+            statusCode == 409 -> ApiError(ApiError.Kind.Conflict, serverMessage ?: "文件已存在", statusCode, code)
             else -> ApiError(ApiError.Kind.Unknown, body ?: "请求失败", statusCode, code)
         }
         return AgentRequestException(error)
@@ -287,4 +312,5 @@ class AgentClient(
 @Serializable private data class DeleteRequest(val rootId: String, val path: String, val confirm: Boolean)
 @Serializable private data class RenameRequest(val rootId: String, val path: String, val newName: String, val confirm: Boolean, val overwrite: Boolean)
 @Serializable private data class MoveRequest(val rootId: String, val fromPath: String, val toPath: String, val confirm: Boolean, val overwrite: Boolean)
+@Serializable private data class RemoteShutdownRequest(val confirm: Boolean)
 @Serializable private data class ErrorResponse(val error: String, val message: String? = null)

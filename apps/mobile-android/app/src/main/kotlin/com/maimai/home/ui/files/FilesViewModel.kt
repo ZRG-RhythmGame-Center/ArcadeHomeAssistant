@@ -14,6 +14,8 @@ import com.maimai.home.data.models.AgentRequestException
 import com.maimai.home.data.models.EventEnvelope
 import com.maimai.home.data.models.FileEntry
 import com.maimai.home.data.models.FileRoot
+import com.maimai.home.ui.common.maimaiViewModelFactory
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,7 +44,7 @@ data class FilesUiState(
     val errorMessage: String? = null,
 ) {
     /**
-     * Task 25: true iff a root is selected AND it is not read-only.
+     * True iff a root is selected and it is not read-only.
      * UI uses this to gate mutation buttons (upload FAB, rename, move, delete).
      */
     val canMutate: Boolean get() = selectedRoot != null && !selectedRoot.readOnly
@@ -52,10 +54,9 @@ data class FilesUiState(
  * Primary constructor takes all dependencies explicitly — used by tests.
  * Production code uses the secondary constructor that wires up ServiceLocator.
  *
- * Wave 4 task 24/25: injectable seam + canMutate + WS files.changed subscription.
- *
  * @param eventFlow  SharedFlow of [EventEnvelope] from the WebSocket.
  */
+@OptIn(FlowPreview::class)
 class FilesViewModel(
     application: Application,
     private val address: String,
@@ -95,11 +96,8 @@ class FilesViewModel(
     }
 
     /**
-     * Task 25 + Gate G F2 B8: subscribe to file.* events emitted by the Windows
-     * agent (`file.created`, `file.deleted`, `file.renamed`, `file.moved`).
-     * The agent does NOT emit a generic `files.changed` event — the original
-     * subscription string was a Wave 4 oversight. Debounce rapid bursts (500 ms),
-     * then refresh the listing only if rootId + path match the current view.
+     * Subscribe to file.* events emitted by the Windows agent. Debounce rapid
+     * bursts, then refresh only if rootId + path match the current view.
      *
      * For renames/moves we also refresh when the event references the current
      * directory as `fromPath` (the source disappeared) or `toPath` (the target
@@ -108,12 +106,7 @@ class FilesViewModel(
     private fun subscribeToWsEvents() {
         viewModelScope.launch {
             eventFlow
-                .filter { event ->
-                    event.type == "file.created" ||
-                        event.type == "file.deleted" ||
-                        event.type == "file.renamed" ||
-                        event.type == "file.moved"
-                }
+                .filter(::isFileMutationEvent)
                 .debounce(500L)
                 .collect { event -> handleFileEvent(event) }
         }
@@ -136,8 +129,8 @@ class FilesViewModel(
         )
 
         val current = _uiState.value
-        val selectedId = current.selectedRoot?.id ?: return
-        if (selectedId != rootId) return
+        val selectedRoot = current.selectedRoot ?: return
+        if (selectedRoot.id != rootId) return
 
         // Refresh if the current directory matches OR is the parent of any of
         // the affected paths (i.e. the affected entry lives directly inside).
@@ -146,7 +139,7 @@ class FilesViewModel(
             affected == currentDir || parentDirOf(affected) == currentDir
         }
         if (refreshNeeded) {
-            loadListing(current.selectedRoot!!, currentDir)
+            loadListing(selectedRoot, currentDir)
         }
     }
 
@@ -176,21 +169,10 @@ class FilesViewModel(
             refresh()
         }
         eventStream = stream
-        // Forward the real EventStream's events into the same flow the WS
-        // subscription consumes. We use a simple relay coroutine that emits
-        // every received event into a MutableSharedFlow that subscribeToWsEvents
-        // already collects from -- but since the existing subscription was wired
-        // to the constructor-injected eventFlow, we instead launch a parallel
-        // collector here that mirrors subscribeToWsEvents's logic against the
-        // real stream. This keeps tests using the constructor flow unaffected.
+        // Production uses the real EventStream; tests inject eventFlow directly.
         eventJob = viewModelScope.launch {
             stream.events
-                .filter { event ->
-                    event.type == "file.created" ||
-                        event.type == "file.deleted" ||
-                        event.type == "file.renamed" ||
-                        event.type == "file.moved"
-                }
+                .filter(::isFileMutationEvent)
                 .debounce(500L)
                 .collect { event -> handleFileEvent(event) }
         }
@@ -203,6 +185,12 @@ class FilesViewModel(
         eventStream?.disconnect()
         eventStream = null
     }
+
+    private fun isFileMutationEvent(event: EventEnvelope): Boolean =
+        event.type == "file.created" ||
+            event.type == "file.deleted" ||
+            event.type == "file.renamed" ||
+            event.type == "file.moved"
 
     override fun onCleared() {
         stop()
@@ -353,9 +341,8 @@ class FilesViewModel(
     }
 
     companion object {
-        fun factory(application: Application, address: String, machineName: String): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T = FilesViewModel(application, address, machineName) as T
-        }
+        fun factory(application: Application, address: String, machineName: String): ViewModelProvider.Factory =
+            maimaiViewModelFactory { FilesViewModel(application, address, machineName) }
 
         fun humanSize(bytes: Long?): String {
             val value = bytes ?: return ""

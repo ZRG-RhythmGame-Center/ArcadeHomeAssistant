@@ -16,10 +16,8 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
 
 /**
- * RED phase: AgentClient.execute() must run on Dispatchers.IO,
+ * AgentClient.execute() must run on Dispatchers.IO,
  * not on the caller's coroutine context.
- *
- * Closes R1 #3 (Major - Dispatchers.IO).
  */
 class AgentClientDispatcherTest {
 

@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtensionContext
 
 /**
- * Verifies [MainDispatcherRule] sets AND resets `Dispatchers.Main`. (Wave 2.8)
+ * Verifies [MainDispatcherRule] sets and resets `Dispatchers.Main`.
  *
  * Two tests, exercising both halves of the rule's contract independently so
  * that a regression in either half (e.g. dropping the `resetMain()` call in

@@ -11,14 +11,7 @@ import org.robolectric.annotation.Config
 import java.net.InetAddress
 
 /**
- * Wave 3 task 15: extends Wave 1's DiscoveryServiceTest with multi-service +
- * dedupe scenarios.
- *
- * Wave 1 covered:
- * - MulticastLock acquire / release lifecycle
- * - hung-resolution timeout safety
- *
- * This file covers:
+ * DiscoveryService multi-service and dedupe scenarios:
  * - resolution returns multiple services in a stable name-sorted order
  * - duplicate hosts (same address) are de-duped to one DiscoveredService
  * - service types other than `_maimai-home._tcp.` are ignored
@@ -72,6 +65,7 @@ class DiscoveryServiceMultiTest {
      * setters. This is the cheapest way to produce a non-mocked instance
      * Robolectric-free — NsdServiceInfo is final but not marked sealed.
      */
+    @Suppress("DEPRECATION")
     private fun infoFor(
         name: String,
         type: String,

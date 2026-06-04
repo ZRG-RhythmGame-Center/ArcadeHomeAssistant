@@ -34,11 +34,9 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
- * GREEN phase: downloadFile must throw a clear AgentRequestException
+ * downloadFile must throw a clear AgentRequestException
  * when the response body is null, instead of silently doing nothing
  * and producing an empty file.
- *
- * Closes R1 #17 (Minor - download null body).
  */
 class AgentClientTest {
 
@@ -91,8 +89,7 @@ class AgentClientTest {
 }
 
 /**
- * Wave 3 task 13: comprehensive MockWebServer-driven coverage of every
- * public AgentClient endpoint, plus the documented error mappings.
+ * MockWebServer-driven coverage of public AgentClient endpoints and documented error mappings.
  *
  * Robolectric is required so [android.net.Uri.encode] resolves while
  * AgentClient builds query parameters for fetchFiles and downloadFile.
@@ -140,7 +137,8 @@ class AgentClientMockWebServerTest {
                 "audioMute": true,
                 "audioDeviceSwitch": false,
                 "fileManagement": true,
-                "discoveryBroadcast": false
+                "discoveryBroadcast": false,
+                "remoteShutdown": true
               }
             }
         """.trimIndent()
@@ -156,6 +154,7 @@ class AgentClientMockWebServerTest {
         assertThat(status.capabilities.audioDeviceSwitch).isFalse()
         assertThat(status.capabilities.fileManagement).isTrue()
         assertThat(status.capabilities.discoveryBroadcast).isFalse()
+        assertThat(status.capabilities.remoteShutdown).isTrue()
 
         val recorded = server.takeRequest()
         assertThat(recorded.method).isEqualTo("GET")
@@ -164,7 +163,7 @@ class AgentClientMockWebServerTest {
 
     @Test
     fun fetchStatus_extraUnknownCapabilityField_isIgnored() = runBlocking {
-        // Closes R1 #18 forward-compat: unknown server-side fields must not break decoding.
+        // Unknown server-side fields must not break decoding.
         val body = """
             {
               "machineName": "M",
@@ -471,10 +470,9 @@ class AgentClientMockWebServerTest {
     }
 
     /**
-     * Wave 3 task 19: when the server includes a `limit` field in the
-     * FileListingResult JSON, AgentClient must surface it on the result so
-     * the FilesScreen banner can interpolate the actual server-enforced
-     * limit instead of the hardcoded 200.
+     * When the server includes a `limit` field in the FileListingResult JSON,
+     * AgentClient surfaces it so the FilesScreen banner can show the actual
+     * server-enforced limit.
      */
     @Test
     fun fetchFiles_serverProvidedLimit_isReadIntoResult() = runBlocking {
@@ -489,10 +487,8 @@ class AgentClientMockWebServerTest {
     }
 
     /**
-     * Wave 3 task 19 forward-compat: older agents omit the `limit` field.
-     * AgentClient must not crash; the result must fall back to the
-     * documented default (200) so the banner does not render an empty
-     * placeholder.
+     * If the `limit` field is missing, AgentClient falls back to the request
+     * default so the banner does not render an empty placeholder.
      */
     @Test
     fun fetchFiles_omittedLimit_defaultsTo200() = runBlocking {
@@ -664,6 +660,61 @@ class AgentClientMockWebServerTest {
         assertThat(bodyJson["overwrite"]?.jsonPrimitive?.boolean).isFalse()
     }
 
+    // -------------------------- power -------------------------------------
+
+    @Test
+    fun fetchRemoteShutdownStatus_parsesStatus() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "available": true,
+                  "state": "executing",
+                  "error": null
+                }
+                """.trimIndent(),
+            ),
+        )
+
+        val status = client.fetchRemoteShutdownStatus(address())
+
+        assertThat(status.available).isTrue()
+        assertThat(status.state).isEqualTo("executing")
+        assertThat(server.takeRequest().path).isEqualTo("/api/power/shutdown")
+    }
+
+    @Test
+    fun executeRemoteShutdown_postsConfirmAndBearerToken() = runBlocking {
+        server.enqueue(
+            MockResponse().setResponseCode(200)
+                .setBody("""{"available":true,"state":"executing","error":null}"""),
+        )
+
+        val status = client.executeRemoteShutdown(address(), "secret-token")
+
+        assertThat(status.state).isEqualTo("executing")
+        val recorded = server.takeRequest()
+        assertThat(recorded.method).isEqualTo("POST")
+        assertThat(recorded.path).isEqualTo("/api/power/shutdown")
+        assertThat(recorded.getHeader("Authorization")).isEqualTo("Bearer secret-token")
+        val bodyJson = Json.parseToJsonElement(recorded.body.readUtf8()).jsonObject
+        assertThat(bodyJson["confirm"]?.jsonPrimitive?.boolean).isTrue()
+    }
+
+    @Test
+    fun remoteShutdown_401_mapsToUnauthorized() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(401)
+                .setBody("""{"error":"unauthorized","message":"远程关机需要有效控制令牌"}"""),
+        )
+
+        val ex = assertAgentException { client.executeRemoteShutdown(address(), "bad-token") }
+
+        assertThat(ex.apiError.kind).isEqualTo(ApiError.Kind.Unauthorized)
+        assertThat(ex.apiError.message).isEqualTo("远程关机需要有效控制令牌")
+    }
+
     // -------------------------- error code wiring -------------------------
 
     @Test
@@ -726,10 +777,8 @@ class AgentClientMockWebServerTest {
 }
 
 /**
- * Wave 5 task 38: network error specificity.
- *
  * AgentClient.execute() must map DNS failures, connection-refused, and
- * socket-timeout to distinct, user-friendly messages (R2 B7).
+ * socket-timeout to distinct, user-friendly messages.
  *
  * These tests use MockWebServer's SocketPolicy to simulate the failure modes.
  */
@@ -755,8 +804,7 @@ class AgentClientNetworkErrorSpecificityTest {
     private fun address(): String = server.url("/").toString().removeSuffix("/")
 
     /**
-     * RED→GREEN (Task 38): socket timeout must map to ApiError.Kind.Timeout
-     * with the user-friendly message from R2 B7.
+     * Socket timeout must map to ApiError.Kind.Timeout with the user-friendly message.
      */
     @Test
     fun socketTimeout_mapsToTimeoutKind() = runBlocking {
@@ -777,8 +825,7 @@ class AgentClientNetworkErrorSpecificityTest {
     }
 
     /**
-     * RED→GREEN (Task 38): connection-refused must map to ApiError.Kind.Network
-     * with the specific R2 B7 message.
+     * Connection-refused must map to ApiError.Kind.Network with the specific message.
      */
     @Test
     fun connectionRefused_mapsToNetworkKindWithSpecificMessage() = runBlocking {

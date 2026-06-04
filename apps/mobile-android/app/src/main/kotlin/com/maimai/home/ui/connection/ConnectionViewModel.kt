@@ -11,6 +11,7 @@ import com.maimai.home.data.DiscoveredService
 import com.maimai.home.data.DiscoveryService
 import com.maimai.home.data.models.AgentStatus
 import com.maimai.home.data.models.AgentRequestException
+import com.maimai.home.ui.common.maimaiViewModelFactory
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,18 +44,12 @@ data class DiscoveryNavigation(
 /**
  * Primary constructor takes all dependencies explicitly — used by tests and
  * the companion [Factory] (which delegates to [ServiceLocator] for production).
- *
- * Wave 4 task 20/21: injectable seam + useDiscoveredService fix.
  */
 class ConnectionViewModel(
     private val preferences: AgentPreferences,
     private val agentClient: AgentClient,
     private val discoveryService: DiscoveryService,
-    /**
-     * Wave 8 follow-up: when true, the ViewModel kicks off a one-shot LAN
-     * scan as part of [init]. Set false in unit tests so behaviour stays
-     * deterministic and the in-flight scan does not race with per-test stubs.
-     */
+    /** When true, [init] kicks off a one-shot LAN scan. Tests keep this false. */
     autoScanOnStart: Boolean = false,
 ) : ViewModel() {
 
@@ -71,9 +66,9 @@ class ConnectionViewModel(
 
     /**
      * One-shot signal used by [useDiscoveredService] to trigger navigation
-     * to AudioScreen after a successful silent verification (closes M5/R1#6).
+     * to AudioScreen after a successful silent verification.
      * Manual `testConnection` does NOT emit on this flow because the success
-     * card requires an explicit "进入设备" button tap (closes R2 B1).
+     * card requires an explicit "进入设备" button tap.
      */
     private val _discoveryNavigation = Channel<DiscoveryNavigation>(Channel.BUFFERED)
     val discoveryNavigation: Flow<DiscoveryNavigation> = _discoveryNavigation.receiveAsFlow()
@@ -84,9 +79,7 @@ class ConnectionViewModel(
                 _uiState.update { it.copy(address = address) }
             }
         }
-        // Wave 8 follow-up: kick off LAN discovery automatically on app start
-        // so the user lands on Connection with a populated list instead of an
-        // empty card. Manual ``scanLan()`` taps still work for re-scans.
+        // Populate the device list on app start; manual scanLan() still re-scans.
         if (autoScanOnStart) {
             scanLan()
         }
@@ -127,10 +120,7 @@ class ConnectionViewModel(
     }
 
     /**
-     * Task 21 fix: silently verify the discovered service by calling
-     * [AgentClient.fetchStatus]. On success, populate [ConnectionUiState.connectedStatus]
-     * AND emit a [DiscoveryNavigation] event so the screen navigates automatically
-     * (closes R1#5/R1#6/M5).
+     * Silently verify the discovered service, then emit navigation on success.
      */
     fun useDiscoveredService(service: DiscoveredService) {
         viewModelScope.launch {
@@ -175,8 +165,6 @@ class ConnectionViewModel(
 
     companion object {
         private const val TAG = "ConnectionViewModel"
-        val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T = ConnectionViewModel() as T
-        }
+        val Factory: ViewModelProvider.Factory = maimaiViewModelFactory { ConnectionViewModel() }
     }
 }

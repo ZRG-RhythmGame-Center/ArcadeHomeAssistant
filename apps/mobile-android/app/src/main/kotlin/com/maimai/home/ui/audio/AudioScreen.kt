@@ -19,13 +19,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Speaker
-import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,7 +71,7 @@ object AudioScreenTags {
 }
 
 /**
- * Wave 8 redesign matching apps/design/2.html.
+ * Bento-style audio controls.
  *  - Status card: agent name + IP + sync indicator + latency.
  *  - Volume card: large display-lg percent + mute toggle + slider.
  *  - Output devices: card list with leading icon + state label + radio dot.
@@ -296,7 +296,7 @@ private fun MasterVolumeCard(
                     modifier = Modifier.testTag(AudioScreenTags.MUTE_TOGGLE),
                 ) {
                     Icon(
-                        imageVector = if (muted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                        imageVector = if (muted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
                         contentDescription = if (muted) "已静音" else "未静音",
                         tint = if (muted) {
                             MaterialTheme.colorScheme.error
@@ -321,7 +321,7 @@ private fun MasterVolumeCard(
                     ),
                 )
                 Icon(
-                    imageVector = Icons.Filled.VolumeUp,
+                    imageVector = Icons.AutoMirrored.Filled.VolumeUp,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                 )

@@ -21,10 +21,12 @@ import com.maimai.home.ui.audio.AudioTabUnconnected
 import com.maimai.home.ui.connection.ConnectionScreen
 import com.maimai.home.ui.files.FilesScreen
 import com.maimai.home.ui.files.FilesTabUnconnected
+import com.maimai.home.ui.power.PowerScreen
+import com.maimai.home.ui.power.PowerTabUnconnected
 
 /**
- * Three top-level tabs live side-by-side in a [NavigationBar]. Audio and Files
- * are primary task surfaces; Device owns connection setup and switching.
+ * Four top-level tabs live side-by-side in a [NavigationBar]. Audio, Files,
+ * and Power are primary task surfaces; Device owns connection setup and switching.
  */
 @Composable
 fun MaimaiNavHost() {
@@ -127,6 +129,31 @@ fun MaimaiNavHost() {
                         address = handle.address,
                         machineName = handle.machineName,
                         onSwitchDevice = {
+                            navController.navigate(AppDestination.Device.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
+                }
+            }
+            composable(AppDestination.Power.route) {
+                val handle = connectionHandle
+                if (handle == null) {
+                    PowerTabUnconnected(onGoToConnection = {
+                        navController.navigate(AppDestination.Device.route) {
+                            popUpTo(AppDestination.Device.route) { saveState = true }
+                            launchSingleTop = true
+                        }
+                    })
+                } else {
+                    PowerScreen(
+                        address = handle.address,
+                        machineName = handle.machineName,
+                        onOpenDevice = {
                             navController.navigate(AppDestination.Device.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true

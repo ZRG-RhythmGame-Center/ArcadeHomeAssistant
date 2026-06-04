@@ -31,9 +31,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- Wave 5: ComponentActivity registration for Robolectric Compose UI tests.
-             Needed in both debug and release variants so createComposeRule() can
-             resolve the activity host. Harmless in production builds. -->
+        <!-- ComponentActivity host used by Robolectric Compose UI tests. -->
         <activity
             android:name="androidx.activity.ComponentActivity"
             android:exported="false" />

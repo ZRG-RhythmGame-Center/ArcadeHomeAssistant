@@ -3,9 +3,11 @@ package com.maimai.home.ui.nav
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -30,6 +32,12 @@ internal enum class AppDestination(
         label = "文件",
         outlinedIcon = Icons.Outlined.Folder,
         filledIcon = Icons.Filled.Folder,
+    ),
+    Power(
+        route = "power",
+        label = "电源",
+        outlinedIcon = Icons.Outlined.PowerSettingsNew,
+        filledIcon = Icons.Filled.PowerSettingsNew,
     ),
     Device(
         route = "connection",

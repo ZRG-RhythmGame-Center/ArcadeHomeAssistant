@@ -21,17 +21,14 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 /**
- * Wave 3 task 14: extends Wave 1's EventStream coverage with end-to-end
- * MockWebServer scenarios:
- *
+ * End-to-end EventStream scenarios with MockWebServer:
  * - real WebSocket upgrade through MockWebServer
  * - server-pushed text frames are emitted on the events SharedFlow
  * - malformed JSON frames are silently dropped (no crash)
  * - connectionState transitions Connecting -> Connected on upgrade
  *
- * The Wave 1 EventStreamTest already covers scheme normalisation and the
- * reconnect-job-cancel-on-disconnect path; this file does NOT duplicate those
- * cases.
+ * Scheme normalisation and reconnect-job cancellation are covered in
+ * EventStreamTest; this file does not duplicate those cases.
  */
 class EventStreamMockServerTest {
 

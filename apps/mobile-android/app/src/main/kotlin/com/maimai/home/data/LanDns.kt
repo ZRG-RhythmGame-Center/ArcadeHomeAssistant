@@ -8,15 +8,12 @@ import java.net.UnknownHostException
  * OkHttp [Dns] implementation that rejects any lookup whose result is not
  * fully LAN (RFC1918 / loopback / link-local / IPv6 ULA / `.local` mDNS).
  *
- * Closes the TOCTOU gap between [LanAddressPolicy.requireLanHost] (called at
+ * Prevents the TOCTOU gap between [LanAddressPolicy.requireLanHost] (called at
  * URL-construction time) and OkHttp's own DNS resolution at connect time.
  *
  * This is the *only* DNS path used by [okhttp3.OkHttpClient] for both HTTP
  * calls and WebSocket upgrades, so a non-LAN address resolved at connect
  * time will still throw [UnknownHostException] before any socket opens.
- *
- * Closes Wave 1 Gate A C1 deviation + final Gate G S3/F3 follow-up
- * (Oracle round 5).
  */
 internal class LanDns(private val delegate: Dns = SYSTEM) : Dns {
 

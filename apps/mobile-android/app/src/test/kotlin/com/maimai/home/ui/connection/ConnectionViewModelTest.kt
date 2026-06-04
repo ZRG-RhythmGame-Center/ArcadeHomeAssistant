@@ -23,10 +23,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 
 /**
- * Wave 4 task 20 + 21: ConnectionViewModel unit tests.
- *
- * RED commit: useDiscoveredService_triggersSilentVerifyAndNavigate fails because
- * the production code does NOT call fetchStatus. GREEN lands after task 21 fix.
+ * ConnectionViewModel unit tests for manual connection, discovery, and silent
+ * verification navigation.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConnectionViewModelTest {
@@ -136,8 +134,8 @@ class ConnectionViewModelTest {
         vm.testConnection()
         advanceUntilIdle()
 
-        // After the W8 round-12 error-mapping fix, non-AgentRequestException
-        // surfaces the actual exception message instead of the blanket "网络错误".
+        // Non-AgentRequestException surfaces the actual exception message
+        // instead of the blanket "网络错误".
         assertThat(vm.uiState.value.errorMessage).isEqualTo("boom")
     }
 
@@ -201,12 +199,10 @@ class ConnectionViewModelTest {
         coVerify(exactly = 0) { discoveryService.discover(any()) }
     }
 
-    // ── useDiscoveredService (Task 21 RED → GREEN) ────────────────────────────
+    // useDiscoveredService.
 
     /**
-     * RED: This test fails before task 21 because the production code only saves
-     * the address but does NOT call fetchStatus or set connectedStatus.
-     * GREEN: After task 21 fix, fetchStatus is called and connectedStatus is set.
+     * Silent verification calls fetchStatus and populates connectedStatus.
      */
     @Test
     fun useDiscoveredService_triggersSilentVerifyAndNavigate() = runTest {
@@ -226,9 +222,8 @@ class ConnectionViewModelTest {
     }
 
     /**
-     * Closes Gate G F1 / M5 / R1#6: silent verify must also emit a one-shot
-     * discoveryNavigation event so ConnectionScreen can auto-navigate to the
-     * AudioScreen without requiring the user to tap "进入设备".
+     * Silent verification also emits a one-shot discoveryNavigation event so
+     * ConnectionScreen can auto-navigate without requiring the user to tap "进入设备".
      */
     @Test
     fun useDiscoveredService_emitsDiscoveryNavigationEvent() = runTest {

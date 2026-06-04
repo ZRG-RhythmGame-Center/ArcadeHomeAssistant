@@ -3,11 +3,9 @@ package com.maimai.home.ui.files
 import android.app.Application
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Delete
@@ -37,8 +36,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.material.icons.filled.Work
@@ -108,26 +107,14 @@ object FilesScreenTags {
     const val BREADCRUMB_ROW = "files.breadcrumb.row"
     const val SNACKBAR_HOST = "files.snackbar"
     const val EMPTY_DIRECTORY = "files.empty.directory"
+    const val ENTRY_ACTION_PREFIX = "files.entry.action."
 }
 
 /**
- * Wave 5 tasks 29-35: FilesScreen rewrite.
- *  - ModalBottomSheet action sheet (R2 I5).
- *  - Delete hidden for directories (R1 #8).
- *  - Delete hidden for readOnly roots (R2 B5/I5).
- *  - Rename dialog: autofocus + trim + reject empty + reject same-name (R2 I8).
- *  - Move dialog: title "移动到", helper text, reject empty + same-path (R2 I9).
- *  - SnackBar for mutation results (R2 B3).
- *  - Leading folder/file icons (R1 #9).
- *  - Trailing chevron for directories (R2 P7).
- *  - FAB upload_file icon (R2 P2).
- *  - Breadcrumb chip row (R2 I6).
- *  - PullToRefreshBox (R2 general).
- *  - Red delete confirm button (R2 P3).
- *  - ModalBottomSheet root selector (R2 B2).
- *  - Empty state "未发现任何文件根".
+ * File management screen with root selection, breadcrumb navigation, refresh,
+ * upload/download, and mutation dialogs.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilesScreen(
     address: String,
@@ -204,7 +191,7 @@ fun FilesScreen(
 /**
  * Stateless inner composable for tests.
  */
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun FilesScreenContent(
     state: FilesUiState,
@@ -370,12 +357,11 @@ internal fun FilesScreenContent(
                     item(key = "file-list") {
                         FileListCard(
                             entries = entries,
-                            canMutate = state.canMutate,
                             onOpen = { entry ->
                                 if (entry.isDirectory) onOpenFolder(entry)
-                                else onDownload(entry)
+                                else selectedEntry = entry
                             },
-                            onLongClick = { entry -> selectedEntry = entry },
+                            onShowActions = { entry -> selectedEntry = entry },
                         )
                     }
                 }
@@ -439,7 +425,7 @@ internal fun FilesScreenContent(
         }
     }
 
-    // ── Action ModalBottomSheet (R2 I5) ───────────────────────────────────────
+    // Action ModalBottomSheet.
     selectedEntry?.let { entry ->
         val sheetState = rememberModalBottomSheetState()
         ModalBottomSheet(
@@ -468,7 +454,7 @@ internal fun FilesScreenContent(
                         )
                     }
                 }
-                // Rename and Move hidden on read-only roots (R2 B5).
+                // Rename and Move are hidden on read-only roots.
                 if (state.canMutate) {
                     TextButton(
                         onClick = { renameEntry = entry; selectedEntry = null },
@@ -489,7 +475,7 @@ internal fun FilesScreenContent(
                         )
                     }
                 }
-                // Delete hidden for directories (R1 #8) and readOnly roots (R2 B5).
+                // Delete is hidden for directories and read-only roots.
                 if (!entry.isDirectory && state.canMutate) {
                     TextButton(
                         onClick = { deleteEntry = entry; selectedEntry = null },
@@ -507,7 +493,7 @@ internal fun FilesScreenContent(
         }
     }
 
-    // ── Rename dialog (R2 I8) ─────────────────────────────────────────────────
+    // Rename dialog.
     renameEntry?.let { entry ->
         var renameValue by remember(entry) { mutableStateOf(entry.name) }
         var renameError by remember { mutableStateOf<String?>(null) }
@@ -556,7 +542,7 @@ internal fun FilesScreenContent(
         )
     }
 
-    // ── Move dialog (R2 I9) ───────────────────────────────────────────────────
+    // Move dialog.
     moveEntry?.let { entry ->
         val originalPath = currentEntryPath(entry)
         var moveValue by remember(entry) { mutableStateOf(originalPath) }
@@ -814,11 +800,10 @@ private fun BreadcrumbDivider() {
 // ── File list card (3.html style) ────────────────────────────────────────
 
 @Composable
-private fun FileListCard(
+internal fun FileListCard(
     entries: List<FileEntry>,
-    canMutate: Boolean,
     onOpen: (FileEntry) -> Unit,
-    onLongClick: (FileEntry) -> Unit,
+    onShowActions: (FileEntry) -> Unit,
 ) {
     BentoCard(contentPadding = PaddingValues(0.dp)) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -826,9 +811,8 @@ private fun FileListCard(
             entries.forEachIndexed { index, entry ->
                 FileEntryRow(
                     entry = entry,
-                    canMutate = canMutate,
                     onOpen = { onOpen(entry) },
-                    onLongClick = { onLongClick(entry) },
+                    onShowActions = { onShowActions(entry) },
                     showDivider = index != entries.lastIndex,
                 )
             }
@@ -862,69 +846,81 @@ private fun FileListHeader() {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FileEntryRow(
     entry: FileEntry,
-    canMutate: Boolean,
     onOpen: () -> Unit,
-    onLongClick: () -> Unit,
+    onShowActions: () -> Unit,
     showDivider: Boolean = true,
 ) {
     Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .combinedClickable(
-                    onClick = onOpen,
-                    onLongClick = if (canMutate) onLongClick else null,
-                )
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = iconForEntry(entry),
-                contentDescription = if (entry.isDirectory) {
-                    stringResource(R.string.files_kind_directory_cd)
-                } else {
-                    stringResource(R.string.files_kind_file_cd)
-                },
-                tint = if (entry.isDirectory) {
-                    MaterialTheme.colorScheme.tertiary
-                } else {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
-                },
-                modifier = Modifier.size(28.dp),
-            )
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = entry.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = if (entry.isDirectory) FontWeight.Medium else FontWeight.Normal,
-                    maxLines = 1,
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onOpen),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = iconForEntry(entry),
+                    contentDescription = if (entry.isDirectory) {
+                        stringResource(R.string.files_kind_directory_cd)
+                    } else {
+                        stringResource(R.string.files_kind_file_cd)
+                    },
+                    tint = if (entry.isDirectory) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+                    },
+                    modifier = Modifier.size(28.dp),
                 )
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = entry.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = if (entry.isDirectory) FontWeight.Medium else FontWeight.Normal,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = FilesViewModel.formatDate(entry.modified),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Text(
-                    text = FilesViewModel.formatDate(entry.modified),
+                    text = if (entry.isDirectory) "--" else FilesViewModel.humanSize(entry.size),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.width(80.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
                 )
+                if (entry.isDirectory) {
+                    Spacer(Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Filled.ChevronRight,
+                        contentDescription = stringResource(R.string.files_open_directory_cd),
+                        tint = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
-            Text(
-                text = if (entry.isDirectory) "--" else FilesViewModel.humanSize(entry.size),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.width(80.dp),
-                textAlign = androidx.compose.ui.text.style.TextAlign.End,
-            )
-            if (entry.isDirectory) {
-                Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.width(4.dp))
+            IconButton(
+                onClick = onShowActions,
+                modifier = Modifier.testTag(FilesScreenTags.ENTRY_ACTION_PREFIX + entry.name),
+            ) {
                 Icon(
-                    imageVector = Icons.Filled.ChevronRight,
-                    contentDescription = stringResource(R.string.files_open_directory_cd),
-                    tint = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.size(20.dp),
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = stringResource(R.string.files_action_menu_cd),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -944,7 +940,7 @@ private fun iconForEntry(entry: FileEntry): ImageVector {
         "png", "jpg", "jpeg", "gif", "webp", "bmp" -> Icons.Filled.Image
         "pdf", "txt", "md", "doc", "docx" -> Icons.Filled.Description
         "json", "xml", "yaml", "yml", "toml", "kt", "java", "py", "js", "ts", "cs", "go", "rs" -> Icons.Filled.Code
-        else -> Icons.Filled.InsertDriveFile
+        else -> Icons.AutoMirrored.Filled.InsertDriveFile
     }
 }
 

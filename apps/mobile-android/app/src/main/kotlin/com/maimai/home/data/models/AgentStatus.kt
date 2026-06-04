@@ -10,10 +10,7 @@ data class AgentStatus(
     val version: String,
     val uptimeSeconds: Long,
     val capabilities: Capabilities,
-    /**
-     * Optional canonical base URL the agent advertises (e.g. http://192.168.1.5:8765).
-     * Older agents do not return this; newer builds may. Closes R2 I20.
-     */
+    /** Optional canonical base URL the agent advertises, e.g. http://192.168.1.5:8765. */
     val baseUrl: String? = null,
 )
 
@@ -25,4 +22,5 @@ data class Capabilities(
     val audioDeviceSwitch: Boolean = false,
     val fileManagement: Boolean = false,
     val discoveryBroadcast: Boolean = false,
+    val remoteShutdown: Boolean = false,
 )

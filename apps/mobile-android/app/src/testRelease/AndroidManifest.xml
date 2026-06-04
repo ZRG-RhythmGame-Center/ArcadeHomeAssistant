@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Wave 5: Robolectric manifest for release unit tests.
-  Registers ComponentActivity so createComposeRule() can resolve the activity
-  in the release variant (the debug variant gets this from ui-test-manifest).
+  Robolectric manifest for release unit tests. Registers ComponentActivity so
+  createComposeRule() can resolve the activity in the release variant.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>

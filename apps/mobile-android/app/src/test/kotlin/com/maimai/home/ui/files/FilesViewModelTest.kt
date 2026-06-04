@@ -26,18 +26,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 
 /**
- * Wave 4 task 24 + 25: FilesViewModel unit tests.
+ * FilesViewModel unit tests for root mutability, file operations, and
+ * WebSocket-driven listing refresh.
  *
- * Uses JUnit5 (Jupiter) + MockK. No Robolectric needed — Application is mocked.
- *
- * RED tests (fail before task 25 fixes):
- *  - canMutate_trueWhenRootIsWritable
- *  - canMutate_falseWhenRootIsReadOnly
- *  - canMutate_falseWhenNoRootSelected
- *  - wsFilesChanged_refreshesListingForCurrentPath
- *  - wsFilesChanged_ignoresDifferentRoot
- *  - wsFilesChanged_ignoresDifferentPath
- *  - wsFilesChanged_debouncesRapidEvents
+ * Uses JUnit5 (Jupiter) + MockK. No Robolectric needed; Application is mocked.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class FilesViewModelTest {
@@ -566,11 +558,8 @@ class FilesViewModelTest {
     }
 
     /**
-     * Closes Gate D #5: when the user navigates away from a directory mid-
-     * debounce, the in-flight files.changed event must not refresh the OLD
-     * directory's listing. Production code reads `_uiState.value` after
-     * `debounce(500L)`, so by the time the event fires, the path/rootId
-     * filter compares against the NEW view, and the listing is left alone.
+     * When the user navigates away from a directory mid-debounce, the in-flight
+     * files.changed event must not refresh the old directory's listing.
      */
     @Test
     fun wsFilesChanged_pathChangesMidDebounce_doesNotRefreshOldPath() = runTest {
@@ -605,8 +594,8 @@ class FilesViewModelTest {
     }
 
     /**
-     * Closes Gate D #5: when the user switches roots mid-debounce, the in-
-     * flight files.changed event must not refresh the OLD root's listing.
+     * When the user switches roots mid-debounce, the in-flight files.changed
+     * event must not refresh the old root's listing.
      */
     @Test
     fun wsFilesChanged_rootChangesMidDebounce_doesNotRefreshOldRoot() = runTest {

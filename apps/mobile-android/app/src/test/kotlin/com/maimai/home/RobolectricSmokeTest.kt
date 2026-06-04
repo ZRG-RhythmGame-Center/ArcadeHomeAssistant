@@ -12,7 +12,7 @@ import org.robolectric.annotation.Config
  * Android runtime under JUnit 4 (bridged via `junit-vintage-engine`), AND
  * actually wires up the production [App] class declared in the manifest.
  *
- * Wave 2.10 — exercises:
+ * Exercises:
  * - Robolectric runner can stand up the SDK shadow.
  * - `ApplicationProvider.getApplicationContext<App>()` returns the real
  *   production [App] class. Asserting `instanceOf App` catches a regressed
@@ -20,8 +20,7 @@ import org.robolectric.annotation.Config
  *   `Application`-typed lookup would miss.
  * - The package name matches one of the two known build-variant-suffixed
  *   values (debug adds `.debug`, release does not).
- * - JUnit 4 tests still execute under the JUnit Platform via the Vintage
- *   engine added in Wave 2.7.
+ * - JUnit 4 tests still execute under the JUnit Platform via the Vintage engine.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])

@@ -62,7 +62,7 @@ import com.maimai.home.ui.common.MaimaiScreenScaffold
  * action to [onConnected]. Discovered services auto-verify via the
  * discoveryNavigation channel.
  *
- * Wave 8 redesign: bento-box layout matching apps/design/1.html.
+ * Renders the bento-box connection layout.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -404,6 +404,7 @@ private fun ConnectedStatusCard(
         ) {
             CapabilityChip("文件", status.capabilities.fileManagement)
             CapabilityChip("发现", status.capabilities.discoveryBroadcast)
+            CapabilityChip("关机", status.capabilities.remoteShutdown)
         }
         Spacer(Modifier.height(16.dp))
         Button(
@@ -457,7 +458,7 @@ private fun CapabilityChip(label: String, enabled: Boolean) {
     )
 }
 
-// ── Reusable cards used across screens (kept here for back-compat with tests).
+// Shared cards used by unconnected tab states across screens.
 
 @Composable
 fun LoadingCard(

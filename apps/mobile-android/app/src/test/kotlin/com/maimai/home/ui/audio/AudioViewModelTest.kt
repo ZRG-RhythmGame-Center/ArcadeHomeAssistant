@@ -27,16 +27,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 
 /**
- * Wave 4 task 22 + 23: AudioViewModel unit tests.
- *
- * RED tests (fail before task 23 fixes):
- *  - refreshDevices_failure_surfacesErrorMessage  (currently swallowed)
- *  - setVolume_setsIsVolumeBusyAroundRequest       (isVolumeBusy not in state)
- *  - dragGate_wsAudioStateIgnoredWhileDragging     (drag gate not implemented)
- *  - dragEnd_appliesNextWsAudioState               (drag gate not implemented)
- *
- * GREEN tests (pass once task 23 lands):
- *  - All of the above + the happy-path cases below.
+ * AudioViewModel unit tests for refresh errors, volume busy state, drag gating,
+ * WebSocket updates, and happy-path mutations.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AudioViewModelTest {

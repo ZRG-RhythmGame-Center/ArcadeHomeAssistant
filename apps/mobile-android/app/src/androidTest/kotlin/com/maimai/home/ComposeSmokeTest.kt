@@ -10,15 +10,14 @@ import org.junit.Test
 /**
  * Smoke test for the Compose UI test stack on instrumented devices.
  *
- * Wave 2.11 — exercises:
+ * Exercises:
  * - `androidx.compose.ui:ui-test-junit4` resolves the
  *   [createComposeRule] entry point on the `androidTest` classpath.
  * - `setContent { ... }` actually composes.
  * - Hierarchy assertions like `onNodeWithText(...).assertIsDisplayed()` work.
  *
  * Runs against an emulator or device via `gradlew connectedDebugAndroidTest`.
- * It does NOT cover the production Composables — those tests land in
- * Wave 5 once the screens are refactored.
+ * It does not cover production Composables; those are covered by unit tests.
  */
 class ComposeSmokeTest {
 

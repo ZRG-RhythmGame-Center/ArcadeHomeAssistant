@@ -7,10 +7,7 @@ import org.junit.Assert.fail
 import org.junit.Test
 
 /**
- * Unit tests for [LanAddressPolicy].
- *
- * Closes Wave 1 Gate A C1 deviation: app-level RFC1918 enforcement that
- * compensates for Android NSC's lack of CIDR support.
+ * Unit tests for [LanAddressPolicy]'s RFC1918 enforcement.
  */
 class LanAddressPolicyTest {
 

@@ -20,11 +20,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Wave 5 task 26 + 27 Compose UI tests for ConnectionScreen.
- *
- * Uses createComposeRule + Robolectric so the suite stays in :app:testDebugUnitTest.
- * Drives the stateless [ConnectionScreenContent] directly to avoid pulling in
- * the ServiceLocator + DataStore production wiring.
+ * Compose UI tests for stateless [ConnectionScreenContent].
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -47,7 +43,7 @@ class ConnectionScreenTest {
     )
 
     /**
-     * RED→GREEN (Task 26): success card must show "开始使用" button and tapping it
+     * Success card must show "开始使用" button and tapping it
      * must invoke onEnterDevice with the active address + machineName. Auto-
      * navigation must NOT happen — the button is the ONLY navigation trigger.
      */
@@ -113,8 +109,7 @@ class ConnectionScreenTest {
     }
 
     /**
-     * Task 27: while testing/scanning the buttons swap to inline progress copy
-     * "连接中…" / "扫描中…".
+     * While testing/scanning, the buttons swap to inline progress copy.
      */
     @Test
     fun loadingButtonsShowInlineProgressCopy() {
@@ -201,7 +196,7 @@ class ConnectionScreenTest {
     }
 
     /**
-     * Task 26 helpers: LoadingCard / EmptyCard / ErrorCard render their text.
+     * LoadingCard / EmptyCard / ErrorCard render their text.
      */
     @Test
     fun loadingCardRendersText() {

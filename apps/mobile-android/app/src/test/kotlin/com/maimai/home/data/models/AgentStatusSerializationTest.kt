@@ -4,22 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Test
 
-/**
- * Characterizes [AgentStatus] / [Capabilities] JSON parsing under the same
- * `Json` configuration used in production (`ServiceLocator.json`):
- *
- * ```
- * Json {
- *     ignoreUnknownKeys = true
- *     explicitNulls = false
- * }
- * ```
- *
- * Closes R1 #18 (forward-compat) and R2 I18 (unknown capability keys silently
- * dropped) and R2 I20 (AgentStatus.baseUrl now exposed).
- *
- * Wave 3 task 18.
- */
+/** Characterizes [AgentStatus] / [Capabilities] JSON parsing under production JSON options. */
 class AgentStatusSerializationTest {
 
     private val json = Json {
@@ -39,7 +24,8 @@ class AgentStatusSerializationTest {
                 "audioMute": true,
                 "audioDeviceSwitch": true,
                 "fileManagement": true,
-                "discoveryBroadcast": true
+                "discoveryBroadcast": true,
+                "remoteShutdown": true
               },
               "baseUrl": "http://192.168.1.5:8765"
             }
@@ -56,13 +42,11 @@ class AgentStatusSerializationTest {
         assertThat(status.capabilities.audioDeviceSwitch).isTrue()
         assertThat(status.capabilities.fileManagement).isTrue()
         assertThat(status.capabilities.discoveryBroadcast).isTrue()
+        assertThat(status.capabilities.remoteShutdown).isTrue()
     }
 
     @Test
     fun unknownCapabilityField_isIgnored() {
-        // Future server adds a new capability flag the client does not know
-        // about. With ignoreUnknownKeys=true the parse must succeed and the
-        // known fields must keep their default / explicit values.
         val raw = """
             {
               "machineName": "PC-01",
@@ -79,9 +63,9 @@ class AgentStatusSerializationTest {
         val status = json.decodeFromString(AgentStatus.serializer(), raw)
 
         assertThat(status.capabilities.audioVolume).isTrue()
-        // Defaults preserved for omitted-and-unknown:
         assertThat(status.capabilities.audioMute).isFalse()
         assertThat(status.capabilities.fileManagement).isFalse()
+        assertThat(status.capabilities.remoteShutdown).isFalse()
     }
 
     @Test
@@ -121,8 +105,6 @@ class AgentStatusSerializationTest {
 
     @Test
     fun baseUrl_defaultsToNull_whenAbsent() {
-        // Older agents omit baseUrl entirely. Parse must still succeed and
-        // baseUrl must be null (not throw, not default to empty string).
         val raw = """
             {
               "machineName": "PC-01",

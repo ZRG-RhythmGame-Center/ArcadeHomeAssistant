@@ -12,8 +12,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.longClick
 import com.google.common.truth.Truth.assertThat
 import com.maimai.home.data.FileListingResult
 import com.maimai.home.data.models.FileEntry
@@ -25,9 +23,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Wave 5 tasks 29-35 Compose UI tests for FilesScreen.
- *
- * Drives the stateless [FilesScreenContent] directly.
+ * Compose UI tests for stateless [FilesScreenContent].
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
@@ -55,44 +51,31 @@ class FilesScreenTest {
         ),
     )
 
-    // ── Task 29: action sheet is ModalBottomSheet ─────────────────────────────
+    // Action sheet.
 
     /**
-     * RED→GREEN (Task 29 / R2 I5): long-pressing an entry must open a
-     * ModalBottomSheet (not an AlertDialog).
+     * Tapping an entry's trailing action button opens the action affordance.
      */
     @Test
     fun actionSheetIsBottomSheet() {
+        var actionEntry: FileEntry? = null
         composeRule.setContent {
             MaterialTheme {
-                FilesScreenContent(
-                    state = defaultState,
-                    breadcrumbSegments = emptyList(),
-                    currentEntryPath = { it.name },
-                    onRefresh = {},
-                    onSelectRoot = {},
-                    onOpenFolder = {},
-                    onNavigateToPath = {},
-                    onDownload = {},
-                    onUpload = {},
-                    onDelete = {},
-                    onRename = { _, _ -> },
-                    onMove = { _, _ -> },
+                FileListCard(
+                    entries = listOf(fileEntry),
+                    onOpen = {},
+                    onShowActions = { actionEntry = it },
                 )
             }
         }
 
-        // Long-press the file entry to open the action sheet.
-        composeRule.onNodeWithText("report.txt").performScrollTo().performTouchInput { longClick() }
-        composeRule.mainClock.advanceTimeBy(500)
-        composeRule.waitForIdle()
-
-        // The ModalBottomSheet with ACTION_SHEET tag must appear.
-        composeRule.onNodeWithTag(FilesScreenTags.ACTION_SHEET).assertIsDisplayed()
+        composeRule.onNodeWithText("report.txt")
+        composeRule.onNodeWithTag(FilesScreenTags.ENTRY_ACTION_PREFIX + "report.txt", useUnmergedTree = true).performClick()
+        assertThat(actionEntry).isEqualTo(fileEntry)
     }
 
     /**
-     * RED→GREEN (Task 29 / R1 #8): delete action must NOT appear for directories.
+     * Delete action must not appear for directories.
      */
     @Test
     fun deleteHiddenForDirectory() {
@@ -115,8 +98,8 @@ class FilesScreenTest {
             }
         }
 
-        // Long-press the directory entry.
-        composeRule.onNodeWithText("subdir").performScrollTo().performTouchInput { longClick() }
+        composeRule.onNodeWithText("subdir").performScrollTo()
+        composeRule.onNodeWithTag(FilesScreenTags.ENTRY_ACTION_PREFIX + "subdir", useUnmergedTree = true).performClick()
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.waitForIdle()
 
@@ -129,13 +112,8 @@ class FilesScreenTest {
     }
 
     /**
-     * Task 29 / R2 B5: delete action must NOT appear when root is readOnly.
-     */
-    /**
-     * R2 B5: read-only roots must not expose any mutation affordance. The
-     * long-click handler is disabled on read-only roots (canMutate=false), so
-     * the action sheet never opens. Download remains accessible via the
-     * trailing chevron / tap path.
+     * Read-only roots must not expose mutation affordances. The action sheet can
+     * still open from the trailing action icon for downloads.
      */
     @Test
     fun mutationsHiddenForReadOnlyRoot() {
@@ -162,17 +140,12 @@ class FilesScreenTest {
             }
         }
 
-        // Long-click on a file. Because canMutate==false, the row's
-        // combinedClickable disables onLongClick (passes null). The action
-        // sheet must NOT open.
-        composeRule.onNodeWithText("report.txt").performScrollTo().performTouchInput { longClick() }
+        composeRule.onNodeWithText("report.txt").performScrollTo()
+        composeRule.onNodeWithTag(FilesScreenTags.ENTRY_ACTION_PREFIX + "report.txt", useUnmergedTree = true).performClick()
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.waitForIdle()
 
-        // No action sheet, no rename/move/delete buttons reachable.
-        assertThat(
-            composeRule.onAllNodesWithTag(FilesScreenTags.ACTION_SHEET).fetchSemanticsNodes(),
-        ).isEmpty()
+        composeRule.onNodeWithText("下载").assertIsDisplayed()
         assertThat(
             composeRule.onAllNodesWithText("重命名").fetchSemanticsNodes(),
         ).isEmpty()
@@ -184,10 +157,55 @@ class FilesScreenTest {
         ).isEmpty()
     }
 
+    @Test
+    fun fileClickOpensActionSheetInsteadOfDownloading() {
+        var downloadCalled = false
+        composeRule.setContent {
+            MaterialTheme {
+                FilesScreenContent(
+                    state = defaultState,
+                    breadcrumbSegments = emptyList(),
+                    currentEntryPath = { it.name },
+                    onRefresh = {},
+                    onSelectRoot = {},
+                    onOpenFolder = {},
+                    onNavigateToPath = {},
+                    onDownload = { downloadCalled = true },
+                    onUpload = {},
+                    onDelete = {},
+                    onRename = { _, _ -> },
+                    onMove = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("report.txt").performScrollTo().performClick()
+        composeRule.onNodeWithText("重命名").assertIsDisplayed()
+        assertThat(downloadCalled).isFalse()
+    }
+
+    @Test
+    fun directoryClickOpensFolderAndActionIconOpensSheet() {
+        var openedEntry: FileEntry? = null
+        var actionEntry: FileEntry? = null
+        composeRule.setContent {
+            MaterialTheme {
+                FileListCard(
+                    entries = listOf(dirEntry),
+                    onOpen = { openedEntry = it },
+                    onShowActions = { actionEntry = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("subdir").performClick()
+        assertThat(openedEntry).isEqualTo(dirEntry)
+        composeRule.onNodeWithTag(FilesScreenTags.ENTRY_ACTION_PREFIX + "subdir", useUnmergedTree = true).performClick()
+        assertThat(actionEntry).isEqualTo(dirEntry)
+    }
+
     /**
-     * RED→GREEN (Task 29 / R2 I8): rename dialog must reject empty names.
-     * Tests the dialog composable directly (ModalBottomSheet interaction is
-     * unreliable under Robolectric; the dialog logic is the contract).
+     * Rename dialog rejects invalid names.
      */
     @Test
     fun renameRequiresNonEmpty() {
@@ -210,7 +228,7 @@ class FilesScreenTest {
     }
 
     /**
-     * Task 29 / R2 I9: move dialog title is "移动到".
+     * Move dialog title is "移动到".
      */
     @Test
     fun moveDialogTitleIsMoveTo() {
@@ -224,7 +242,7 @@ class FilesScreenTest {
         composeRule.onNodeWithText("移动到").assertIsDisplayed()
     }
 
-    // ── Task 33: red delete confirm ───────────────────────────────────────────
+    // Delete confirmation.
 
     @Test
     fun deleteConfirmButtonPresent() {
@@ -242,7 +260,7 @@ class FilesScreenTest {
         composeRule.onNodeWithTag(FilesScreenTags.DELETE_CONFIRM_BUTTON).assertIsDisplayed()
     }
 
-    // ── Task 34: truncation banner ────────────────────────────────────────────
+    // Truncation banner.
 
     @Test
     fun truncationBannerShowsCorrectLimit() {
@@ -276,7 +294,7 @@ class FilesScreenTest {
         composeRule.onNodeWithText("仅显示前 123 项", substring = true).performScrollTo().assertIsDisplayed()
     }
 
-    // ── Task 35: ModalBottomSheet root selector ───────────────────────────────
+    // Root selector.
 
     @Test
     fun rootPickerButtonOpensBottomSheet() {
@@ -358,7 +376,7 @@ class FilesScreenTest {
         composeRule.onNodeWithText("未发现任何文件根").assertIsDisplayed()
     }
 
-    // ── Task 30: FAB upload icon ──────────────────────────────────────────────
+    // Upload FAB.
 
     @Test
     fun uploadFabPresentForWritableRoot() {
@@ -411,7 +429,7 @@ class FilesScreenTest {
         ).isEmpty()
     }
 
-    // ── Task 31: breadcrumb chip row ──────────────────────────────────────────
+    // Breadcrumb chip row.
 
     @Test
     fun breadcrumbChipRowPresent() {

@@ -13,8 +13,7 @@ import java.net.UnknownHostException
  * resolution that contains even one non-LAN address (defense against
  * DNS rebinding) while letting clean LAN resolutions through.
  *
- * Uses fake [Dns] delegates rather than network. Closes the TOCTOU gap
- * raised by Oracle round 5.
+ * Uses fake [Dns] delegates rather than network.
  */
 class LanDnsTest {
 

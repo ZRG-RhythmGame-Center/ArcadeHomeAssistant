@@ -13,16 +13,16 @@ import org.robolectric.annotation.Config
  * Verifies that the app is configured to:
  * 1. Allow cleartext traffic to RFC1918 private networks
  * 2. Declare NEARBY_WIFI_DEVICES permission for mDNS discovery on Android 13+
- * 3. Maintain CHANGE_WIFI_MULTICAST_STATE for legacy mDNS support
+ * 3. Maintain CHANGE_WIFI_MULTICAST_STATE for multicast DNS support
  *
- * These tests close R1 findings #1 (Critical) and #2 (Major).
+ * These tests pin cleartext and discovery permission requirements.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class ManifestSecurityTest {
 
     /**
-     * RED: Verify that cleartext traffic is enabled in the manifest.
+     * Verify that cleartext traffic is enabled in the manifest.
      * This allows HTTP connections to LAN agents on Android 9+.
      *
      * Expected: applicationInfo.flags contains FLAG_USES_CLEARTEXT_TRAFFIC
@@ -125,7 +125,7 @@ class ManifestSecurityTest {
         assert(xml.contains("<base-config") && xml.contains("cleartextTrafficPermitted=\"true\"")) {
             "NSC must declare <base-config cleartextTrafficPermitted=\"true\">. Got:\n$xml"
         }
-        // Reject the old, invalid <domain>-based policy that Gate A flagged.
+        // Reject invalid <domain>-based cleartext policy.
         // Match "<domain " (with trailing space) to avoid false-positives from
         // comment text that mentions the element name.
         assert(!xml.contains("<domain ")) {

@@ -28,8 +28,6 @@ import org.junit.jupiter.api.extension.ExtensionContext
  * what Compose `viewModelScope` consumers usually want. Pass an explicit
  * dispatcher (e.g. `StandardTestDispatcher`) for tests that need controlled
  * dispatch.
- *
- * Wave 2.8 (test stack scaffold).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherRule(

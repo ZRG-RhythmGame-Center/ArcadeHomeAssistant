@@ -34,7 +34,6 @@ class AgentPreferences(
          * Default address surfaced to the user before they pick one. Sourced
          * from `BuildConfig.DEFAULT_AGENT_ADDRESS` so debug builds get a LAN
          * sample (`192.168.1.100:8765`) and release builds start empty.
-         * Closes plan task 17 / R1 #17.
          */
         val DEFAULT_AGENT_ADDRESS: String = BuildConfig.DEFAULT_AGENT_ADDRESS
         internal val AGENT_ADDRESS_KEY = stringPreferencesKey("agent_address")

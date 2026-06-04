@@ -10,6 +10,7 @@ import com.maimai.home.data.models.AgentRequestException
 import com.maimai.home.data.models.AudioDevice
 import com.maimai.home.data.models.AudioState
 import com.maimai.home.data.models.EventEnvelope
+import com.maimai.home.ui.common.maimaiViewModelFactory
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
@@ -30,7 +31,7 @@ data class AudioUiState(
     val audioState: AudioState? = null,
     val devices: List<AudioDevice> = emptyList(),
     val isRefreshing: Boolean = false,
-    /** Wave 4 task 23: true while a setVolume request is in-flight. */
+    /** True while a setVolume request is in flight. */
     val isVolumeBusy: Boolean = false,
     val errorMessage: String? = null,
 )
@@ -38,9 +39,6 @@ data class AudioUiState(
 /**
  * Primary constructor takes all dependencies explicitly — used by tests.
  * Production code uses the secondary constructor that wires up a real [EventStream].
- *
- * Wave 4 task 22/23: injectable seam + refreshDevices error surface +
- * isVolumeBusy + drag gate.
  *
  * @param eventFlow       SharedFlow of [EventEnvelope] from the WebSocket.
  * @param connectionStateFlow StateFlow of [EventStream.ConnectionState].
@@ -98,20 +96,7 @@ class AudioViewModel(
         }
         viewModelScope.launch {
             evFlow.collect { event ->
-                when (event.type) {
-                    "audio.state" -> {
-                        val state = runCatching {
-                            json.decodeFromJsonElement<AudioState>(event.payload)
-                        }.getOrNull() ?: return@collect
-                        if (isDragging) {
-                            // Gate: store for later, don't update slider
-                            pendingDragState = state
-                        } else {
-                            _uiState.update { it.copy(audioState = state, errorMessage = null) }
-                        }
-                    }
-                    "audio.device.changed" -> refreshDevices()
-                }
+                handleAudioEvent(event)
             }
         }
     }
@@ -131,23 +116,28 @@ class AudioViewModel(
             }
             launch {
                 stream.events.collect { event ->
-                    when (event.type) {
-                        "audio.state" -> {
-                            val state = runCatching {
-                                json.decodeFromJsonElement<AudioState>(event.payload)
-                            }.getOrNull() ?: return@collect
-                            if (isDragging) {
-                                pendingDragState = state
-                            } else {
-                                _uiState.update { it.copy(audioState = state, errorMessage = null) }
-                            }
-                        }
-                        "audio.device.changed" -> refreshDevices()
-                    }
+                    handleAudioEvent(event)
                 }
             }
         }
         stream.connect()
+    }
+
+    private fun handleAudioEvent(event: EventEnvelope) {
+        when (event.type) {
+            "audio.state" -> {
+                val state = runCatching {
+                    json.decodeFromJsonElement<AudioState>(event.payload)
+                }.getOrNull() ?: return
+                if (isDragging) {
+                    // Gate: store for later, don't update slider.
+                    pendingDragState = state
+                } else {
+                    _uiState.update { it.copy(audioState = state, errorMessage = null) }
+                }
+            }
+            "audio.device.changed" -> refreshDevices()
+        }
     }
 
     fun stop() {
@@ -186,9 +176,6 @@ class AudioViewModel(
         }
     }
 
-    /**
-     * Task 23 fix: surface failures to errorMessage (previously swallowed).
-     */
     fun refreshDevices() {
         viewModelScope.launch {
             runCatching { agentClient.fetchAudioDevices(address) }
@@ -201,9 +188,6 @@ class AudioViewModel(
         }
     }
 
-    /**
-     * Task 23: set isVolumeBusy true/false around the request.
-     */
     fun setVolume(percent: Float) {
         viewModelScope.launch {
             _uiState.update { it.copy(isVolumeBusy = true) }
@@ -243,7 +227,6 @@ class AudioViewModel(
     }
 
     /**
-     * Task 23: called when the user starts dragging the volume slider.
      * While dragging, incoming WS audio.state events are buffered, not applied.
      */
     fun onVolumeDragStart() {
@@ -252,7 +235,6 @@ class AudioViewModel(
     }
 
     /**
-     * Task 23: called when the user releases the volume slider.
      * Applies any buffered WS audio.state that arrived during the drag.
      */
     fun onVolumeDragEnd() {
@@ -268,8 +250,7 @@ class AudioViewModel(
     }
 
     companion object {
-        fun factory(address: String, machineName: String): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: Class<T>): T = AudioViewModel(address, machineName) as T
-        }
+        fun factory(address: String, machineName: String): ViewModelProvider.Factory =
+            maimaiViewModelFactory { AudioViewModel(address, machineName) }
     }
 }

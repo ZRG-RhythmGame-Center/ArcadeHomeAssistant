@@ -13,9 +13,6 @@ import java.net.UnknownHostException
  * inside `<domain>` (only exact hostnames or full IPs), so the manifest
  * simply enables cleartext globally. This policy enforces the original
  * RFC1918-only intent at the HTTP/WebSocket call sites.
- *
- * Closes Wave 1 Gate A C1 deviation + final Gate G S3/F3 follow-up.
- *
  * Allowed hosts:
  * - `127.0.0.0/8` loopback (developer convenience, agent on same device)
  * - `10.0.0.0/8`
@@ -91,7 +88,7 @@ internal object LanAddressPolicy {
                 }
             }
             is Inet6Address -> {
-                // isSiteLocalAddress (fec0::/10) is deprecated but still on private LANs.
+                // isSiteLocalAddress (fec0::/10) is superseded but still appears on private LANs.
                 // Unique-Local (fc00::/7) is the modern replacement; first byte 0xFC or 0xFD.
                 if (address.isSiteLocalAddress) return true
                 val first = address.address[0].toInt() and 0xFF

@@ -12,6 +12,7 @@ data class ApiError(
     enum class Kind {
         Network,
         Timeout,
+        Unauthorized,
         NotFound,
         Busy,
         DeviceUnavailable,
