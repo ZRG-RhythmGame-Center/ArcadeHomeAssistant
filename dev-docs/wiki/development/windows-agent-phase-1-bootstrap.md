@@ -1,13 +1,13 @@
 # Windows Agent 阶段 1 启动骨架说明
 
 > 创建日期: 2026-05-28 15:27
-> 最后更新: 2026-05-31
+> 最后更新: 2026-06-03 10:05
 > 作者: Adsicmes
 > 状态: 草稿
 
 ## 目的
 
-记录 Windows Agent 已落地的启动骨架、认证与配对层、运行方式、状态接口、日志与开发注意事项。
+记录 Windows Agent 已落地的启动骨架、LAN-only 安全边界、远程关机控制令牌、运行方式、状态接口、日志与开发注意事项。
 
 ## 当前代码状态
 
@@ -31,12 +31,15 @@
 - `PathGuard.ResolveSafe`：安全路径解析，防止路径穿越、绝对路径、符号链接逃逸
 - `PathSafetyError` 枚举：`InvalidChar`、`Absolute`、`OutsideRoot`、`SymlinkEscape`、`ReparsePointInPath`
 - `PathGuardResult`：类型化结果，调用方映射到 HTTP 403/400，不使用异常驱动控制流
-- `Security/` 认证与配对层（Wave 4 / 阶段 8）：
-  - `IPairingService` / `PairingService`：创建一次性配对码（绑定来源 IP，默认 TTL 120 秒）、换取长期 token（原子单次消费）、查询当前活跃码
-  - `ITokenStore` / `JsonFileTokenStore`：token 持久化到 `%LOCALAPPDATA%\maimai-home-assistant\tokens.json`，支持校验、列表、撤销
-  - `AuthMiddleware`：Bearer token（HTTP）/ `?token=` 查询参数（WebSocket）验证；白名单路径：`/api/status`、`/api/pairing/code`、`/api/pairing/active`、`/api/pairing/exchange`、非 `/api/` 前缀（静态资源 / SPA）
-  - `PairingEndpoints`：`POST /api/pairing/code`（loopback-only，托盘 UI 调用）、`GET /api/pairing/active`（查询当前码）、`POST /api/pairing/exchange`（客户端换 token，在白名单上）
-  - `TokenAdminEndpoints`：`GET /api/tokens`（列出已签发 token，不含 token 值）、`DELETE /api/tokens/{id}`（撤销，自删时响应 `selfDeleted:true`）
+- `Power/` 远程关机模块：
+  - `RemoteShutdownOptions`：绑定 `appsettings.json` 的 `RemoteShutdown` 段
+  - `IRemoteShutdownExecutor` / `WindowsRemoteShutdownExecutor`：封装 `shutdown.exe /s /t 0`，测试中可替换执行器避免真实关机
+  - `IRemoteShutdownService` / `RemoteShutdownService`：维护立即执行、执行中、失败状态和实时事件发布；状态 DTO 只包含 `available`、`state`、`error`
+  - `PowerEndpoints.MapPowerEndpoints()`：映射远程关机状态读取和立即执行接口
+- 当前安全边界：
+  - 普通 `/api/*` 接口仍是 LAN-only 匿名访问；`Program.cs` 没有全局认证 middleware
+  - `/api/events` 不读取查询参数作为身份标识
+  - 远程关机单独要求 `Authorization: Bearer <RemoteShutdown.ControlToken>`，且使用固定时间比较校验令牌
 
 ## 当前公开接口
 
@@ -56,20 +59,49 @@
   - `audioDeviceSwitch`
   - `fileManagement`
   - `discoveryBroadcast`
+  - `remoteShutdown`
 
 当前 `capabilities` 中：
 
-- 所有能力均为 `true`：`audioVolume`、`audioMute`、`audioDeviceSwitch`、`fileManagement`、`discoveryBroadcast` 均已实现
+- `audioVolume`、`audioMute`、`audioDeviceSwitch`、`fileManagement`、`discoveryBroadcast` 均为 `true`
+- `remoteShutdown` 由 `IRemoteShutdownService.IsAvailable` 动态计算：仅当 `RemoteShutdown.Enabled = true`、`RemoteShutdown.ControlToken` 非空且 `IRemoteShutdownExecutor.IsSupported = true` 时为 `true`
 
-### 认证相关接口
+### 安全边界说明
+
+当前源码没有 `Security/` 目录、`AuthMiddleware`、配对码端点或 token 管理端点。开发者不要假设普通音频、文件或状态 API 已被 Bearer token 保护。
+
+远程关机是当前唯一带独立控制令牌的 HTTP 能力，令牌只从请求头读取：
+
+```http
+Authorization: Bearer <RemoteShutdown.ControlToken>
+```
+
+### 远程关机接口
 
 | 端点 | 说明 | 认证要求 |
 |---|---|---|
-| `POST /api/pairing/code` | 创建配对码（loopback-only） | 无（仅限 127.0.0.1/::1） |
-| `GET /api/pairing/active` | 查询当前活跃配对码 | 无（白名单） |
-| `POST /api/pairing/exchange` | 用配对码换取 token | 无（白名单） |
-| `GET /api/tokens` | 列出已签发 token（不含 token 值） | Bearer token |
-| `DELETE /api/tokens/{id}` | 撤销指定 token | Bearer token |
+| `GET /api/power/shutdown` | 返回远程关机能力、执行中或失败状态 | 无，仅读状态 |
+| `POST /api/power/shutdown` | 令牌校验和 `{ "confirm": true }` 通过后立即调用系统关机 | `Authorization: Bearer <RemoteShutdown.ControlToken>` |
+
+状态响应：
+
+```json
+{
+  "available": true,
+  "state": "idle",
+  "error": null
+}
+```
+
+`state` 取值为 `idle`、`executing` 或 `failed`。执行时间只出现在 `power.shutdown.executing` / `power.shutdown.failed` 事件 payload 中，不放入状态响应。
+
+错误约定：
+
+- 400：缺少 `confirm: true`
+- 401：控制令牌缺失或不匹配
+- 409：远程关机正在执行
+- 503：远程关机不可用，例如配置未启用、令牌为空、非 Windows 平台或执行器不支持
+- 502：系统关机命令执行失败
 
 ## 配置与运行约定
 
@@ -96,6 +128,24 @@ http://0.0.0.0:8765
 - 局域网 MVP 阶段先保证手机/浏览器直连成功
 - 自签证书会增加调试和配对成本
 - 后续若需要更严格的传输保护，再单独设计证书与配对方案
+
+### RemoteShutdown
+
+[appsettings.json](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/services/windows-agent/src/MaimaiHomeAgent/appsettings.json) 新增 `RemoteShutdown` 段：
+
+```json
+"RemoteShutdown": {
+  "Enabled": false,
+  "ControlToken": ""
+}
+```
+
+字段说明：
+
+- `Enabled`：总开关，默认 `false`，未启用时 `capabilities.remoteShutdown = false`
+- `ControlToken`：远程关机控制令牌，默认空；为空时即使 `Enabled = true` 也不可用
+
+注意：远程关机没有延迟参数。PC Web 与 Android 都只发送 `{ "confirm": true }`，服务端在令牌校验通过后立即执行关机。
 
 ## 日志方案
 
@@ -218,10 +268,9 @@ mDNS service advertised. Instance=FRZ-XIAOXIN ServiceType=_maimai-home._tcp Port
 
 - 状态 payload 关键字段名校验
 - `PathGuardTests.cs`：覆盖典型穿越攻击向量（`..`、绝对路径、符号链接、控制字符等）
-- `Security/PairingEndpointsTests.cs`：配对码创建（loopback 限制、参数校验）、换取 token（IP 绑定、单次消费、过期）
-- `Security/AuthMiddlewareTests.cs`：Bearer token 验证、WebSocket `?token=` 验证、白名单路径放行、401 响应格式
-- `Security/TokenAdminEndpointsTests.cs`：token 列表、撤销（含自删 `selfDeleted:true`）
 - `Files/FileListingEndpointsTests.cs` / `FileMutationEndpointsTests.cs`：文件操作集成测试
+- `Power/PowerEndpointsTests.cs`：远程关机状态读取、未授权拒绝、立即执行、确认缺失、不可用和执行失败
+- `Realtime/EventPublisherTests.cs`：远程关机事件信封广播
 
 
 
@@ -258,5 +307,15 @@ dotnet tool install -g csharp-ls
 
 建议接下来优先做：
 
-1. 实现托盘 UI（阶段 9）：显示配对码、打开 PC Web、控制启停
-2. 单文件打包与防火墙放行说明
+1. 为远程关机控制令牌提供更友好的本机配置入口，避免用户手工编辑 `appsettings.json`
+2. 单文件打包与防火墙放行说明继续保持同步，尤其是 PC Web `/power` 静态路由
+
+---
+
+## 修订记录
+
+| 时间 | 作者 | 变更说明 |
+|------|------|----------|
+| 2026-06-03 10:05 | Maimai Dev | 远程关机状态响应收敛为 `available`、`state`、`error`，移除旧状态字段和 `/api/events` 查询参数透传。 |
+| 2026-06-03 09:50 | Maimai Dev | 远程关机改为控制令牌确认后立即执行，移除延迟配置、撤销接口、排程状态和对应测试描述。 |
+| 2026-06-02 20:38 | Maimai Dev | 新增远程关机模块、配置、接口、安全边界和测试说明；移除已不存在的配对/TokenAdmin 接口与 Security 测试描述并归档。 |

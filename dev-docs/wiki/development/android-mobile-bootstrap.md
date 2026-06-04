@@ -1,13 +1,13 @@
 # Android 移动端启动骨架说明
 
 > 创建日期: 2026-05-31
-> 最后更新: 2026-06-01（更新路由表与联调说明，反映三 Tab 导航结构与无参数路由；补充 AudioScreenTags 和 AudioScreen 公开接口）
+> 最后更新: 2026-06-03 10:05
 > 作者: Adsicmes
 > 状态: 草稿
 
 ## 目的
 
-记录 `apps/mobile-android` Android 原生 App 的初始骨架实现现状，包括工具链版本、架构、已实现页面与联调方式。
+记录 `apps/mobile-android` Android 原生 App 的初始骨架实现现状，包括工具链版本、架构、已实现页面、远程关机入口与联调方式。
 
 ## 对应代码
 
@@ -17,10 +17,13 @@
 - [App.kt](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile-android/app/src/main/kotlin/com/maimai/home/App.kt)
 - [ServiceLocator.kt](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile-android/app/src/main/kotlin/com/maimai/home/ServiceLocator.kt)
 - [data/AgentClient.kt](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile-android/app/src/main/kotlin/com/maimai/home/data/AgentClient.kt)
+- [data/models/RemoteShutdownStatus.kt](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile-android/app/src/main/kotlin/com/maimai/home/data/models/RemoteShutdownStatus.kt)
 - [data/AgentPreferences.kt](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile-android/app/src/main/kotlin/com/maimai/home/data/AgentPreferences.kt)
 - [data/DiscoveryService.kt](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile-android/app/src/main/kotlin/com/maimai/home/data/DiscoveryService.kt)
 - [data/EventStream.kt](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile-android/app/src/main/kotlin/com/maimai/home/data/EventStream.kt)
 - [ui/nav/MaimaiNavHost.kt](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile-android/app/src/main/kotlin/com/maimai/home/ui/nav/MaimaiNavHost.kt)
+- [ui/power/PowerScreen.kt](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile-android/app/src/main/kotlin/com/maimai/home/ui/power/PowerScreen.kt)
+- [ui/power/PowerViewModel.kt](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/apps/mobile-android/app/src/main/kotlin/com/maimai/home/ui/power/PowerViewModel.kt)
 
 ## 工具链版本
 
@@ -63,15 +66,15 @@
 | `io.mockk:mockk` | 1.13.14 | Kotlin-native Mock 框架 |
 | `io.mockk:mockk-agent` | 1.13.14 | MockK JVM agent（单元测试） |
 | `io.mockk:mockk-android` | 1.13.14 | MockK Android instrumentation 版本 |
-| `org.jetbrains.kotlin:kotlin-test` | 2.3.0 | Kotlin 断言工具（兼容 JUnit 5，不引入 kotlin-test-junit 以避免 capability 冲突） |
+| `org.jetbrains.kotlin:kotlin-test` | 2.3.0 | Kotlin 断言工具（可用于 JUnit 5，不引入 kotlin-test-junit 以避免 capability 冲突） |
 | `kotlinx-coroutines-test` | 1.10.2 | 协程测试工具 |
 | `com.squareup.okhttp3:mockwebserver` | 4.12.0 | HTTP/WebSocket mock 服务器 |
 | `org.robolectric:robolectric` | 4.13 | Android 框架 JVM 模拟（NSD、Manifest 等） |
 | `androidx.test:core` | 1.6.1 | AndroidX 测试核心工具 |
 | `androidx.test.ext:junit` | 1.2.1 | AndroidX JUnit 扩展 |
-| `org.mockito:mockito-core` | 5.14.2 | Mockito（供 Wave 1 遗留测试使用；新测试优先用 MockK） |
-| `androidx.compose.ui:ui-test-junit4` | BOM 管理 | Compose UI 测试（`createComposeRule()`，Wave 5） |
-| `androidx.compose.ui:ui-test-manifest` | BOM 管理 | Compose UI 测试宿主 Activity（Robolectric 下 `setContent()` 所需，Wave 5） |
+| `org.mockito:mockito-core` | 5.14.2 | Mockito（供既有 Mockito 测试使用；新测试优先用 MockK） |
+| `androidx.compose.ui:ui-test-junit4` | BOM 管理 | Compose UI 测试（`createComposeRule()`） |
+| `androidx.compose.ui:ui-test-manifest` | BOM 管理 | Compose UI 测试宿主 Activity（Robolectric 下 `setContent()` 所需） |
 
 ## 架构
 
@@ -83,15 +86,16 @@
 
 ### 路由（`MaimaiNavHost`）
 
-底部导航三 Tab，路由均无参数，连接信息通过 `ServiceLocator.connectionHandle` 传递：
+底部导航四 Tab，路由均无参数，连接信息通过 `ServiceLocator.connectionHandle` 传递：
 
 | 路由（`AppDestination`） | 页面 | 说明 |
 |---|---|---|
-| `connection`（`Device`） | `ConnectionScreen` / 设备页 | 连接与设备管理；未连接时为默认启动页 |
 | `audio`（`Audio`） | `AudioScreen` / `AudioTabUnconnected` | 音频控制页；已连接时为默认启动页 |
 | `files`（`Files`） | `FilesScreen` / `FilesTabUnconnected` | 文件管理页 |
+| `power`（`Power`） | `PowerScreen` / `PowerTabUnconnected` | 远程关机页；未连接时展示空状态 |
+| `connection`（`Device`） | `ConnectionScreen` / 设备页 | 连接与设备管理；未连接时为默认启动页 |
 
-启动默认页规则：`connectionHandle == null` → Device，否则 → Audio。未连接时 Audio/Files Tab 展示空状态页（`AudioTabUnconnected` / `FilesTabUnconnected`），提供"前往设备"入口。
+启动默认页规则：`connectionHandle == null` → Device，否则 → Audio。未连接时 Audio/Files/Power Tab 展示空状态页（`AudioTabUnconnected` / `FilesTabUnconnected` / `PowerTabUnconnected`），提供"前往设备"入口。
 
 ## 数据层
 
@@ -108,8 +112,21 @@
 - 状态：`fetchStatus(address)` → `GET /api/status`
 - 音频：`fetchAudioState`、`fetchAudioDevices`、`setVolume`、`setMute`、`switchDevice`
 - 文件：`fetchFileRoots`、`fetchFiles`、`uploadFile`（两个重载：`File` 和 `ContentResolver+Uri`）、`downloadFile`、`deleteFile`、`renameFile`、`moveFile`
+- 远程关机：`fetchRemoteShutdownStatus(address)`、`executeRemoteShutdown(address, controlToken)`
 
 地址规范化：无 scheme 时自动补 `http://`；所有地址在发起请求前经 `LanAddressPolicy` 校验，非 RFC1918 / loopback / `.local` / IPv6 link-local 地址会抛出 `IllegalArgumentException`。
+
+远程关机请求使用 `RemoteShutdownRequest(confirm = true)`，执行时额外设置 `Authorization: Bearer <controlToken>` 请求头。401 会映射为 `ApiError.Kind.Unauthorized`，供 `PowerViewModel` 显示“未授权/控制令牌错误”类反馈。
+
+`RemoteShutdownStatus` 数据模型只包含：
+
+```kotlin
+RemoteShutdownStatus(
+    available: Boolean,
+    state: String,
+    error: String?,
+)
+```
 
 ### DiscoveryService
 
@@ -165,7 +182,7 @@ OkHttp `Dns` 接口的内部实现（`internal class LanDns`），作为连接�
 
 ### AudioScreen 公开 Composable
 
-`AudioScreen` 的完整签名（Wave 8 重设计）：
+`AudioScreen` 的完整签名：
 
 ```kotlin
 fun AudioScreen(
@@ -216,6 +233,39 @@ fun AudioScreen(
 | `VOLUME_PERCENT` | 音量百分比文字 |
 | `REFRESH_BUTTON` | 顶部栏刷新按钮 |
 | `SNACKBAR_HOST` | Snackbar 宿主 |
+
+### PowerScreen / PowerViewModel
+
+`PowerScreen` 的完整签名：
+
+```kotlin
+fun PowerScreen(
+    address: String,
+    machineName: String,
+    onOpenDevice: () -> Unit,
+    viewModel: PowerViewModel = ...,
+)
+```
+
+未连接时由 `MaimaiNavHost` 渲染 `PowerTabUnconnected(onGoToConnection)`，不进入 `PowerScreen`。
+
+`PowerViewModel` 负责：
+
+- `refresh()`：并发读取 `fetchStatus(address)` 与 `fetchRemoteShutdownStatus(address)`
+- `remoteShutdownAvailable`：同时要求 `AgentStatus.capabilities.remoteShutdown == true` 和 `RemoteShutdownStatus.available == true`
+- `executeShutdown()`：要求控制令牌非空，调用 `AgentClient.executeRemoteShutdown(address, token)`，确认后立即执行远程关机
+- `start()` / `stop()`：创建真实 `EventStream`，监听 `power.shutdown.*` 后刷新远程关机状态
+
+`PowerScreenTags` 是定义在 `PowerScreen.kt` 的公开 `object`，提供 Compose UI 测试所需的 `testTag` 常量：
+
+| 常量 | 说明 |
+|---|---|
+| `TOKEN_FIELD` | 控制令牌输入框 |
+| `SHUTDOWN_BUTTON` | 发起远程关机按钮 |
+| `CONFIRM_BUTTON` | 二次确认对话框里的确认关机按钮 |
+| `REFRESH_BUTTON` | 顶部栏刷新按钮 |
+| `SNACKBAR_HOST` | Snackbar 宿主 |
+
 ### FilesViewModel
 
 - `start()` / `stop()`：生命周期方法，由 Screen 通过 `DisposableEffect` 调用；`start()` 创建真实 `EventStream` 并订阅文件事件，`stop()` 断开连接并取消协程
@@ -252,11 +302,11 @@ pwsh scripts/verify-manifest.ps1 -ManifestPath path/to/AndroidManifest.xml
 
 对应的 Robolectric 单元测试位于 `ManifestSecurityTest.kt`，覆盖相同五项检查，可通过 `./gradlew test` 运行。
 
-`RobolectricSmokeTest.kt`（Wave 2.10）是一个独立的冒烟测试，验证 Robolectric 运行时可正常启动、`ApplicationProvider.getApplicationContext<App>()` 返回生产 `App` 实例（而非 Robolectric 默认的 `Application`），以及包名符合 debug/release 两种变体之一。该测试以 JUnit 4 编写，通过 `junit-vintage-engine` 桥接在 JUnit Platform 下运行。`testOptions.unitTests.isIncludeAndroidResources = true` 已在 `build.gradle.kts` 中启用，Robolectric 需要此选项才能访问 AndroidManifest 和资源文件。
+`RobolectricSmokeTest.kt` 是一个独立的冒烟测试，验证 Robolectric 运行时可正常启动、`ApplicationProvider.getApplicationContext<App>()` 返回生产 `App` 实例（而非 Robolectric 默认的 `Application`），以及包名符合 debug/release 两种变体之一。该测试以 JUnit 4 编写，通过 `junit-vintage-engine` 桥接在 JUnit Platform 下运行。`testOptions.unitTests.isIncludeAndroidResources = true` 已在 `build.gradle.kts` 中启用，Robolectric 需要此选项才能访问 AndroidManifest 和资源文件。
 
-`app/src/test/resources/robolectric.properties` 设置了全局 `sdk=28`，规避 `androidx.core 1.15.x` 与 Robolectric 4.13 的 insets-dispatch 字段不兼容问题（`NoSuchFieldError`）。旧测试类上的 `@Config(sdk = [28])` 与此保持一致；Wave 5 新增的 Compose UI 测试类（`ConnectionScreenTest`、`AudioScreenTest`、`FilesScreenTest`）使用 `@Config(sdk = [33])`，依赖 `build.gradle.kts` 中的 `afterEvaluate` 块通过 `configurations.matching { it.name.contains("UnitTest") && it.name.contains("RuntimeClasspath") }` 在单元测试运行时 classpath 中强制将 `androidx.core` 和 `androidx.core-ktx` 降至 `1.13.1`，作为双重保险。
+`app/src/test/resources/robolectric.properties` 设置了全局 `sdk=28`，规避 `androidx.core 1.15.x` 与 Robolectric 4.13 的 insets-dispatch 字段缺失问题（`NoSuchFieldError`）。使用 `@Config(sdk = [28])` 的测试类与此保持一致；Compose UI 测试类（`ConnectionScreenTest`、`AudioScreenTest`、`FilesScreenTest`）使用 `@Config(sdk = [33])`，依赖 `build.gradle.kts` 中的 `afterEvaluate` 块通过 `configurations.matching { it.name.contains("UnitTest") && it.name.contains("RuntimeClasspath") }` 在单元测试运行时 classpath 中强制将 `androidx.core` 和 `androidx.core-ktx` 降至 `1.13.1`，作为双重保险。
 
-### Release 变体测试配置（Wave 5）
+### Release 变体测试配置
 
 Release 单元测试变体（`testRelease`）需要额外配置才能让 Robolectric + `createComposeRule()` 正常工作：
 
@@ -271,7 +321,7 @@ Release 单元测试变体（`testRelease`）需要额外配置才能让 Robolec
 
 ## JaCoCo 覆盖率配置
 
-Wave 2.12 在 `app/build.gradle.kts` 中手动定义了两个 Gradle 任务，替代 `android-junit5` 插件自带的 JaCoCo 任务生成（已通过 `junitPlatform { jacocoOptions.taskGenerationEnabled.set(false) }` 禁用）：
+`app/build.gradle.kts` 中手动定义了两个 Gradle 任务，替代 `android-junit5` 插件自带的 JaCoCo 任务生成（已通过 `junitPlatform { jacocoOptions.taskGenerationEnabled.set(false) }` 禁用）：
 
 | 任务 | 说明 |
 |---|---|
@@ -292,6 +342,16 @@ Wave 2.12 在 `app/build.gradle.kts` 中手动定义了两个 Gradle 任务，�
 ```
 
 JaCoCo 版本：`0.8.12`。覆盖率统计排除主题文件、`MainActivity`、`App`、导航骨架、Compose 生成类等非业务代码。
+
+## 远程关机测试覆盖
+
+新增或更新的远程关机相关测试：
+
+- `data/AgentClientTest.kt`：覆盖 `fetchRemoteShutdownStatus`、`executeRemoteShutdown`，并断言执行请求会携带 `Authorization: Bearer <token>` 与 `{ "confirm": true }`
+- `data/AgentClientTest.kt`：覆盖远程关机 401 响应映射为 `ApiError.Kind.Unauthorized`
+- `data/models/AgentStatusSerializationTest.kt`：覆盖 `capabilities.remoteShutdown` 反序列化，旧 Agent 省略字段时默认 `false`
+- `ui/power/PowerViewModelTest.kt`：覆盖状态刷新、能力门控、控制令牌必填、立即执行和 `power.shutdown.*` 事件刷新
+- `ui/power/PowerScreenTest.kt`：覆盖按钮门控、控制令牌输入和二次确认对话框
 
 ## 构建说明
 
@@ -314,7 +374,8 @@ ABI 拆分已启用，仅输出 `arm64-v8a`，不生成 universal APK。
 2. 手机与 Windows 电脑连接同一局域网
 3. App 启动后进入设备页（`ConnectionScreen`），输入 Windows 机器 IP（如 `192.168.x.x:8765`）或点击"扫描局域网"自动发现
 4. 连接成功后自动跳转到音频页（`AudioScreen`），可切换设备、调节音量
-5. 通过底部 Tab 切换到文件页（`FilesScreen`）进行文件管理；未连接时两个页面均展示空状态并提供"前往设备"入口
+5. 通过底部 Tab 切换到文件页（`FilesScreen`）进行文件管理；未连接时文件页展示空状态并提供"前往设备"入口
+6. Agent 启用 `RemoteShutdown.Enabled` 并配置 `RemoteShutdown.ControlToken` 后，切换到底部电源页（`PowerScreen`），输入控制令牌并二次确认后会立即执行远程关机
 
 ## 注意事项
 
@@ -322,3 +383,13 @@ ABI 拆分已启用，仅输出 `arm64-v8a`，不生成 universal APK。
 - `CHANGE_WIFI_MULTICAST_STATE` 权限在部分厂商 ROM 上需要额外申请
 - Release 构建当前使用 debug 签名（`signingConfig = signingConfigs.getByName("debug")`），正式发布前需替换
 - `compileSdk 36` 需要在 `gradle.properties` 中设置 `android.suppressUnsupportedCompileSdk=36`（已配置）
+
+---
+
+## 修订记录
+
+| 时间 | 作者 | 变更说明 |
+|------|------|----------|
+| 2026-06-03 10:05 | Maimai Dev | `RemoteShutdownStatus` 收敛为 `available`、`state`、`error`，同步数据层、UI 测试和文档说明。 |
+| 2026-06-03 09:50 | Maimai Dev | 远程关机改为控制令牌二次确认后立即执行，更新 AgentClient、PowerViewModel、PowerScreenTags、测试覆盖和联调步骤，移除撤销路径说明。 |
+| 2026-06-02 20:38 | Maimai Dev | 更新四 Tab 导航、远程关机数据模型、AgentClient 方法、PowerScreen/PowerViewModel 接口、测试覆盖和联调步骤。 |

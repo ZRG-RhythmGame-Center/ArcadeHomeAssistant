@@ -50,7 +50,7 @@
 | `IncludeNativeLibrariesForSelfExtract` | `true` | 把 native DLL（Kestrel、ICU、Hostfxr 等）也塞进 exe |
 | `EnableCompressionInSingleFile` | `true` | 启用 LZMA 压缩，60 MB 出包对比未压缩约可省 30%~40% |
 | `DebugType` | `embedded` | 调试符号嵌入 exe，崩溃栈带行号；不会再额外生成独立 PDB |
-| `PublishTrimmed` | **`false`** | **绝对不能开**：`AudioSwitcher.AudioApi.CoreAudio`（NU1701 net40 库）、`NAudio` COM 互操作、`H.NotifyIcon` 都没有 trim 兼容声明，开启后会在运行时随机抛 `MissingMethodException` |
+| `PublishTrimmed` | **`false`** | **绝对不能开**：`AudioSwitcher.AudioApi.CoreAudio`（NU1701 net40 库）、`NAudio` COM 互操作、`H.NotifyIcon` 都没有 trimming 支持声明，开启后会在运行时随机抛 `MissingMethodException` |
 | `PublishDir` | `bin\publish\win-x64\` | 显式指定输出目录（相对 csproj），避开默认的 `bin/Release/<TFM>/<RID>/publish/` 嵌套层级 |
 
 ## 一键发布脚本 publish.ps1
@@ -183,7 +183,7 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 - 切换设备时 `TypeLoadException` on `IMMNotificationClient`
 - Tray 加载图标时 `EntryPointNotFoundException` on `LoadImageW`
 
-且这些都是运行时偶发，**单元测试覆盖不到**。当前节流体积约 60 MB 已经在可接受范围（< 100 MB 目标），不值得为了再压几兆冒崩溃风险。等到 Wave 5 之后这些依赖确实声明 trim-compatible 再考虑切换。
+且这些都是运行时偶发，**单元测试覆盖不到**。当前节流体积约 60 MB 已经在可接受范围（< 100 MB 目标），不值得为了再压几兆冒崩溃风险。等到这些依赖明确声明支持 trimming 后再考虑切换。
 
 ## 后续可选优化
 

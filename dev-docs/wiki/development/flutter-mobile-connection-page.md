@@ -69,7 +69,7 @@
 ### dependency_overrides
 
 `file_picker 8.x` 传递依赖 `flutter_plugin_android_lifecycle 6.0.0`，该版本要求 `compileSdk 36`。
-当前 Android 构建已升级至 `compileSdk 36`（`android/app/build.gradle.kts`），同时在 `pubspec.yaml` 中通过 `dependency_overrides` 将 `flutter_plugin_android_lifecycle` 固定为 `2.0.22`，以保持与现有构建配置的兼容性。
+当前 Android 构建已升级至 `compileSdk 36`（`android/app/build.gradle.kts`），同时在 `pubspec.yaml` 中通过 `dependency_overrides` 将 `flutter_plugin_android_lifecycle` 固定为 `2.0.22`，以保持现有构建配置可用。
 如后续插件迁移完成，可移除此 override。
 
 ### Android 构建工具链版本
@@ -210,4 +210,4 @@ _maimai-home._tcp
 
 1. ~~接入 WebSocket `/api/events` 实时推送~~ **已完成**：`EventStream`（指数退避重连）+ `events_provider`（`eventBusProvider` 路由 `audio.*`/`file.*` 事件）
 2. ~~实现文件浏览页（`FilesPage`）~~ **已完成**：接入 `fileRootsProvider` + `fileListingProvider`，支持上传/下载/删除/重命名
-3. ~~接入配对授权流程（Wave 4）~~ **已完成**：`PairingPage`、`AuthNotifier`、`_AuthGate` 路由守卫均已实现
+3. ~~接入配对授权流程~~ **已完成**：`PairingPage`、`AuthNotifier`、`_AuthGate` 路由守卫均已实现
