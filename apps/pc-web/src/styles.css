@@ -316,6 +316,169 @@ body {
 }
 
 /* ============================================================
+   Power page
+   ============================================================ */
+
+.power-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 720px;
+}
+
+.power-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.power-header h1 {
+  margin: 0 0 var(--space-2);
+  font-size: 28px;
+}
+
+.power-subtitle {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.power-agent-url {
+  font-family: 'JetBrains Mono', 'Cascadia Code', ui-monospace, monospace;
+  color: var(--text);
+}
+
+.power-status-pill {
+  flex: 0 0 auto;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.power-status-pill.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.power-error {
+  background: rgba(239, 87, 119, 0.12);
+  border: 1px solid rgba(239, 87, 119, 0.4);
+  color: #ff97ad;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+.power-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.power-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.power-card-header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.power-card-value {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.power-copy {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.power-token-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.power-token-input {
+  width: 100%;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: var(--space-3) var(--space-4);
+  font: inherit;
+}
+
+.power-confirm {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-4);
+}
+
+.power-confirm p {
+  margin: 0 0 var(--space-4);
+  line-height: 1.6;
+}
+
+.power-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.power-danger-button,
+.power-secondary-button {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.power-danger-button {
+  background: #d83b5c;
+  border-color: #d83b5c;
+  color: #fff;
+}
+
+.power-secondary-button {
+  background: var(--surface-elevated);
+}
+
+.power-danger-button:hover:not(:disabled),
+.power-secondary-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.power-danger-button:disabled,
+.power-secondary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
    Files page
    ============================================================ */
 

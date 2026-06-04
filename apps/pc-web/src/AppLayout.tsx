@@ -5,6 +5,7 @@ export function AppLayout() {
   const tabs = [
     { to: '/audio', label: 'Audio' },
     { to: '/files', label: 'Files' },
+    { to: '/power', label: 'Power' },
   ];
 
   return (

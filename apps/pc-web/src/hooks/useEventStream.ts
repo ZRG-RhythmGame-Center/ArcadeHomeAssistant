@@ -10,6 +10,7 @@ import { EventStream, type EventEnvelope } from '../lib/eventStream';
  * - `audio.state`           → invalidate `['audio', 'state']`
  * - `audio.device.changed`  → invalidate `['audio']` (covers state + device list)
  * - `file.*`                → invalidate `['files', 'listing']`
+ * - `power.shutdown.*`      → invalidate `['power', 'shutdown']`
  *
  * Reconnect handling: once the socket re-opens after a disconnect, we
  * invalidate `['audio']` and `['files']` (NOT a global flush) to recover
@@ -38,6 +39,11 @@ export function useEventStream(): void {
         queryClient.invalidateQueries({ queryKey: ['files', 'listing'] });
         return;
       }
+      if (type.startsWith('power.shutdown.')) {
+        queryClient.invalidateQueries({ queryKey: ['power', 'shutdown'] });
+        queryClient.invalidateQueries({ queryKey: ['power', 'agent-status'] });
+        return;
+      }
       // Other server-side event types (e.g. `device.unavailable`) are not
       // mapped to a query key — ignored on purpose.
     };
@@ -47,6 +53,7 @@ export function useEventStream(): void {
       // areas without invalidating EVERY query.
       queryClient.invalidateQueries({ queryKey: ['audio'] });
       queryClient.invalidateQueries({ queryKey: ['files'] });
+      queryClient.invalidateQueries({ queryKey: ['power'] });
     };
 
     const unsubscribe = stream.subscribe(handleEvent);

@@ -126,7 +126,7 @@ export interface DownloadVariables {
 
 /**
  * Returns a stable callback that fetches the file as a blob and triggers
- * a browser download via a temporary anchor click. Not a `useMutation`
+ * a browser download via a transient anchor click. Not a `useMutation`
  * because TanStack Query has nothing to cache — the side effect IS the
  * outcome.
  */
