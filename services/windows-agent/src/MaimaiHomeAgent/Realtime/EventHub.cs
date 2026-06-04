@@ -32,10 +32,10 @@ public class EventHub
     /// closes. The caller (the /api/events handler) must keep awaiting this so
     /// ASP.NET Core does not tear down the connection.
     /// </summary>
-    public async Task AddAsync(WebSocket socket, string? token, CancellationToken ct)
+    public async Task AddAsync(WebSocket socket, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(socket);
-        var session = new WebSocketSession(socket, token, _logger);
+        var session = new WebSocketSession(socket, _logger);
         _sessions[session.Id] = session;
         _logger.LogInformation("WebSocket session {SessionId} connected. TotalSessions={Total}", session.Id, _sessions.Count);
 

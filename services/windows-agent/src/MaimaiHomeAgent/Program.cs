@@ -2,9 +2,11 @@ using System.Reflection;
 using MaimaiHomeAgent.Audio;
 using MaimaiHomeAgent.Files;
 using MaimaiHomeAgent.Discovery;
+using MaimaiHomeAgent.Power;
 using MaimaiHomeAgent.Realtime;
 using MaimaiHomeAgent.Startup;
 using MaimaiHomeAgent.Tray;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 using Serilog.Settings.Configuration;
 
@@ -48,6 +50,7 @@ try
 
     builder.Services.AddOpenApi();
     builder.Services.Configure<DiscoveryOptions>(builder.Configuration.GetSection("Discovery"));
+    builder.Services.Configure<RemoteShutdownOptions>(builder.Configuration.GetSection("RemoteShutdown"));
     builder.Services.AddHostedService<MdnsAdvertiser>();
 
     builder.Services.AddSingleton<AudioStaDispatcher>();
@@ -64,9 +67,12 @@ try
     builder.Services.AddSingleton<EventPublisher>();
     builder.Services.AddHostedService<HeartbeatService>();
 
+    builder.Services.TryAddSingleton<IProcessRunner, ProcessRunner>();
+    builder.Services.AddSingleton<IRemoteShutdownExecutor, WindowsRemoteShutdownExecutor>();
+    builder.Services.AddSingleton<IRemoteShutdownService, RemoteShutdownService>();
+
     if (OperatingSystem.IsWindows())
     {
-        builder.Services.AddSingleton<IProcessRunner, ProcessRunner>();
         builder.Services.AddSingleton<AutoStartManager>();
         builder.Services.AddHostedService<TrayApp>();
     }
@@ -86,12 +92,11 @@ try
     var startedAt = DateTimeOffset.UtcNow;
     var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
 
-    app.MapGet("/api/status", (HttpContext ctx) =>
+    app.MapGet("/api/status", (HttpContext ctx, IRemoteShutdownService remoteShutdown) =>
     {
         var uptime = DateTimeOffset.UtcNow - startedAt;
         // baseUrl: derived from the inbound request so the mobile client can
         // round-trip the canonical address it should use for subsequent calls.
-        // Closes Gate F #3 / R2 I20 / mobile-side AgentStatus.baseUrl field.
         var baseUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}";
         return Results.Ok(new
         {
@@ -106,7 +111,8 @@ try
                 audioMute = true,
                 audioDeviceSwitch = true,
                 fileManagement = true,
-                discoveryBroadcast = true
+                discoveryBroadcast = true,
+                remoteShutdown = remoteShutdown.IsAvailable
             }
         });
     });
@@ -119,12 +125,8 @@ try
             return;
         }
 
-        // Optional ?token= query is preserved as a no-op client identifier
-        // for backwards compatibility (e.g. mobile app builds that still set it).
-
         using var socket = await ctx.WebSockets.AcceptWebSocketAsync();
-        var token = ctx.Request.Query["token"].FirstOrDefault();
-        await hub.AddAsync(socket, token, ct);
+        await hub.AddAsync(socket, ct);
     });
 
     app.MapFileRootsConfigEndpoints();
@@ -132,6 +134,7 @@ try
     app.MapFileMutationEndpoints();
     app.MapAudioEndpoints();
     app.MapDeviceEndpoints();
+    app.MapPowerEndpoints();
 
 
     // Fallback to the SPA shell for any non-API route. Registered AFTER all

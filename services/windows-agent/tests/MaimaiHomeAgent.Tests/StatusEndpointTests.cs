@@ -166,9 +166,20 @@ public class StatusEndpointTests : IDisposable
         Assert.Equal(JsonValueKind.True, prop.ValueKind);
     }
 
+    [Fact]
+    public async Task GetStatus_Capabilities_ContainsRemoteShutdownFalseByDefault()
+    {
+        var response = await _client.GetAsync("/api/status");
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+
+        var caps = doc.RootElement.GetProperty("capabilities");
+        Assert.True(caps.TryGetProperty("remoteShutdown", out var prop));
+        Assert.Equal(JsonValueKind.False, prop.ValueKind);
+    }
+
     /// <summary>
-    /// Closes Gate F #3: /api/status must include a baseUrl field so the
-    /// mobile-side AgentStatus.baseUrl mirror has a value to read.
+    /// /api/status includes a baseUrl field for mobile AgentStatus.baseUrl.
     /// </summary>
     [Fact]
     public async Task GetStatus_ContainsBaseUrl()

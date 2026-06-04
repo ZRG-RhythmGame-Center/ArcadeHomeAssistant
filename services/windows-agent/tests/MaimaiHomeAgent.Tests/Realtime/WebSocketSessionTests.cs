@@ -26,7 +26,7 @@ public class WebSocketSessionTests
         // Abort the client side so the server's CloseAsync will fail.
         clientWs.Abort();
 
-        var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
 
         // Must not throw.
         await session.CloseAsync(WebSocketCloseStatus.NormalClosure, "done");
@@ -38,7 +38,7 @@ public class WebSocketSessionTests
     public async Task CloseAsync_WhenAlreadyClosed_DoesNotThrow()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
-        var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
 
         // Run the server receive loop so the close handshake can complete.
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -64,7 +64,7 @@ public class WebSocketSessionTests
     public async Task SendJsonAsync_DeliversFrameToClient()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
-        var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
 
         var envelope = new EventEnvelope(
             EventTypes.AudioState,
@@ -86,7 +86,7 @@ public class WebSocketSessionTests
     {
         // Verifies the semaphore serialises concurrent sends without deadlock.
         var (serverWs, clientWs) = CreateLinkedPair();
-        var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
 
         const int count = 10;
         var sendTasks = Enumerable.Range(0, count).Select(i =>
@@ -124,7 +124,7 @@ public class WebSocketSessionTests
     public async Task SendPingAsync_DeliversPingFrame()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
-        var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
 
         await session.SendPingAsync();
 
@@ -143,7 +143,7 @@ public class WebSocketSessionTests
     public async Task ReceiveLoopAsync_ExitsWhenClientCloses()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
-        var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var loopTask = session.ReceiveLoopAsync(cts.Token);
@@ -163,7 +163,7 @@ public class WebSocketSessionTests
     public async Task ReceiveLoopAsync_ExitsOnCancellation()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
-        var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
 
         using var cts = new CancellationTokenSource();
         var loopTask = session.ReceiveLoopAsync(cts.Token);
@@ -182,7 +182,7 @@ public class WebSocketSessionTests
     public async Task ReceiveLoopAsync_UpdatesLastPongAt_OnAnyFrame()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
-        var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
         var before = session.LastPongAt;
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -208,7 +208,7 @@ public class WebSocketSessionTests
     public async Task ReceiveLoopAsync_WebSocketException_ExitsGracefully()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
-        var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var loopTask = session.ReceiveLoopAsync(cts.Token);
@@ -231,7 +231,7 @@ public class WebSocketSessionTests
     public async Task DisposeAsync_CalledTwice_DoesNotThrow()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
-        var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
 
         await session.DisposeAsync();
         // Second dispose must not throw (semaphore already disposed).
@@ -248,14 +248,12 @@ public class WebSocketSessionTests
     public async Task Constructor_SetsExpectedProperties()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
-        var token = "test-token";
         var before = DateTimeOffset.UtcNow;
 
-        var session = new WebSocketSession(serverWs, token, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
 
         Assert.NotEqual(Guid.Empty, session.Id);
         Assert.Equal(serverWs, session.Socket);
-        Assert.Equal(token, session.Token);
         Assert.True(session.ConnectedAt >= before);
         Assert.True(session.LastPongAt >= before);
 
@@ -267,14 +265,14 @@ public class WebSocketSessionTests
     public void Constructor_NullSocket_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new WebSocketSession(null!, null, NullLogger.Instance));
+            new WebSocketSession(null!, NullLogger.Instance));
     }
 
     [Fact]
     public async Task MarkPong_UpdatesLastPongAt()
     {
         var (serverWs, clientWs) = CreateLinkedPair();
-        var session = new WebSocketSession(serverWs, null, NullLogger.Instance);
+        var session = new WebSocketSession(serverWs, NullLogger.Instance);
         var newTime = DateTimeOffset.UtcNow.AddMinutes(5);
 
         session.MarkPong(newTime);

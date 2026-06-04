@@ -86,6 +86,23 @@ public sealed class EventPublisherTests
     }
 
     [Fact]
+    public async Task PublishRemoteShutdownEvent_BroadcastsPowerEnvelope()
+    {
+        var hub = new RecordingEventHub();
+        var publisher = new EventPublisher(hub);
+
+        publisher.PublishRemoteShutdownEvent(
+            EventTypes.PowerShutdownExecuting,
+            new { state = "executing", executedAt = "2026-01-01T00:00:00Z" });
+        await hub.WaitForBroadcastAsync(1);
+
+        var envelope = Assert.Single(hub.Broadcasts);
+        Assert.Equal(EventTypes.PowerShutdownExecuting, envelope.Type);
+        Assert.Equal("executing", envelope.Payload.GetProperty("state").GetString());
+        Assert.Equal("2026-01-01T00:00:00Z", envelope.Payload.GetProperty("executedAt").GetString());
+    }
+
+    [Fact]
     public async Task PublishAudioStateChanged_DoesNotBlockCaller()
     {
         // The hub broadcast intentionally hangs; the publisher must still return

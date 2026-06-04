@@ -14,4 +14,6 @@ public static class EventTypes
     public const string FileRenamed = "file.renamed";
     public const string FileMoved = "file.moved";
     public const string DeviceUnavailable = "device.unavailable";
+    public const string PowerShutdownExecuting = "power.shutdown.executing";
+    public const string PowerShutdownFailed = "power.shutdown.failed";
 }

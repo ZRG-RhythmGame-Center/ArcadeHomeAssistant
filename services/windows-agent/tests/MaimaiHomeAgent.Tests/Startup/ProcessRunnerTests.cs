@@ -73,8 +73,8 @@ public class ProcessRunnerTests
             await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
                 await _runner.RunAsync("ping.exe", "-n 30 127.0.0.1", cts.Token));
 
-            // Closes Gate F #2: prove the process was actually KILLED, not just
-            // that the wait was abandoned. ProcessRunner.RunAsync wires
+            // Prove the process was actually killed, not just that the wait
+            // was abandoned. ProcessRunner.RunAsync wires
             // process.Kill(entireProcessTree: true) into the cancellation path,
             // so any ping.exe spawned during this test must be gone after
             // RunAsync returns. We give the OS a brief moment to reap the PID.

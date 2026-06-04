@@ -5,7 +5,7 @@ Windows Agent 是运行在目标 Windows 电脑上的本地服务，负责暴露
 ## 当前已完成
 
 - ASP.NET Core Minimal API 启动骨架
-- `GET /api/status` 状态接口（含 `discoveryBroadcast` 能力标志）
+- `GET /api/status` 状态接口（含 `discoveryBroadcast`、`remoteShutdown` 能力标志）
 - Serilog 控制台 + 文件日志
 - 默认监听 `0.0.0.0:8765`
 - `Makaretu.Dns.Multicast` mDNS / DNS-SD 服务广播
@@ -15,7 +15,8 @@ Windows Agent 是运行在目标 Windows 电脑上的本地服务，负责暴露
 - `PathGuardResult`：类型化结果，调用方映射到 HTTP 403/400，不使用异常驱动控制流
 - 音频控制 HTTP 接口：`GET /api/audio/state`、`POST /api/audio/volume`、`POST /api/audio/mute`
 - 音频设备接口：`GET /api/audio/devices`、`POST /api/audio/default-device`
-- `DeviceChangeNotifier`：监听 Windows Core Audio 设备变更事件，通过 EventHub WebSocket 广播 `audio_device_changed`
+- 远程关机接口：`GET /api/power/shutdown`、`POST /api/power/shutdown`
+- `DeviceChangeNotifier`：监听 Windows Core Audio 设备变更事件，通过 EventHub WebSocket 广播 `audio.device.changed`
 ## 目录结构
 
 ```text
@@ -76,6 +77,8 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8765/api/status" -UseBasicParsing
 - `POST /api/audio/mute`
 - `GET /api/audio/devices`
 - `POST /api/audio/default-device`
+- `GET /api/power/shutdown`
+- `POST /api/power/shutdown`
 
 返回示例：
 
@@ -91,12 +94,44 @@ Invoke-WebRequest -Uri "http://127.0.0.1:8765/api/status" -UseBasicParsing
     "audioMute": true,
     "audioDeviceSwitch": true,
     "fileManagement": true,
-    "discoveryBroadcast": true
+    "discoveryBroadcast": true,
+    "remoteShutdown": false
   }
 }
 ```
 
-`capabilities` 中所有能力均已实现，当前全部为 `true`。`baseUrl` 字段由服务端根据入站请求动态生成，供移动端回传使用。
+`baseUrl` 字段由服务端根据入站请求动态生成，供移动端回传使用。`remoteShutdown` 默认是 `false`，只有 `appsettings.json` 的 `RemoteShutdown.Enabled = true`、`RemoteShutdown.ControlToken` 非空且当前平台支持关机执行器时才会变为 `true`。
+
+## 远程关机
+
+远程关机是危险操作，不复用普通 LAN API 的匿名访问能力。发起关机必须携带 `Authorization: Bearer <RemoteShutdown.ControlToken>`，请求体必须包含 `{ "confirm": true }`。
+
+配置位置：
+
+```json
+"RemoteShutdown": {
+  "Enabled": false,
+  "ControlToken": ""
+}
+```
+
+接口行为：
+
+- `GET /api/power/shutdown`：读取当前能力、执行中或失败状态。
+- `POST /api/power/shutdown`：令牌校验和二次确认通过后立即调用 `shutdown.exe /s /t 0`；正在执行时返回 409。
+- 开始执行和失败会通过 `/api/events` 广播 `power.shutdown.executing` / `power.shutdown.failed` 事件。
+
+状态响应固定为：
+
+```json
+{
+  "available": true,
+  "state": "idle",
+  "error": null
+}
+```
+
+`state` 取值为 `idle`、`executing` 或 `failed`；执行事件的时间只出现在 `/api/events` 的远程关机事件 payload 中。
 
 ## 日志位置
 
@@ -178,7 +213,7 @@ pnpm --dir apps/pc-web build
 
 - `pnpm --dir apps/pc-web build` 会先跑 `tsc --noEmit`，再跑 `vite build`。如果只想跳过类型检查、纯出包，使用 `pnpm --dir apps/pc-web build:agent`。
 - `vite.config.ts` 的 `build.outDir` 通过 `fileURLToPath` 解析为绝对路径，指向 `services/windows-agent/src/MaimaiHomeAgent/wwwroot/`。`emptyOutDir: true` 会清空旧产物，但 `.gitkeep` 在每次 vite build 后会被一起清掉——它只是给 Git 占位用。
-- Agent 的 csproj 里有一个 `WarnIfPcWebMissing` MSBuild target：检测到 `wwwroot/index.html` 不存在时只打印 `MSBuild warning`，**不会阻断构建**。换言之，单独构建 Agent（不构建 PC Web）依然成功，但访问 `/audio`、`/files`、`/pairing` 等 SPA 路由会返回 404。
+- Agent 的 csproj 里有一个 `WarnIfPcWebMissing` MSBuild target：检测到 `wwwroot/index.html` 不存在时只打印 `MSBuild warning`，**不会阻断构建**。换言之，单独构建 Agent（不构建 PC Web）依然成功，但访问 `/audio`、`/files`、`/power` 等 SPA 路由会返回 404。
 - 不要在 `dotnet build` 内部链式调用 `pnpm`：跨工具链路径解析容易出错；保持"先 pnpm build，再 dotnet build/publish"两步走。
 - `wwwroot/` 下的构建产物属于派生物，不应提交到 git；仓库的 `.gitignore` 应当忽略 `services/windows-agent/src/MaimaiHomeAgent/wwwroot/*`，只保留 `.gitkeep`。
 
@@ -205,7 +240,7 @@ services\windows-agent\publish.ps1
 - `PublishSingleFile=true` + `IncludeNativeLibrariesForSelfExtract=true` + `EnableCompressionInSingleFile=true`：合一可执行文件、内嵌原生 DLL、压缩。
 - `SelfContained=true` + `RuntimeIdentifier=win-x64`：自带 .NET 9 运行时，目标机器无需预装 SDK。
 - `DebugType=embedded`：调试符号嵌入 exe，方便事后排查崩溃。
-- `PublishTrimmed=false`：**不**裁剪。`AudioSwitcher`、`NAudio`、`H.NotifyIcon` 都没有官方验证 trim 兼容；强行开启会在运行时随机抛 `MissingMethodException`。等到这些依赖明确支持 trimming 之后再考虑打开。
+- `PublishTrimmed=false`：**不**裁剪。`AudioSwitcher`、`NAudio`、`H.NotifyIcon` 都没有官方验证 trimming 支持声明；强行开启会在运行时随机抛 `MissingMethodException`。等到这些依赖明确支持 trimming 之后再考虑打开。
 - `PublishDir=bin\publish\win-x64\`：输出目录，相对 csproj。
 
 如果 `dotnet` 不在 PATH 上，可以传 `-DotnetPath`：
@@ -245,7 +280,7 @@ New-NetFirewallRule -DisplayName "Maimai Home Agent" -Direction Inbound -LocalPo
 
 ### 注意事项
 
-- **必须先把 PC Web 构建到 `wwwroot/`**：脚本第 1、2 步会做这件事；如果跳过，`/`、`/audio`、`/files`、`/pairing` 等 SPA 路由会返回 404，但 `/api/*` 仍然正常。
+- **必须先把 PC Web 构建到 `wwwroot/`**：脚本第 1、2 步会做这件事；如果跳过，`/`、`/audio`、`/files`、`/power` 等 SPA 路由会返回 404，但 `/api/*` 仍然正常。
 - **`ContentRoot` 已固定到 exe 所在目录**：发布后 `appsettings.json` 紧挨着 exe，`Program.cs` 通过 `WebApplicationOptions.ContentRootPath = AppContext.BaseDirectory` 显式锁定路径，不论从哪个 CWD 启动都能正确加载配置。
 - **single-file 下 Serilog 不能自动扫程序集**：`Program.cs` 通过 `ConfigurationReaderOptions(typeof(ConsoleLoggerConfigurationExtensions).Assembly, typeof(FileLoggerConfigurationExtensions).Assembly)` 显式声明 sink 程序集；如果再添加新 sink，需要在这里同步声明，否则会报 `No Serilog:Using configuration section is defined`。
 - **不要 trim**：见上面 `PublishTrimmed=false` 的说明。

@@ -17,10 +17,9 @@ public sealed class WebSocketSession : IAsyncDisposable
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly ILogger? _logger;
 
-    public WebSocketSession(WebSocket socket, string? token, ILogger? logger = null)
+    public WebSocketSession(WebSocket socket, ILogger? logger = null)
     {
         Socket = socket ?? throw new ArgumentNullException(nameof(socket));
-        Token = token;
         Id = Guid.NewGuid();
         ConnectedAt = DateTimeOffset.UtcNow;
         LastPongAt = ConnectedAt;
@@ -29,7 +28,6 @@ public sealed class WebSocketSession : IAsyncDisposable
 
     public Guid Id { get; }
     public WebSocket Socket { get; }
-    public string? Token { get; }
     public DateTimeOffset ConnectedAt { get; }
     public DateTimeOffset LastPongAt { get; private set; }
 

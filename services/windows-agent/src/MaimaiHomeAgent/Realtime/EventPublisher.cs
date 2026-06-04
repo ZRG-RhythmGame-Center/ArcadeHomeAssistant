@@ -71,6 +71,13 @@ public sealed class EventPublisher
         Broadcast(EventTypes.DeviceUnavailable, new { deviceId });
     }
 
+    public void PublishRemoteShutdownEvent<TPayload>(string eventType, TPayload payload)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(eventType);
+        ArgumentNullException.ThrowIfNull(payload);
+        Broadcast(eventType, payload);
+    }
+
     private void Broadcast<T>(string eventType, T payload)
     {
         var element = JsonSerializer.SerializeToElement(payload, JsonOptions);

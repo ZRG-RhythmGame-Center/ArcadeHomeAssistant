@@ -25,7 +25,7 @@ public sealed class EventHubTests
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
         // Run AddAsync in background; it should register the session and run receive loop.
-        var addTask = Task.Run(() => hub.AddAsync(serverWs, "test-token", cts.Token));
+        var addTask = Task.Run(() => hub.AddAsync(serverWs, cts.Token));
 
         // Wait for the session to land in the registry.
         await WaitForAsync(() => hub.SessionCount >= 1, TimeSpan.FromSeconds(2));
@@ -55,8 +55,8 @@ public sealed class EventHubTests
         var hub = new EventHub(NullLogger<EventHub>.Instance);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
-        var addA = Task.Run(() => hub.AddAsync(serverA, null, cts.Token));
-        var addB = Task.Run(() => hub.AddAsync(serverB, null, cts.Token));
+        var addA = Task.Run(() => hub.AddAsync(serverA, cts.Token));
+        var addB = Task.Run(() => hub.AddAsync(serverB, cts.Token));
 
         await WaitForAsync(() => hub.SessionCount >= 2, TimeSpan.FromSeconds(2));
         Assert.Equal(2, hub.SessionCount);
@@ -90,7 +90,7 @@ public sealed class EventHubTests
         var heartbeat = new HeartbeatService(hub, options, NullLogger<HeartbeatService>.Instance);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var addTask = Task.Run(() => hub.AddAsync(serverWs, null, cts.Token));
+        var addTask = Task.Run(() => hub.AddAsync(serverWs, cts.Token));
         await WaitForAsync(() => hub.SessionCount >= 1, TimeSpan.FromSeconds(2));
         Assert.Equal(1, hub.SessionCount);
 
@@ -117,7 +117,7 @@ public sealed class EventHubTests
         var hub = new EventHub(NullLogger<EventHub>.Instance);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
-        var addTask = Task.Run(() => hub.AddAsync(serverWs, null, cts.Token));
+        var addTask = Task.Run(() => hub.AddAsync(serverWs, cts.Token));
         await WaitForAsync(() => hub.SessionCount >= 1, TimeSpan.FromSeconds(2));
 
         var session = Assert.Single(hub.Snapshot());

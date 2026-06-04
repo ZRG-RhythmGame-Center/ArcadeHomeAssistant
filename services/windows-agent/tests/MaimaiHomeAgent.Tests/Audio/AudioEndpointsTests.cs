@@ -241,7 +241,7 @@ public class AudioEndpointsTests : IAsyncLifetime
         // observe the broadcast that the endpoint should emit on success.
         var (serverWs, clientWs) = CreateLinkedWebSocketPair();
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var addTask = Task.Run(() => _hub.AddAsync(serverWs, null, cts.Token));
+        var addTask = Task.Run(() => _hub.AddAsync(serverWs, cts.Token));
         await WaitForAsync(() => _hub.SessionCount >= 1, TimeSpan.FromSeconds(2));
 
         var deviceId = Guid.NewGuid();
@@ -270,7 +270,7 @@ public class AudioEndpointsTests : IAsyncLifetime
     {
         var (serverWs, clientWs) = CreateLinkedWebSocketPair();
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        var addTask = Task.Run(() => _hub.AddAsync(serverWs, null, cts.Token));
+        var addTask = Task.Run(() => _hub.AddAsync(serverWs, cts.Token));
         await WaitForAsync(() => _hub.SessionCount >= 1, TimeSpan.FromSeconds(2));
 
         _audioMock
@@ -298,7 +298,7 @@ public class AudioEndpointsTests : IAsyncLifetime
         // Read-only state retrieval must NOT trigger an audio.state broadcast.
         var (serverWs, clientWs) = CreateLinkedWebSocketPair();
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var addTask = Task.Run(() => _hub.AddAsync(serverWs, null, cts.Token));
+        var addTask = Task.Run(() => _hub.AddAsync(serverWs, cts.Token));
         await WaitForAsync(() => _hub.SessionCount >= 1, TimeSpan.FromSeconds(2));
 
         _audioMock
