@@ -8,7 +8,7 @@ namespace MaimaiHomeAgent.Startup;
 /// Uses <c>/SC ONLOGON /RL LIMITED</c> so the scheduled task is created at user
 /// scope, no admin elevation required.
 /// </summary>
-public sealed class AutoStartManager
+public sealed class AutoStartManager : IAutoStartManager
 {
     /// <summary>
     /// Scheduled task name. Stable across versions because <see cref="IsEnabledAsync"/>

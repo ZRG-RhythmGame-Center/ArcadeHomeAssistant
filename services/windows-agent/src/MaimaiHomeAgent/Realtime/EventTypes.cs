@@ -16,4 +16,5 @@ public static class EventTypes
     public const string DeviceUnavailable = "device.unavailable";
     public const string PowerShutdownExecuting = "power.shutdown.executing";
     public const string PowerShutdownFailed = "power.shutdown.failed";
+    public const string SettingsUpdated = "settings.updated";
 }

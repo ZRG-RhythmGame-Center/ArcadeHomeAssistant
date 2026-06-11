@@ -178,6 +178,30 @@ public class StatusEndpointTests : IDisposable
         Assert.Equal(JsonValueKind.False, prop.ValueKind);
     }
 
+    [Fact]
+    public async Task GetStatus_Capabilities_ContainsSettingsManagement()
+    {
+        var response = await _client.GetAsync("/api/status");
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+
+        var caps = doc.RootElement.GetProperty("capabilities");
+        Assert.True(caps.TryGetProperty("settingsManagement", out var prop));
+        Assert.Equal(JsonValueKind.True, prop.ValueKind);
+    }
+
+    [Fact]
+    public async Task GetStatus_Capabilities_ContainsLauncher()
+    {
+        var response = await _client.GetAsync("/api/status");
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+
+        var caps = doc.RootElement.GetProperty("capabilities");
+        Assert.True(caps.TryGetProperty("launcher", out var prop));
+        Assert.Equal(JsonValueKind.True, prop.ValueKind);
+    }
+
     /// <summary>
     /// /api/status includes a baseUrl field for mobile AgentStatus.baseUrl.
     /// </summary>

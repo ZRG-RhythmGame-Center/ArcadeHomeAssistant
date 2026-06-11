@@ -1,9 +1,12 @@
 using System.Reflection;
+using MaimaiHomeAgent.Admin;
 using MaimaiHomeAgent.Audio;
 using MaimaiHomeAgent.Files;
 using MaimaiHomeAgent.Discovery;
+using MaimaiHomeAgent.Launcher;
 using MaimaiHomeAgent.Power;
 using MaimaiHomeAgent.Realtime;
+using MaimaiHomeAgent.Settings;
 using MaimaiHomeAgent.Startup;
 using MaimaiHomeAgent.Tray;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -28,6 +31,10 @@ try
         Args = args,
         ContentRootPath = AppContext.BaseDirectory,
     });
+    if (!builder.Environment.IsEnvironment("Testing"))
+    {
+        builder.Configuration.AddJsonFile("appsettings.user.json", optional: true, reloadOnChange: true);
+    }
 
     var logPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -49,8 +56,11 @@ try
     });
 
     builder.Services.AddOpenApi();
+    builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection("Admin"));
     builder.Services.Configure<DiscoveryOptions>(builder.Configuration.GetSection("Discovery"));
+    builder.Services.Configure<LauncherOptions>(builder.Configuration.GetSection("Launcher"));
     builder.Services.Configure<RemoteShutdownOptions>(builder.Configuration.GetSection("RemoteShutdown"));
+    builder.Services.AddSingleton<AdminGuard>();
     builder.Services.AddHostedService<MdnsAdvertiser>();
 
     builder.Services.AddSingleton<AudioStaDispatcher>();
@@ -70,10 +80,12 @@ try
     builder.Services.TryAddSingleton<IProcessRunner, ProcessRunner>();
     builder.Services.AddSingleton<IRemoteShutdownExecutor, WindowsRemoteShutdownExecutor>();
     builder.Services.AddSingleton<IRemoteShutdownService, RemoteShutdownService>();
+    builder.Services.AddSingleton<IAgentSettingsService, AgentSettingsService>();
 
     if (OperatingSystem.IsWindows())
     {
         builder.Services.AddSingleton<AutoStartManager>();
+        builder.Services.AddSingleton<IAutoStartManager>(sp => sp.GetRequiredService<AutoStartManager>());
         builder.Services.AddHostedService<TrayApp>();
     }
 
@@ -112,7 +124,9 @@ try
                 audioDeviceSwitch = true,
                 fileManagement = true,
                 discoveryBroadcast = true,
-                remoteShutdown = remoteShutdown.IsAvailable
+                remoteShutdown = remoteShutdown.IsAvailable,
+                settingsManagement = true,
+                launcher = true
             }
         });
     });
@@ -132,6 +146,8 @@ try
     app.MapFileRootsConfigEndpoints();
     app.MapFileListingEndpoints();
     app.MapFileMutationEndpoints();
+    app.MapAdminEndpoints();
+    app.MapSettingsEndpoints();
     app.MapAudioEndpoints();
     app.MapDeviceEndpoints();
     app.MapPowerEndpoints();
