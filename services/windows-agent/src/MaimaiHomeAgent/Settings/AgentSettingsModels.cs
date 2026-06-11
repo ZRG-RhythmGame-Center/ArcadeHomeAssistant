@@ -35,6 +35,8 @@ public sealed record LauncherSettingsDto(
             Name = item.Name,
             CommandLine = item.CommandLine,
             WorkingDirectory = item.WorkingDirectory,
+            StopCommandLine = item.StopCommandLine,
+            StopWorkingDirectory = item.StopWorkingDirectory,
             Key = item.Key,
             Order = item.Order,
             Enabled = item.Enabled
@@ -52,6 +54,8 @@ public sealed record LauncherSettingsDto(
                 item.Name ?? string.Empty,
                 item.CommandLine ?? string.Empty,
                 item.WorkingDirectory,
+                item.StopCommandLine ?? string.Empty,
+                item.StopWorkingDirectory,
                 item.Key ?? string.Empty,
                 item.Order,
                 item.Enabled))
@@ -63,6 +67,8 @@ public sealed record LauncherItemSettingsDto(
     string Name,
     string CommandLine,
     string? WorkingDirectory,
+    string StopCommandLine,
+    string? StopWorkingDirectory,
     string Key,
     int Order,
     bool Enabled);

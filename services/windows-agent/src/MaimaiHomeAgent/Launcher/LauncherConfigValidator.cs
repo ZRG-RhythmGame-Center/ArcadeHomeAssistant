@@ -36,6 +36,11 @@ public static class LauncherConfigValidator
                 errors.Add(new LauncherConfigError("launcher_item_command_required", $"启动项 {label} 命令行不能为空"));
             }
 
+            if (string.IsNullOrWhiteSpace(item.StopCommandLine))
+            {
+                errors.Add(new LauncherConfigError("launcher_item_stop_command_required", $"启动项 {label} 关闭命令行不能为空"));
+            }
+
             if (string.IsNullOrWhiteSpace(item.Key))
             {
                 errors.Add(new LauncherConfigError("launcher_item_key_required", $"启动项 {label} 按键不能为空"));
@@ -47,6 +52,15 @@ public static class LauncherConfigValidator
                 if (!Directory.Exists(expanded))
                 {
                     errors.Add(new LauncherConfigError("launcher_item_working_directory_missing", $"启动项 {label} 工作目录不存在"));
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(item.StopWorkingDirectory))
+            {
+                var expanded = Environment.ExpandEnvironmentVariables(item.StopWorkingDirectory);
+                if (!Directory.Exists(expanded))
+                {
+                    errors.Add(new LauncherConfigError("launcher_item_stop_working_directory_missing", $"启动项 {label} 关闭工作目录不存在"));
                 }
             }
 

@@ -11,7 +11,7 @@ public sealed class LauncherConfigValidatorTests
         {
             Items = new()
             {
-                new LauncherItemOptions { Id = "mai", Name = "maimai", CommandLine = "echo mai", Key = "A", Enabled = true }
+                new LauncherItemOptions { Id = "mai", Name = "maimai", CommandLine = "echo mai", StopCommandLine = "echo stop", Key = "A", Enabled = true }
             }
         };
 
@@ -27,8 +27,8 @@ public sealed class LauncherConfigValidatorTests
         {
             Items = new()
             {
-                new LauncherItemOptions { Id = "a", Name = "A", CommandLine = "echo a", Key = "A", Enabled = true },
-                new LauncherItemOptions { Id = "b", Name = "B", CommandLine = "echo b", Key = "a", Enabled = true }
+                new LauncherItemOptions { Id = "a", Name = "A", CommandLine = "echo a", StopCommandLine = "echo stop a", Key = "A", Enabled = true },
+                new LauncherItemOptions { Id = "b", Name = "B", CommandLine = "echo b", StopCommandLine = "echo stop b", Key = "a", Enabled = true }
             }
         };
 
@@ -44,8 +44,8 @@ public sealed class LauncherConfigValidatorTests
         {
             Items = new()
             {
-                new LauncherItemOptions { Id = "a", Name = "A", CommandLine = "echo a", Key = "A", Enabled = true },
-                new LauncherItemOptions { Id = "b", Name = "B", CommandLine = "echo b", Key = "A", Enabled = false }
+                new LauncherItemOptions { Id = "a", Name = "A", CommandLine = "echo a", StopCommandLine = "echo stop a", Key = "A", Enabled = true },
+                new LauncherItemOptions { Id = "b", Name = "B", CommandLine = "echo b", StopCommandLine = "echo stop b", Key = "A", Enabled = false }
             }
         };
 
@@ -70,6 +70,7 @@ public sealed class LauncherConfigValidatorTests
         Assert.Contains(errors, error => error.Error == "launcher_item_id_required");
         Assert.Contains(errors, error => error.Error == "launcher_item_name_required");
         Assert.Contains(errors, error => error.Error == "launcher_item_command_required");
+        Assert.Contains(errors, error => error.Error == "launcher_item_stop_command_required");
         Assert.Contains(errors, error => error.Error == "launcher_item_key_required");
     }
 }

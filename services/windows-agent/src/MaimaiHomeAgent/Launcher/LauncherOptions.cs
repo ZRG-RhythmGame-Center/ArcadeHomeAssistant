@@ -21,6 +21,10 @@ public sealed class LauncherItemOptions
 
     public string? WorkingDirectory { get; set; }
 
+    public string? StopCommandLine { get; set; }
+
+    public string? StopWorkingDirectory { get; set; }
+
     public string? Key { get; set; }
 
     public int Order { get; set; }
