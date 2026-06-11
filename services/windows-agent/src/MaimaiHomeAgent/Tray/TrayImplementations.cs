@@ -11,6 +11,7 @@ namespace MaimaiHomeAgent.Tray;
 internal sealed class Win32TrayIconHost : ITrayIconHost
 {
     private readonly Func<bool> _getAutoStartEnabled;
+    private readonly Func<Task> _onOpenSettings;
     private readonly Func<Task> _onToggleAutoStart;
     private readonly Action _onExit;
 
@@ -20,10 +21,12 @@ internal sealed class Win32TrayIconHost : ITrayIconHost
 
     public Win32TrayIconHost(
         Func<bool> getAutoStartEnabled,
+        Func<Task> onOpenSettings,
         Func<Task> onToggleAutoStart,
         Action onExit)
     {
         _getAutoStartEnabled = getAutoStartEnabled;
+        _onOpenSettings = onOpenSettings;
         _onToggleAutoStart = onToggleAutoStart;
         _onExit = onExit;
     }
@@ -42,10 +45,12 @@ internal sealed class Win32TrayIconHost : ITrayIconHost
             Checked = _getAutoStartEnabled(),
         };
 
+        var settingsItem = new PopupMenuItem("设置", async (_, _) => await _onOpenSettings());
         var exitItem = new PopupMenuItem("退出", (_, _) => _onExit());
 
         var menu = new PopupMenu();
         menu.Items.Add(statusItem);
+        menu.Items.Add(settingsItem);
         menu.Items.Add(_autoStartItem);
         menu.Items.Add(exitItem);
 

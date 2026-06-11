@@ -17,4 +17,11 @@ public static class EventTypes
     public const string PowerShutdownExecuting = "power.shutdown.executing";
     public const string PowerShutdownFailed = "power.shutdown.failed";
     public const string SettingsUpdated = "settings.updated";
+    public const string LauncherShown = "launcher.shown";
+    public const string LauncherMinimized = "launcher.minimized";
+    public const string LauncherItemStarted = "launcher.item.started";
+    public const string LauncherItemFailed = "launcher.item.failed";
+    public const string LauncherItemStopStarted = "launcher.item.stop.started";
+    public const string LauncherItemStopCompleted = "launcher.item.stop.completed";
+    public const string LauncherItemStopFailed = "launcher.item.stop.failed";
 }

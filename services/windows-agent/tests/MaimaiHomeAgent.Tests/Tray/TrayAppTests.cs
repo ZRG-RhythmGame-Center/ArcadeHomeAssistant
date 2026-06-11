@@ -1,4 +1,5 @@
 using MaimaiHomeAgent.Startup;
+using MaimaiHomeAgent.Settings;
 using MaimaiHomeAgent.Tray;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,6 +20,7 @@ public class TrayAppTests
     private readonly Mock<ITrayIconHost> _hostMock;
     private readonly Mock<IUiThreadPump> _pumpMock;
     private readonly Mock<IProcessRunner> _runnerMock;
+    private readonly Mock<ISettingsWindowHost> _settingsWindowMock;
     private readonly Mock<IHostApplicationLifetime> _lifetimeMock;
     private readonly AutoStartManager _autoStart;
     private readonly TrayApp _trayApp;
@@ -28,6 +30,7 @@ public class TrayAppTests
         _hostMock = new Mock<ITrayIconHost>(MockBehavior.Strict);
         _pumpMock = new Mock<IUiThreadPump>(MockBehavior.Strict);
         _runnerMock = new Mock<IProcessRunner>(MockBehavior.Loose);
+        _settingsWindowMock = new Mock<ISettingsWindowHost>(MockBehavior.Strict);
         _lifetimeMock = new Mock<IHostApplicationLifetime>(MockBehavior.Loose);
 
         _autoStart = new AutoStartManager(
@@ -49,6 +52,9 @@ public class TrayAppTests
         _hostMock.Setup(h => h.Create());
         _hostMock.Setup(h => h.UpdateAutoStartChecked(It.IsAny<bool>()));
         _hostMock.Setup(h => h.Dispose());
+        _settingsWindowMock
+            .Setup(w => w.ShowAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         // IsEnabledAsync: return false (task not registered).
         _runnerMock
@@ -57,6 +63,7 @@ public class TrayAppTests
 
         _trayApp = new TrayApp(
             _autoStart,
+            _settingsWindowMock.Object,
             _lifetimeMock.Object,
             NullLogger<TrayApp>.Instance,
             _hostMock.Object,
@@ -141,6 +148,16 @@ public class TrayAppTests
         _hostMock.Verify(
             h => h.UpdateAutoStartChecked(It.IsAny<bool>()),
             Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task OnOpenSettings_ShowsSettingsWindow()
+    {
+        await _trayApp.StartAsync(CancellationToken.None);
+
+        await _trayApp.SimulateOpenSettingsAsync();
+
+        _settingsWindowMock.Verify(w => w.ShowAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

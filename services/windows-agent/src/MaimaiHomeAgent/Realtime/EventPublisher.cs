@@ -84,6 +84,13 @@ public sealed class EventPublisher
         Broadcast(EventTypes.SettingsUpdated, payload);
     }
 
+    public void PublishLauncherEvent<TPayload>(string eventType, TPayload payload)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(eventType);
+        ArgumentNullException.ThrowIfNull(payload);
+        Broadcast(eventType, payload);
+    }
+
     private void Broadcast<T>(string eventType, T payload)
     {
         var element = JsonSerializer.SerializeToElement(payload, JsonOptions);

@@ -9,6 +9,7 @@ using MaimaiHomeAgent.Realtime;
 using MaimaiHomeAgent.Settings;
 using MaimaiHomeAgent.Startup;
 using MaimaiHomeAgent.Tray;
+using MaimaiHomeAgent.Ui;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 using Serilog.Settings.Configuration;
@@ -81,6 +82,12 @@ try
     builder.Services.AddSingleton<IRemoteShutdownExecutor, WindowsRemoteShutdownExecutor>();
     builder.Services.AddSingleton<IRemoteShutdownService, RemoteShutdownService>();
     builder.Services.AddSingleton<IAgentSettingsService, AgentSettingsService>();
+    builder.Services.AddSingleton<IWinFormsUiThread, WinFormsUiThread>();
+    builder.Services.AddSingleton<ISettingsWindowHost, WinFormsSettingsWindowHost>();
+    builder.Services.AddSingleton<LauncherService>();
+    builder.Services.AddSingleton<ILauncherService>(sp => sp.GetRequiredService<LauncherService>());
+    builder.Services.AddSingleton<ILauncherWindowHost, WinFormsLauncherWindowHost>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<LauncherService>());
 
     if (OperatingSystem.IsWindows())
     {
@@ -148,6 +155,7 @@ try
     app.MapFileMutationEndpoints();
     app.MapAdminEndpoints();
     app.MapSettingsEndpoints();
+    app.MapLauncherEndpoints();
     app.MapAudioEndpoints();
     app.MapDeviceEndpoints();
     app.MapPowerEndpoints();

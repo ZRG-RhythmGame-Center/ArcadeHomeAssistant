@@ -1,13 +1,13 @@
 using MaimaiHomeAgent.Startup;
+using MaimaiHomeAgent.Settings;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace MaimaiHomeAgent.Tray;
 
 /// <summary>
-/// System-tray hosted service. Creates a Win32 tray icon with EXACTLY 3 menu
-/// items: status (disabled), auto-start toggle, exit. Authentication has been
-/// removed (LAN-only deployment), so there is no pairing-code menu entry.
+/// System-tray hosted service. Creates a Win32 tray icon with status, settings,
+/// auto-start toggle, and exit menu items.
 ///
 /// The Win32 specifics are isolated behind <see cref="ITrayIconHost"/> and
 /// <see cref="IUiThreadPump"/> so the class is testable without a real
@@ -16,6 +16,7 @@ namespace MaimaiHomeAgent.Tray;
 public sealed class TrayApp : IHostedService, IAsyncDisposable
 {
     private readonly AutoStartManager _autoStart;
+    private readonly ISettingsWindowHost _settingsWindow;
     private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<TrayApp> _logger;
     private ITrayIconHost _host;
@@ -26,15 +27,18 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
     /// </summary>
     public TrayApp(
         AutoStartManager autoStart,
+        ISettingsWindowHost settingsWindow,
         IHostApplicationLifetime lifetime,
         ILogger<TrayApp> logger)
     {
         _autoStart = autoStart;
+        _settingsWindow = settingsWindow;
         _lifetime = lifetime;
         _logger = logger;
         _pump = new WindowsFormsPump();
         _host = new Win32TrayIconHost(
             getAutoStartEnabled: SafeIsAutoStartEnabled,
+            onOpenSettings: OnOpenSettingsAsync,
             onToggleAutoStart: OnToggleAutoStartAsync,
             onExit: OnExit);
     }
@@ -44,12 +48,14 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
     /// </summary>
     internal TrayApp(
         AutoStartManager autoStart,
+        ISettingsWindowHost settingsWindow,
         IHostApplicationLifetime lifetime,
         ILogger<TrayApp> logger,
         ITrayIconHost host,
         IUiThreadPump pump)
     {
         _autoStart = autoStart;
+        _settingsWindow = settingsWindow;
         _lifetime = lifetime;
         _logger = logger;
         _host = host;
@@ -91,6 +97,9 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
     /// <summary>Test seam: directly invoke the auto-start toggle handler.</summary>
     internal Task SimulateToggleAutoStartAsync() => OnToggleAutoStartAsync();
 
+    /// <summary>Test seam: directly invoke the settings handler.</summary>
+    internal Task SimulateOpenSettingsAsync() => OnOpenSettingsAsync();
+
     // ------------------------------------------------------------------ //
     //  Private handlers                                                   //
     // ------------------------------------------------------------------ //
@@ -123,6 +132,18 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Tray: auto-start toggle failed.");
+        }
+    }
+
+    private async Task OnOpenSettingsAsync()
+    {
+        try
+        {
+            await _settingsWindow.ShowAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Tray: opening settings window failed.");
         }
     }
 
