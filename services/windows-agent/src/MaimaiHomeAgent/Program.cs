@@ -9,7 +9,9 @@ using MaimaiHomeAgent.Realtime;
 using MaimaiHomeAgent.Settings;
 using MaimaiHomeAgent.Startup;
 using MaimaiHomeAgent.Tray;
-using MaimaiHomeAgent.Ui;
+using MaimaiHomeAgent.Ui.Avalonia;
+using MaimaiHomeAgent.Ui.Avalonia.Launcher;
+using MaimaiHomeAgent.Ui.Avalonia.Settings;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Serilog;
 using Serilog.Settings.Configuration;
@@ -79,14 +81,15 @@ try
     builder.Services.AddHostedService<HeartbeatService>();
 
     builder.Services.TryAddSingleton<IProcessRunner, ProcessRunner>();
+    builder.Services.TryAddSingleton<IElevatedProcessRunner, ElevatedProcessRunner>();
     builder.Services.AddSingleton<IRemoteShutdownExecutor, WindowsRemoteShutdownExecutor>();
     builder.Services.AddSingleton<IRemoteShutdownService, RemoteShutdownService>();
     builder.Services.AddSingleton<IAgentSettingsService, AgentSettingsService>();
-    builder.Services.AddSingleton<IWinFormsUiThread, WinFormsUiThread>();
-    builder.Services.AddSingleton<ISettingsWindowHost, WinFormsSettingsWindowHost>();
+    builder.Services.AddSingleton<IAvaloniaUiThread, AvaloniaUiThread>();
+    builder.Services.AddSingleton<ISettingsWindowHost, AvaloniaSettingsWindowHost>();
     builder.Services.AddSingleton<LauncherService>();
     builder.Services.AddSingleton<ILauncherService>(sp => sp.GetRequiredService<LauncherService>());
-    builder.Services.AddSingleton<ILauncherWindowHost, WinFormsLauncherWindowHost>();
+    builder.Services.AddSingleton<ILauncherWindowHost, AvaloniaLauncherWindowHost>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<LauncherService>());
 
     if (OperatingSystem.IsWindows())

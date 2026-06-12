@@ -1,7 +1,7 @@
 # Windows Agent 阶段 1 启动骨架说明
 
 > 创建日期: 2026-05-28 15:27
-> 最后更新: 2026-06-03 10:05
+> 最后更新: 2026-06-12 19:21
 > 作者: Adsicmes
 > 状态: 草稿
 
@@ -40,6 +40,11 @@
   - 普通 `/api/*` 接口仍是 LAN-only 匿名访问；`Program.cs` 没有全局认证 middleware
   - `/api/events` 不读取查询参数作为身份标识
   - 远程关机单独要求 `Authorization: Bearer <RemoteShutdown.ControlToken>`，且使用固定时间比较校验令牌
+- 本机桌面 UI：
+  - 设置窗口和应用启动器使用 Avalonia UI。
+  - `AvaloniaUiThread` 在独立 STA 线程初始化 Avalonia Dispatcher。
+  - 托盘消息循环使用原生 `Win32MessagePump`，不再依赖 WinForms `Application.Run()`。
+  - 项目不再启用 `UseWindowsForms`。
 
 ## 当前公开接口
 
@@ -60,11 +65,15 @@
   - `fileManagement`
   - `discoveryBroadcast`
   - `remoteShutdown`
+  - `settingsManagement`
+  - `launcher`
 
 当前 `capabilities` 中：
 
 - `audioVolume`、`audioMute`、`audioDeviceSwitch`、`fileManagement`、`discoveryBroadcast` 均为 `true`
 - `remoteShutdown` 由 `IRemoteShutdownService.IsAvailable` 动态计算：仅当 `RemoteShutdown.Enabled = true`、`RemoteShutdown.ControlToken` 非空且 `IRemoteShutdownExecutor.IsSupported = true` 时为 `true`
+- `settingsManagement` 固定为 `true`（当 Agent 注册了统一设置接口时）
+- `launcher` 固定为 `true`（当 Agent 注册了启动选择器服务时）
 
 ### 安全边界说明
 
@@ -102,6 +111,54 @@ Authorization: Bearer <RemoteShutdown.ControlToken>
 - 409：远程关机正在执行
 - 503：远程关机不可用，例如配置未启用、令牌为空、非 Windows 平台或执行器不支持
 - 502：系统关机命令执行失败
+
+### 管理员鉴权
+
+统一设置接口和启动选择器管理接口均要求管理员密码，通过请求头传递：
+
+```http
+Authorization: Bearer <Admin.Password>
+```
+
+密码在 `appsettings.json` 的 `Admin:Password` 字段配置，默认值为 `seganmsl`。鉴权失败返回 `401`，响应体包含明确错误码。
+
+### 统一设置接口
+
+| 端点 | 说明 | 认证要求 |
+|---|---|---|
+| `GET /api/settings` | 读取完整配置快照（`AgentSettingsSnapshot`） | 管理员密码 |
+| `PUT /api/settings` | 保存配置（`AgentSettingsUpdateRequest`），成功返回新快照 | 管理员密码 |
+
+`AgentSettingsSnapshot` 包含以下字段：
+
+- `adminPasswordConfigured`：管理员密码是否已配置（布尔值，不返回密码明文）
+- `autoStartEnabled`：开机自启状态
+- `launcher`：启动选择器配置（见 `LauncherSettingsDto`）
+- `fileRoots`：文件根目录列表
+- `remoteShutdown`：远程关机配置
+
+`LauncherSettingsDto` 字段：`showOnAgentStart`、`canvasWidth`、`canvasHeight`、`navigateLeftKey`、`navigateRightKey`、`confirmKey`、`items`。
+
+`LauncherItemSettingsDto` 字段：`id`、`name`、`title`、`note`、`iconPath`、`commandLine`、`workingDirectory`、`stopCommandLine`、`stopWorkingDirectory`、`key`、`order`、`enabled`。
+
+注意：`key` 是历史兼容字段，当前本机 Avalonia 设置窗口不再提供启动项独立按键编辑项，服务端也不再要求启动项按键必填或唯一。启动器交互以全局 `navigateLeftKey`、`navigateRightKey`、`confirmKey` 为准。
+
+注意：`title` 是历史兼容字段，当前本机 Avalonia 设置窗口不再提供启动项标题编辑项，服务端也不再要求标题必填。启动器卡片展示 `name`。
+
+校验失败返回 `400`/`409`，响应体包含错误码列表。空 `adminPassword` 不会清空现有密码。
+
+### 启动选择器管理接口
+
+| 端点 | 说明 | 认证要求 |
+|---|---|---|
+| `GET /api/launcher/status` | 读取启动选择器窗口和当前运行启动项状态 | 无 |
+| `POST /api/launcher/show` | 重新显示启动选择器 | 管理员密码 |
+| `POST /api/launcher/start` | 按启动项 ID 启动指定启动项（`{ "itemId": "..." }`） | 管理员密码 |
+| `POST /api/launcher/stop` | 调用当前运行启动项的关闭命令 | 管理员密码 |
+
+`LauncherStatusDto` 字段：`isVisible`、`hasActiveItem`、`activeItemId`、`activeItemName`、`state`、`lastError`。
+
+`state` 取值：`idle`、`starting`、`running`、`stopping`。
 
 ## 配置与运行约定
 
@@ -209,6 +266,9 @@ http://0.0.0.0:8765
 [MaimaiHomeAgent.csproj](file:///D:/UserFiles/Development/Projects/ZRC/maimai-home-assistant/services/windows-agent/src/MaimaiHomeAgent/MaimaiHomeAgent.csproj) 当前新增的关键依赖：
 
 - `AudioSwitcher.AudioApi.CoreAudio`
+- `Avalonia`
+- `Avalonia.Desktop`
+- `Avalonia.Themes.Fluent`
 - `Makaretu.Dns.Multicast`
 - `Serilog.AspNetCore`
 - `Serilog.Sinks.File`
@@ -272,6 +332,15 @@ mDNS service advertised. Instance=FRZ-XIAOXIN ServiceType=_maimai-home._tcp Port
 - `Power/PowerEndpointsTests.cs`：远程关机状态读取、未授权拒绝、立即执行、确认缺失、不可用和执行失败
 - `Realtime/EventPublisherTests.cs`：远程关机事件信封广播
 
+最近一次 Avalonia 迁移验证：
+
+```powershell
+$env:DOTNET_ROLL_FORWARD='Major'; dotnet build services/windows-agent/src/MaimaiHomeAgent/MaimaiHomeAgent.csproj -p:BaseOutputPath="C:\Users\abbey\AppData\Local\Temp\opencode\maimai-test-bin\"
+$env:DOTNET_ROLL_FORWARD='Major'; dotnet test services/windows-agent/tests/MaimaiHomeAgent.Tests/MaimaiHomeAgent.Tests.csproj -p:BaseOutputPath="C:\Users\abbey\AppData\Local\Temp\opencode\maimai-test-bin\"
+```
+
+结果：build 成功；测试通过 236 个，失败 0 个，跳过 0 个。
+
 
 
 
@@ -316,6 +385,10 @@ dotnet tool install -g csharp-ls
 
 | 时间 | 作者 | 变更说明 |
 |------|------|----------|
+| 2026-06-12 19:21 | Maimai Dev | 记录启动项标题配置项已从 Avalonia 设置窗口移除，`title` 字段仅作为历史兼容字段保留，启动器卡片展示 `name`。 |
+| 2026-06-12 19:15 | Maimai Dev | 记录启动项独立按键配置项已从 Avalonia 设置窗口移除，`key` 字段仅作为历史兼容字段保留。 |
+| 2026-06-12 19:09 | Maimai Dev | 补充 Windows Agent 本机桌面 UI 迁移状态：设置窗口和启动器已迁移到 Avalonia，托盘消息循环改为原生 Win32，项目不再启用 WinForms；同步记录 Avalonia 依赖和验证结果。 |
+| 2026-06-12 | Maimai Dev | 补充管理员鉴权、统一设置接口（`/api/settings`）、启动选择器管理接口（`/api/launcher/*`）说明；`capabilities` 增加 `settingsManagement` 和 `launcher` 字段。 |
 | 2026-06-03 10:05 | Maimai Dev | 远程关机状态响应收敛为 `available`、`state`、`error`，移除旧状态字段和 `/api/events` 查询参数透传。 |
 | 2026-06-03 09:50 | Maimai Dev | 远程关机改为控制令牌确认后立即执行，移除延迟配置、撤销接口、排程状态和对应测试描述。 |
 | 2026-06-02 20:38 | Maimai Dev | 新增远程关机模块、配置、接口、安全边界和测试说明；移除已不存在的配对/TokenAdmin 接口与 Security 测试描述并归档。 |

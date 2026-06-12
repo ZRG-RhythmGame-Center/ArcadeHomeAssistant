@@ -54,7 +54,7 @@ public sealed class AgentSettingsServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateAsync_WithDuplicateLauncherKey_FailsWithoutWritingConfig()
+    public async Task UpdateAsync_WithDuplicateLauncherKey_PersistsUserConfig()
     {
         var configPath = Path.Combine(_tempDir, "appsettings.user.json");
         var service = CreateService(configPath: configPath);
@@ -73,9 +73,8 @@ public sealed class AgentSettingsServiceTests : IDisposable
 
         var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(null, null, launcher, null, null));
 
-        Assert.False(result.Success);
-        Assert.Contains(result.Errors, error => error.Error == "launcher_item_key_duplicate");
-        Assert.False(File.Exists(configPath));
+        Assert.True(result.Success);
+        Assert.True(File.Exists(configPath));
     }
 
     [Fact]

@@ -24,7 +24,7 @@ public sealed class LauncherConfigValidatorTests
     }
 
     [Fact]
-    public void Validate_WithDuplicateEnabledKeys_ReturnsDuplicateError()
+    public void Validate_WithDuplicateEnabledKeys_ReturnsNoErrors()
     {
         var options = new LauncherOptions
         {
@@ -40,7 +40,7 @@ public sealed class LauncherConfigValidatorTests
 
         var errors = LauncherConfigValidator.Validate(options);
 
-        Assert.Contains(errors, error => error.Error == "launcher_item_key_duplicate");
+        Assert.Empty(errors);
     }
 
     [Fact]
@@ -78,10 +78,8 @@ public sealed class LauncherConfigValidatorTests
 
         Assert.Contains(errors, error => error.Error == "launcher_item_id_required");
         Assert.Contains(errors, error => error.Error == "launcher_item_name_required");
-        Assert.Contains(errors, error => error.Error == "launcher_item_title_required");
         Assert.Contains(errors, error => error.Error == "launcher_item_command_required");
         Assert.Contains(errors, error => error.Error == "launcher_item_stop_command_required");
-        Assert.Contains(errors, error => error.Error == "launcher_item_key_required");
     }
 
     [Fact]

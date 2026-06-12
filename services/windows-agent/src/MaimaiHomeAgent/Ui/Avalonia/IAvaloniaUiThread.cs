@@ -1,6 +1,6 @@
-namespace MaimaiHomeAgent.Ui;
+namespace MaimaiHomeAgent.Ui.Avalonia;
 
-public interface IWinFormsUiThread
+public interface IAvaloniaUiThread
 {
     Task InvokeAsync(Func<Task> action, CancellationToken ct = default);
 }

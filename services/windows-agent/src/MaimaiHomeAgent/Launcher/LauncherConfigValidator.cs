@@ -46,7 +46,6 @@ public static class LauncherConfigValidator
             errors.Add(new LauncherConfigError("launcher_confirm_key_conflict", "启动选择器确认按键不能与移动按键相同"));
         }
 
-        var enabledKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var item in options.Items)
         {
             var label = string.IsNullOrWhiteSpace(item.Id) ? item.Name : item.Id;
@@ -60,11 +59,6 @@ public static class LauncherConfigValidator
                 errors.Add(new LauncherConfigError("launcher_item_name_required", $"启动项 {label} 名称不能为空"));
             }
 
-            if (string.IsNullOrWhiteSpace(item.Title))
-            {
-                errors.Add(new LauncherConfigError("launcher_item_title_required", $"启动项 {label} 标题不能为空"));
-            }
-
             if (string.IsNullOrWhiteSpace(item.CommandLine))
             {
                 errors.Add(new LauncherConfigError("launcher_item_command_required", $"启动项 {label} 命令行不能为空"));
@@ -73,11 +67,6 @@ public static class LauncherConfigValidator
             if (string.IsNullOrWhiteSpace(item.StopCommandLine))
             {
                 errors.Add(new LauncherConfigError("launcher_item_stop_command_required", $"启动项 {label} 关闭命令行不能为空"));
-            }
-
-            if (string.IsNullOrWhiteSpace(item.Key))
-            {
-                errors.Add(new LauncherConfigError("launcher_item_key_required", $"启动项 {label} 按键不能为空"));
             }
 
             if (!string.IsNullOrWhiteSpace(item.WorkingDirectory))
@@ -107,20 +96,6 @@ public static class LauncherConfigValidator
                 }
             }
 
-            if (!item.Enabled || string.IsNullOrWhiteSpace(item.Key))
-            {
-                continue;
-            }
-
-            var normalizedKey = item.Key.Trim();
-            if (enabledKeys.TryGetValue(normalizedKey, out var existing))
-            {
-                errors.Add(new LauncherConfigError("launcher_item_key_duplicate", $"启动项按键 {normalizedKey} 同时用于 {existing} 和 {label}"));
-            }
-            else
-            {
-                enabledKeys[normalizedKey] = label ?? normalizedKey;
-            }
         }
 
         return errors;

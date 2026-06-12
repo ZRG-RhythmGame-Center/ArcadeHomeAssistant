@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
 using H.NotifyIcon.Core;
 
 namespace MaimaiHomeAgent.Tray;
@@ -115,26 +114,27 @@ internal sealed class Win32TrayIconHost : ITrayIconHost
 }
 
 /// <summary>
-/// Production <see cref="IUiThreadPump"/> that runs a Windows Forms STA
-/// message loop on a dedicated background thread.
+/// Production <see cref="IUiThreadPump"/> that runs a native Win32 message
+/// loop on a dedicated STA background thread. No WinForms dependency.
 /// </summary>
-internal sealed class WindowsFormsPump : IUiThreadPump
+internal sealed class Win32MessagePump : IUiThreadPump
 {
     private Thread? _uiThread;
-    private SynchronizationContext? _uiContext;
+    private volatile bool _running;
+    private uint _threadId;
 
     public void Start(Action onReady)
     {
         var ready = new ManualResetEventSlim(false);
+        _running = true;
         _uiThread = new Thread(() =>
         {
             try
             {
-                _uiContext = new WindowsFormsSynchronizationContext();
-                SynchronizationContext.SetSynchronizationContext(_uiContext);
+                _threadId = GetCurrentThreadId();
                 onReady();
                 ready.Set();
-                Application.Run();
+                RunMessageLoop();
             }
             catch
             {
@@ -152,13 +152,18 @@ internal sealed class WindowsFormsPump : IUiThreadPump
 
     public void RunOnUiThread(Action action)
     {
-        _uiContext?.Post(_ => action(), null);
+        // Not needed for current tray usage but satisfies the interface.
+        // If needed in the future, use PostMessage + a custom window message.
+        ThreadPool.QueueUserWorkItem(_ => action());
     }
 
     public void Stop()
     {
-        try { _uiContext?.Post(_ => Application.ExitThread(), null); }
-        catch { /* best-effort */ }
+        _running = false;
+        if (_threadId != 0)
+        {
+            PostThreadMessageW(_threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+        }
 
         if (_uiThread is not null)
         {
@@ -166,4 +171,54 @@ internal sealed class WindowsFormsPump : IUiThreadPump
             _uiThread = null;
         }
     }
+
+    private void RunMessageLoop()
+    {
+        while (_running)
+        {
+            var result = GetMessageW(out var msg, IntPtr.Zero, 0, 0);
+            if (result == 0 || result == -1)
+            {
+                break;
+            }
+
+            TranslateMessage(ref msg);
+            DispatchMessageW(ref msg);
+        }
+    }
+
+    private const uint WM_QUIT = 0x0012;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MSG
+    {
+        public IntPtr hwnd;
+        public uint message;
+        public IntPtr wParam;
+        public IntPtr lParam;
+        public uint time;
+        public POINT pt;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int x;
+        public int y;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetMessageW(out MSG lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
+
+    [DllImport("user32.dll")]
+    private static extern bool TranslateMessage(ref MSG lpMsg);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr DispatchMessageW(ref MSG lpMsg);
+
+    [DllImport("user32.dll")]
+    private static extern bool PostThreadMessageW(uint idThread, uint Msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
 }

@@ -17,11 +17,18 @@ public sealed class AutoStartManager : IAutoStartManager
     public const string TaskName = "MaimaiHomeAgent";
 
     private readonly IProcessRunner _runner;
+    private readonly IElevatedProcessRunner? _elevatedRunner;
     private readonly ILogger<AutoStartManager> _logger;
 
     public AutoStartManager(IProcessRunner runner, ILogger<AutoStartManager> logger)
+        : this(runner, null, logger)
+    {
+    }
+
+    public AutoStartManager(IProcessRunner runner, IElevatedProcessRunner? elevatedRunner, ILogger<AutoStartManager> logger)
     {
         _runner = runner;
+        _elevatedRunner = elevatedRunner;
         _logger = logger;
     }
 
@@ -77,7 +84,7 @@ public sealed class AutoStartManager : IAutoStartManager
         // user-scope task — no admin / UAC prompt.
         var args = $"/Create /TN {TaskName} /SC ONLOGON /TR \"{exe}\" /RL LIMITED /F";
 
-        var result = await _runner.RunAsync("schtasks.exe", args, ct).ConfigureAwait(false);
+        var result = await RunAutoStartMutationAsync(args, ct).ConfigureAwait(false);
 
         if (result.ExitCode == 0)
         {
@@ -100,7 +107,7 @@ public sealed class AutoStartManager : IAutoStartManager
     public async Task<bool> DisableAsync(CancellationToken ct = default)
     {
         var args = $"/Delete /TN {TaskName} /F";
-        var result = await _runner.RunAsync("schtasks.exe", args, ct).ConfigureAwait(false);
+        var result = await RunAutoStartMutationAsync(args, ct).ConfigureAwait(false);
 
         if (result.ExitCode == 0)
         {
@@ -114,6 +121,25 @@ public sealed class AutoStartManager : IAutoStartManager
             result.StandardOutput.Trim(),
             result.StandardError.Trim());
         return false;
+    }
+
+    private async Task<ProcessResult> RunAutoStartMutationAsync(string arguments, CancellationToken ct)
+    {
+        if (_elevatedRunner is null)
+        {
+            return await _runner.RunAsync("schtasks.exe", arguments, ct).ConfigureAwait(false);
+        }
+
+        try
+        {
+            var exitCode = await _elevatedRunner.RunAsync("schtasks.exe", arguments, ct).ConfigureAwait(false);
+            return new ProcessResult(exitCode, string.Empty, string.Empty);
+        }
+        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        {
+            // ERROR_CANCELLED: the user dismissed the UAC prompt.
+            return new ProcessResult(1, string.Empty, "UAC prompt was cancelled by the user.");
+        }
     }
 
     /// <summary>

@@ -7,7 +7,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
     <ApplicationManifest>MaimaiHomeAgent.manifest</ApplicationManifest>
-    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +14,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.8" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.8" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.8" />
     <PackageReference Include="Makaretu.Dns.Multicast" Version="0.27.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.16" />
     <PackageReference Include="NAudio" Version="2.2.1" />
@@ -33,9 +35,7 @@
   </ItemGroup>
 
   <Target Name="WarnIfPcWebMissing" BeforeTargets="BeforeBuild">
-    <Warning
-      Condition="!Exists('$(MSBuildProjectDirectory)\wwwroot\index.html')"
-      Text="PC Web bundle not found at $(MSBuildProjectDirectory)\wwwroot\index.html. Run 'pnpm --dir apps/pc-web build' from the repo root before publishing. The Agent will still build, but '/' and SPA routes will return 404 until the bundle is generated." />
+    <Warning Condition="!Exists('$(MSBuildProjectDirectory)\wwwroot\index.html')" Text="PC Web bundle not found at $(MSBuildProjectDirectory)\wwwroot\index.html. Run 'pnpm --dir apps/pc-web build' from the repo root before publishing. The Agent will still build, but '/' and SPA routes will return 404 until the bundle is generated." />
   </Target>
 
 

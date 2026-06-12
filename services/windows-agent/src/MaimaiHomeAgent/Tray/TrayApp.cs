@@ -39,7 +39,7 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
         _settingsWindow = settingsWindow;
         _lifetime = lifetime;
         _logger = logger;
-        _pump = new WindowsFormsPump();
+        _pump = new Win32MessagePump();
         _host = new Win32TrayIconHost(
             getAutoStartEnabled: SafeIsAutoStartEnabled,
             onOpenLauncher: OnOpenLauncherAsync,

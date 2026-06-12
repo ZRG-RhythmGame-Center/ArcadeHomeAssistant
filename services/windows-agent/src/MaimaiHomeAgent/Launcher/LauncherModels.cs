@@ -29,3 +29,11 @@ public sealed record LauncherItemRuntime(
     string? StopWorkingDirectory,
     string Key,
     int Order);
+
+public sealed record LauncherNavigationOptions(
+    string NavigateLeftKey,
+    string NavigateRightKey,
+    string ConfirmKey)
+{
+    public static LauncherNavigationOptions Default { get; } = new("Left", "Right", "Enter");
+}

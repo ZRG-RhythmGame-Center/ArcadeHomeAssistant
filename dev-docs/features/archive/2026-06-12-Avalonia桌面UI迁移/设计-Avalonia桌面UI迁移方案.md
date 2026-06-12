@@ -1,0 +1,279 @@
+# Avalonia 桌面 UI 迁移方案
+
+> 创建日期: 2026-06-12 18:35
+> 最后更新: 2026-06-12 19:21
+> 作者: Maimai Dev
+> 状态: 已实现
+
+## 背景
+
+Windows Agent 当前的托盘设置窗口和应用启动器窗口使用 Windows Forms 实现。随着功能扩展，WinForms 已经暴露出布局、样式和维护上的明显问题：复杂表单行高难控制、分类设置页容易错位、全屏启动器卡片布局和 9:16 内容区需要大量手工坐标计算，后续继续做游戏机风格 UI 的成本较高。
+
+本方案决定将 Windows Agent 的桌面 UI 从 WinForms 迁移到 Avalonia UI。迁移后，Windows Agent 仍然保留现有 ASP.NET Core Minimal API、后台服务、托盘入口、统一设置服务和启动器服务；Avalonia 只负责桌面窗口呈现和交互。
+
+## 目标
+
+- 使用 Avalonia 替换 WinForms 设置窗口。
+- 使用 Avalonia 替换 WinForms 应用启动器窗口。
+- 保留现有 `ISettingsWindowHost` 和 `ILauncherWindowHost` 边界，降低业务层改动。
+- 设置窗口提供明确分类侧边栏和表单式配置页。
+- 应用启动器提供更易维护的 9:16 竖屏布局、参考图背景和卡片列表。
+- 继续支持托盘菜单打开设置窗口和应用启动器。
+- 不改变现有 HTTP API、配置模型和测试结构。
+
+## 非目标
+
+- 不迁移 Windows Agent 后端为 Avalonia 应用主进程。
+- 不引入 Electron 或 Chromium 运行时。
+- 不在本阶段重做 Android 管理端。
+- 不在本阶段重做 PC Web 管理端。
+- 不在本阶段改动统一设置接口协议。
+
+## 选型结论
+
+采用 Avalonia UI 作为 Windows Agent 桌面 UI 框架。
+
+原因：
+
+- Avalonia 是 .NET 原生 UI 框架，和当前 C# / .NET 9 Windows Agent 技术栈匹配。
+- 支持 XAML、样式、数据绑定和 MVVM，适合复杂设置窗口。
+- 布局系统比 WinForms 更适合响应式和比例布局。
+- 对全屏启动器、卡片列表、透明背景图、9:16 内容区等 UI 需求支持更自然。
+- 不需要引入 WebView2 或 Electron 的额外运行时依赖。
+
+## 总体架构
+
+保留现有业务边界：
+
+- `IAgentSettingsService`：设置读取、校验、保存。
+- `ILauncherService`：启动器状态、启动、关闭、显示和隐藏。
+- `ISettingsWindowHost`：设置窗口宿主接口。
+- `ILauncherWindowHost`：启动器窗口宿主接口。
+
+新增 Avalonia UI 层：
+
+- `AvaloniaUiThread`：负责启动 Avalonia 应用生命周期和 UI Dispatcher。
+- `AvaloniaSettingsWindowHost`：实现 `ISettingsWindowHost`。
+- `AvaloniaLauncherWindowHost`：实现 `ILauncherWindowHost`。
+- `SettingsWindow`：设置窗口视图。
+- `SettingsWindowViewModel`：设置窗口状态和保存逻辑。
+- `AvaloniaLauncherWindowHost`：应用启动器窗口宿主，并承载当前启动器窗口 UI 构建逻辑。
+
+依赖方向：
+
+- Avalonia 视图依赖 ViewModel。
+- ViewModel 依赖现有接口，如 `IAgentSettingsService` 和 `ILauncherService`。
+- 后端服务不依赖 Avalonia 具体控件。
+- `Program.cs` 只负责注册接口实现。
+
+## 项目结构
+
+实际新增目录：
+
+```text
+services/windows-agent/src/MaimaiHomeAgent/Ui/Avalonia/
+├─ IAvaloniaUiThread.cs
+├─ AvaloniaUiThread.cs
+├─ AvaloniaApp.cs
+├─ Settings/
+│  ├─ AvaloniaSettingsWindowHost.cs
+│  ├─ SettingsWindow.cs
+│  └─ SettingsWindowViewModel.cs
+└─ Launcher/
+   ├─ AvaloniaLauncherWindowHost.cs
+```
+
+当前实现未使用 `.axaml` 文件，`SettingsWindow` 和启动器窗口均以 code-behind（纯 C#）方式构建 UI。启动器窗口主体当前在 `AvaloniaLauncherWindowHost.cs` 内实现，尚未拆出独立 `LauncherWindow.cs` 和 `LauncherWindowViewModel.cs` 文件。
+
+已删除或废弃：
+
+- `WinFormsSettingsWindowHost`
+- `WinFormsLauncherWindowHost`
+- `WinFormsUiThread`
+- `IWinFormsUiThread`
+
+托盘入口继续保留 `H.NotifyIcon` 图标能力，但托盘消息循环已从 WinForms `Application.Run()` 改为原生 Win32 消息泵 `Win32MessagePump`，项目不再启用 `UseWindowsForms`。
+
+## 设置窗口设计
+
+设置窗口采用左右结构：
+
+- 左侧：分类导航。
+- 右侧：当前分类配置表单。
+- 底部：保存、重新加载、关闭。
+
+分类：
+
+- 管理员
+- 启动器
+- 启动项
+- 文件根目录
+- 远程关机
+
+设置项：
+
+- 管理员：管理员密码。
+- 启动器：开机自启、启动器自动显示、画布尺寸、左移按键、右移按键、确认按键。
+- 启动项：ID、名称、备注、图标路径、启动命令、启动工作目录、关闭命令、关闭工作目录、排序、启用。
+- 文件根目录：ID、名称、路径、只读。
+- 远程关机：启用状态、控制令牌。
+
+保存规则：
+
+- 保存时组装 `AgentSettingsUpdateRequest`。
+- 调用 `IAgentSettingsService.UpdateAsync()`。
+- 服务端校验失败时在 UI 中展示错误。
+- 管理员密码为空时不修改。
+
+## 应用启动器设计
+
+启动器窗口采用全屏黑底，中间放置严格 9:16 的内容区。
+
+布局：
+
+- 内容区高度不超过屏幕高度。
+- 内容区宽度按 `height * 9 / 16` 计算。
+- 在宽屏显示器上左右显示黑边。
+- 参考图作为背景，以 20% 透明度显示。
+- 以 `(540, 1440)` 为设计参考中心，放置横向启动卡片列表。
+- 中心卡片放大，左右卡片缩小。
+
+卡片字段：
+
+- 图标
+- 命令或路径
+- 名称
+- 备注
+
+按键：
+
+- `NavigateLeftKey`：左移选择。
+- `NavigateRightKey`：右移选择。
+- `ConfirmKey`：启动当前选中项。
+- `Esc`：隐藏启动器。
+
+启动/关闭：
+
+- 启动通过 `ILauncherService.StartItemAsync()`。
+- 关闭通过 `ILauncherService.StopActiveItemAsync()`。
+- 关闭不直接杀进程，必须调用配置的关闭脚本或程序。
+
+## 实施步骤
+
+### 阶段 1：引入 Avalonia 基础
+
+任务：
+
+- 添加 Avalonia NuGet 包。
+- 新增 Avalonia App 基础文件。
+- 新增 `AvaloniaUiThread`，确保 Avalonia Dispatcher 独立运行。
+- 在 `Program.cs` 注册 Avalonia UI 线程。
+
+验收：
+
+- Windows Agent 能启动。
+- Avalonia UI 线程能初始化。
+- 不影响现有 HTTP API。
+
+### 阶段 2：迁移设置窗口
+
+任务：
+
+- 新增 `AvaloniaSettingsWindowHost`。
+- 新增 `SettingsWindow` 和 `SettingsWindowViewModel`。
+- 实现分类侧边栏和表单配置页。
+- 保存和重新加载调用 `IAgentSettingsService`。
+- 替换 `ISettingsWindowHost` 注册。
+
+验收：
+
+- 托盘"设置"打开 Avalonia 设置窗口。
+- 所有现有配置项都能查看和保存。
+- 校验失败能显示错误。
+- 原 WinForms 设置窗口不再使用。
+
+**落地状态**：已完成。`AvaloniaSettingsWindowHost`、`SettingsWindow`（code-behind）和 `SettingsWindowViewModel` 均已实现；`Program.cs` 已替换 `ISettingsWindowHost` 注册。
+
+### 阶段 3：迁移应用启动器
+
+任务：
+
+- 新增 `AvaloniaLauncherWindowHost`。
+- 新增 `LauncherWindow` 和 `LauncherWindowViewModel`。
+- 实现全屏黑底和中间 9:16 内容区。
+- 实现 20% 透明参考图背景。
+- 实现卡片横向列表和中心放大效果。
+- 实现左移、右移、确认、Esc 按键。
+- 替换 `ILauncherWindowHost` 注册。
+
+验收：
+
+- 托盘"打开应用启动器"打开 Avalonia 启动器。
+- 宽屏环境下内容区居中且左右黑边正确。
+- 左右键能切换卡片。
+- 确认键能启动当前卡片。
+- Esc 能隐藏启动器。
+
+**落地状态**：已完成。`AvaloniaLauncherWindowHost` 已实现并承载当前启动器窗口 UI 构建逻辑；`Program.cs` 已替换 `ILauncherWindowHost` 注册。
+
+### 阶段 4：清理 WinForms 窗口实现
+
+任务：
+
+- 删除 `WinFormsSettingsWindowHost`。
+- 删除 `WinFormsLauncherWindowHost`。
+- 删除 `WinFormsUiThread`。
+- 保留托盘实现，除非后续决定一起迁移。
+- 更新测试和文档。
+
+验收：
+
+- 项目不再依赖 WinForms 窗口实现。
+- 测试通过。
+- 手动验证设置窗口和启动器。
+
+**落地状态**：已完成。`MaimaiHomeAgent.csproj` 已移除 `UseWindowsForms`，新增 `Avalonia`、`Avalonia.Desktop`、`Avalonia.Themes.Fluent` 依赖；WinForms 窗口实现和 WinForms UI 线程已删除；托盘消息循环改为 `Win32MessagePump`。
+
+## 实际变更摘要
+
+- `Program.cs` 注册 `IAvaloniaUiThread`、`AvaloniaSettingsWindowHost`、`AvaloniaLauncherWindowHost`，替换原 WinForms host 注册。
+- `MaimaiHomeAgent.csproj` 引入 Avalonia 11.3.8 依赖，移除 WinForms 开关。
+- `Ui/Avalonia/AvaloniaUiThread.cs` 在独立 STA 线程初始化 Avalonia AppBuilder，并通过 `Dispatcher.UIThread.Post` 运行 UI 任务。
+- `Ui/Avalonia/Settings/SettingsWindow.cs` 和 `SettingsWindowViewModel.cs` 实现设置窗口的分类导航、设置加载、保存和配置项编辑。
+- `Ui/Avalonia/Launcher/AvaloniaLauncherWindowHost.cs` 实现全屏启动器窗口、9:16 中央内容区、卡片展示、左右切换、确认启动和 Esc 隐藏。
+- `Tray/TrayImplementations.cs` 增加 `Win32MessagePump`，使用 `GetMessageW`、`TranslateMessage`、`DispatchMessageW` 维持托盘消息循环。
+- 删除 WinForms 窗口和 WinForms UI 线程相关文件，避免后续维护两套桌面 UI。
+
+## 测试策略
+
+- 保留现有服务层测试。
+- 对 ViewModel 编写单元测试，验证配置加载、修改、保存和错误展示。
+- 对 `AvaloniaSettingsWindowHost` 和 `AvaloniaLauncherWindowHost` 做轻量集成测试或通过接口 mock 验证调用路径。
+- 继续运行 Windows Agent 测试集。
+- 手动验证托盘打开设置窗口和启动器。
+
+本次自动化验证：
+
+```powershell
+$env:DOTNET_ROLL_FORWARD='Major'; dotnet build services/windows-agent/src/MaimaiHomeAgent/MaimaiHomeAgent.csproj -p:BaseOutputPath="C:\Users\abbey\AppData\Local\Temp\opencode\maimai-test-bin\"
+$env:DOTNET_ROLL_FORWARD='Major'; dotnet test services/windows-agent/tests/MaimaiHomeAgent.Tests/MaimaiHomeAgent.Tests.csproj -p:BaseOutputPath="C:\Users\abbey\AppData\Local\Temp\opencode\maimai-test-bin\"
+```
+
+结果：build 成功；测试通过 236 个，失败 0 个，跳过 0 个。
+
+## 风险与处理
+
+- Avalonia 与 ASP.NET Core 同进程生命周期冲突：通过独立 `AvaloniaUiThread` 管理 UI Dispatcher。
+- 托盘图标能力仍使用 `H.NotifyIcon`，但消息循环已迁移为原生 Win32 消息泵，避免继续依赖 WinForms。
+- Avalonia 打包体积增加：可接受，换取更好的 UI 维护性。
+- UI 迁移期间功能回归：保留现有接口边界和测试，先迁移窗口实现，不改业务服务。
+
+## 修订记录
+
+| 时间 | 作者 | 变更说明 |
+|------|------|----------|
+| 2026-06-12 19:21 | Maimai Dev | 移除启动项标题编辑项，Avalonia 启动器卡片改为展示名称。 |
+| 2026-06-12 19:15 | Maimai Dev | 确认 Avalonia 设置窗口不提供启动项独立按键编辑项，只保留启动器全局导航键和确认键。 |
+| 2026-06-12 19:09 | Maimai Dev | 标记 Avalonia 桌面 UI 迁移已实现；补充阶段 4 清理结果、实际变更摘要、验证命令和托盘消息循环迁移说明。 |
+| 2026-06-12 | Maimai Dev | 补充阶段 2、3 落地状态；记录实际使用 code-behind 而非 .axaml 的实现偏差；项目结构说明增加偏差注记。 |
+| 2026-06-12 18:35 | Maimai Dev | 创建 Avalonia 桌面 UI 迁移方案，确定用 Avalonia 替换 WinForms 设置窗口和应用启动器。 |
