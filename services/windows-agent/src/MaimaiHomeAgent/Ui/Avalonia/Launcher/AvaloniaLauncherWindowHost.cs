@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Threading;
 using MaimaiHomeAgent.Launcher;
 
 namespace MaimaiHomeAgent.Ui.Avalonia.Launcher;
@@ -51,6 +52,7 @@ internal sealed class AvaloniaLauncherWindowHost : ILauncherWindowHost
             _window.Show();
             _window.Activate();
             _window.WindowState = WindowState.FullScreen;
+            _window.FocusForKeyboardInput();
             _viewModel!.IsVisible = true;
             return Task.CompletedTask;
         }, ct);
@@ -168,8 +170,25 @@ internal sealed class LauncherWindow : Window
         WindowState = WindowState.FullScreen;
         SystemDecorations = SystemDecorations.None;
         Background = Brushes.Black;
+        Focusable = true;
         Topmost = true;
         Content = BuildContent();
+    }
+
+    public void FocusForKeyboardInput()
+    {
+        Activate();
+        Focus();
+
+        // Some Windows focus changes settle after Show/FullScreen completes. Queue a second
+        // focus request so launcher navigation keys work immediately after the window appears.
+        Dispatcher.UIThread.Post(() =>
+        {
+            Topmost = false;
+            Topmost = true;
+            Activate();
+            Focus();
+        }, DispatcherPriority.Background);
     }
 
     protected override async void OnKeyDown(KeyEventArgs e)
