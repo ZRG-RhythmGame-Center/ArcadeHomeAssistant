@@ -6,6 +6,7 @@ namespace MaimaiHomeAgent.Launcher;
 
 public sealed class LauncherService : ILauncherService, IHostedService
 {
+    private static readonly TimeSpan StopCommandTimeout = TimeSpan.FromSeconds(10);
     private readonly EventPublisher _events;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly ILogger<LauncherService> _logger;
@@ -87,15 +88,7 @@ public sealed class LauncherService : ILauncherService, IHostedService
             _events.PublishLauncherEvent(EventTypes.LauncherItemStarted,
                 new { item.Id, item.Name, startedAt = DateTimeOffset.UtcNow });
 
-            var result = await RunCommandAsync(item.CommandLine, item.WorkingDirectory, ct).ConfigureAwait(false);
-            if (result.ExitCode != 0)
-            {
-                _state = "failed";
-                _lastError = BuildProcessError("启动命令执行失败", result);
-                _events.PublishLauncherEvent(EventTypes.LauncherItemFailed,
-                    new { item.Id, item.Name, error = _lastError, failedAt = DateTimeOffset.UtcNow });
-                return LauncherActionResult.Rejected(CreateStatus(), "launcher_item_start_failed", _lastError);
-            }
+            await StartCommandAsync(item.CommandLine, item.WorkingDirectory, ct).ConfigureAwait(false);
 
             _activeItem = item;
             _state = "running";
@@ -121,7 +114,9 @@ public sealed class LauncherService : ILauncherService, IHostedService
 
     public async Task<LauncherActionResult> StopActiveItemAsync(CancellationToken ct = default)
     {
-        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        if (!await _gate.WaitAsync(TimeSpan.FromSeconds(1), CancellationToken.None).ConfigureAwait(false))
+            return LauncherActionResult.Rejected(CreateStatus(), "launcher_operation_busy", "启动器正在执行启动或关闭操作，请稍后再试");
+
         try
         {
             if (_activeItem is null)
@@ -136,7 +131,9 @@ public sealed class LauncherService : ILauncherService, IHostedService
             var workingDirectory = string.IsNullOrWhiteSpace(item.StopWorkingDirectory)
                 ? item.WorkingDirectory
                 : item.StopWorkingDirectory;
-            var result = await RunCommandAsync(item.StopCommandLine, workingDirectory, ct).ConfigureAwait(false);
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(StopCommandTimeout);
+            var result = await RunCommandAsync(item.StopCommandLine, workingDirectory, timeoutCts.Token).ConfigureAwait(false);
             if (result.ExitCode != 0)
             {
                 _state = "stop_failed";
@@ -161,6 +158,20 @@ public sealed class LauncherService : ILauncherService, IHostedService
             _events.PublishLauncherEvent(EventTypes.LauncherItemStopFailed,
                 new { error = _lastError, failedAt = DateTimeOffset.UtcNow });
             return LauncherActionResult.Rejected(CreateStatus(), "launcher_item_stop_failed", _lastError);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            _state = "stop_failed";
+            _lastError = $"关闭命令执行超时（{StopCommandTimeout.TotalSeconds:N0} 秒）";
+            _events.PublishLauncherEvent(EventTypes.LauncherItemStopFailed,
+                new { itemId = _activeItem?.Id, error = _lastError, failedAt = DateTimeOffset.UtcNow });
+            return LauncherActionResult.Rejected(CreateStatus(), "launcher_item_stop_timeout", _lastError);
+        }
+        catch (OperationCanceledException)
+        {
+            _state = "stop_failed";
+            _lastError = "关闭请求已取消";
+            return LauncherActionResult.Rejected(CreateStatus(), "launcher_stop_cancelled", _lastError);
         }
         finally
         {
@@ -199,6 +210,14 @@ public sealed class LauncherService : ILauncherService, IHostedService
             ? $"/C {commandLine}"
             : $"/C cd /D \"{workingDirectory}\" && {commandLine}";
         return _processRunner.RunAsync("cmd.exe", command, ct);
+    }
+
+    private Task StartCommandAsync(string commandLine, string? workingDirectory, CancellationToken ct)
+    {
+        var command = string.IsNullOrWhiteSpace(workingDirectory)
+            ? $"/C {commandLine}"
+            : $"/C cd /D \"{workingDirectory}\" && {commandLine}";
+        return _processRunner.StartDetachedAsync("cmd.exe", command, ct);
     }
 
     private LauncherStatusDto CreateStatus()

@@ -14,6 +14,8 @@ public sealed record ProcessResult(int ExitCode, string StandardOutput, string S
 public interface IProcessRunner
 {
     Task<ProcessResult> RunAsync(string fileName, string arguments, CancellationToken ct = default);
+
+    Task StartDetachedAsync(string fileName, string arguments, CancellationToken ct = default);
 }
 
 /// <summary>
@@ -21,6 +23,28 @@ public interface IProcessRunner
 /// </summary>
 public sealed class ProcessRunner : IProcessRunner
 {
+    public Task StartDetachedAsync(string fileName, string arguments, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        var psi = new ProcessStartInfo(fileName, arguments)
+        {
+            CreateNoWindow = true,
+            UseShellExecute = false
+        };
+
+        using var process = new Process { StartInfo = psi };
+        try
+        {
+            process.Start();
+        }
+        catch
+        {
+            throw;
+        }
+
+        return Task.CompletedTask;
+    }
+
     public async Task<ProcessResult> RunAsync(string fileName, string arguments, CancellationToken ct = default)
     {
         var psi = new ProcessStartInfo(fileName, arguments)

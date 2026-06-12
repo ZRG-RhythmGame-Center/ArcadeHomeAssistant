@@ -47,7 +47,8 @@ public sealed class LauncherServiceTests
         Assert.True(result.Accepted);
         Assert.True(window.MinimizeCalled);
         Assert.Equal("running", result.Status.State);
-        var call = Assert.Single(runner.Calls);
+        Assert.Empty(runner.Calls);
+        var call = Assert.Single(runner.DetachedCalls);
         Assert.Equal("cmd.exe", call.FileName);
         Assert.Contains("start-mai", call.Arguments);
     }
@@ -76,8 +77,8 @@ public sealed class LauncherServiceTests
 
         Assert.True(result.Accepted);
         Assert.Equal("idle", result.Status.State);
-        Assert.Equal(2, runner.Calls.Count);
-        Assert.Contains("stop-mai", runner.Calls[1].Arguments);
+        var call = Assert.Single(runner.Calls);
+        Assert.Contains("stop-mai", call.Arguments);
         Assert.True(window.ShowCalled);
     }
 
@@ -95,7 +96,7 @@ public sealed class LauncherServiceTests
     [Fact]
     public async Task StartItemAsync_WhenCommandFails_ReturnsRejected()
     {
-        var runner = new FakeProcessRunner { NextResult = new ProcessResult(7, string.Empty, "boom") };
+        var runner = new FakeProcessRunner { DetachedException = new InvalidOperationException("boom") };
         var service = CreateService(runner);
 
         var result = await service.StartItemAsync("mai");
@@ -150,8 +151,17 @@ public sealed class LauncherServiceTests
     private sealed class FakeProcessRunner : IProcessRunner
     {
         public ProcessResult NextResult { get; set; } = new(0, string.Empty, string.Empty);
+        public Exception? DetachedException { get; set; }
 
         public List<(string FileName, string Arguments)> Calls { get; } = new();
+        public List<(string FileName, string Arguments)> DetachedCalls { get; } = new();
+
+        public Task StartDetachedAsync(string fileName, string arguments, CancellationToken ct = default)
+        {
+            if (DetachedException is not null) throw DetachedException;
+            DetachedCalls.Add((fileName, arguments));
+            return Task.CompletedTask;
+        }
 
         public Task<ProcessResult> RunAsync(string fileName, string arguments, CancellationToken ct = default)
         {

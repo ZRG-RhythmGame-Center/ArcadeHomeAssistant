@@ -150,6 +150,11 @@ public class AutoStartManagerTests
 
         public List<(string FileName, string Arguments)> Calls { get; } = new();
 
+        public Task StartDetachedAsync(string fileName, string arguments, CancellationToken ct = default)
+        {
+            throw new NotSupportedException();
+        }
+
         public Task<ProcessResult> RunAsync(string fileName, string arguments, CancellationToken ct = default)
         {
             Calls.Add((fileName, arguments));

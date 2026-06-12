@@ -17,6 +17,9 @@ Windows Agent 是运行在目标 Windows 电脑上的本地服务，负责暴露
 - 音频设备接口：`GET /api/audio/devices`、`POST /api/audio/default-device`
 - 远程关机接口：`GET /api/power/shutdown`、`POST /api/power/shutdown`
 - `DeviceChangeNotifier`：监听 Windows Core Audio 设备变更事件，通过 EventHub WebSocket 广播 `audio.device.changed`
+- `LauncherOptions` / `LauncherItemOptions`：`Launcher` 配置段，含画布尺寸、全局导航键（`NavigateLeftKey`/`NavigateRightKey`/`ConfirmKey`）、全局关闭键（`StopKey`，默认 `F11`，F12 保留给调试器）和启动项列表
+- `LauncherConfigValidator`：启动项和导航键校验，覆盖必填字段、键冲突、F12 保留键限制
+- 托盘设置窗口（Avalonia）：托盘右键"设置"打开 Avalonia 配置窗口，统一通过 `IAgentSettingsService` 读写配置
 ## 目录结构
 
 ```text

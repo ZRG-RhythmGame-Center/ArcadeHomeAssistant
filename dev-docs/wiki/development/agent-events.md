@@ -1,7 +1,7 @@
 # Agent 实时事件总线（/api/events）
 
 > 创建日期: 2026-05-31
-> 最后更新: 2026-06-03 10:05
+> 最后更新: 2026-06-12
 > 作者: Maimai Dev
 > 状态: 草稿
 >
@@ -31,7 +31,7 @@
 }
 ```
 
-- `type`：事件类型字符串，必须取自 `EventTypes` 中的 9 个常量。
+- `type`：事件类型字符串，必须取自 `EventTypes` 中的常量（当前 18 个）。
 - `payload`：随事件类型变化；客户端按 `type` 分支解析。
 - `timestamp`：UTC ISO‑8601，由 `EventPublisher` 在广播时打。
 
@@ -48,6 +48,15 @@
 | `EventTypes.DeviceUnavailable` | `device.unavailable` | 设备调用抛出 `AudioOperationException`，同时认定该设备已不可达 | `{ deviceId: string }` |
 | `EventTypes.PowerShutdownExecuting` | `power.shutdown.executing` | `POST /api/power/shutdown` 令牌校验通过并调用 `IRemoteShutdownExecutor.ExecuteShutdownAsync()` 前 | `RemoteShutdownEventDto`：`{ state: "executing", executedAt: string, error: null }` |
 | `EventTypes.PowerShutdownFailed` | `power.shutdown.failed` | `shutdown.exe` 返回失败、权限不足、非预期异常等执行失败路径 | `RemoteShutdownEventDto`：`{ state: "failed", executedAt: string, error: string }` |
+| `EventTypes.SettingsUpdated` | `settings.updated` | `IAgentSettingsService.UpdateAsync()` 配置写入成功后 | 无固定 payload（空对象） |
+| `EventTypes.LauncherShown` | `launcher.shown` | `LauncherService.ShowAsync()` 成功展示启动器窗口后 | `{ shownAt: string }` |
+| `EventTypes.LauncherHidden` | `launcher.hidden` | `LauncherService.HideAsync()` 隐藏窗口后 | `{ hiddenAt: string }` |
+| `EventTypes.LauncherMinimized` | `launcher.minimized` | 启动项命令执行成功后窗口最小化时 | `{ id: string, name: string, minimizedAt: string }` |
+| `EventTypes.LauncherItemStarted` | `launcher.item.started` | `StartItemAsync()` 开始执行启动命令时（命令执行前） | `{ id: string, name: string, startedAt: string }` |
+| `EventTypes.LauncherItemFailed` | `launcher.item.failed` | 启动命令返回非 0 退出码或抛出异常 | `{ id: string, name: string, error: string, failedAt: string }` |
+| `EventTypes.LauncherItemStopStarted` | `launcher.item.stop.started` | `StopActiveItemAsync()` 开始执行关闭命令时 | `{ id: string, name: string, startedAt: string }` |
+| `EventTypes.LauncherItemStopCompleted` | `launcher.item.stop.completed` | 关闭命令成功完成（退出码 0） | `{ id: string, name: string, completedAt: string }` |
+| `EventTypes.LauncherItemStopFailed` | `launcher.item.stop.failed` | 关闭命令失败、超时（10 秒）或抛出异常 | `{ id?: string, name?: string, error: string, failedAt: string }` |
 
 ## 客户端集成约定
 
@@ -75,6 +84,7 @@
 
 | 时间 | 作者 | 变更说明 |
 |------|------|----------|
+| 2026-06-12 | Maimai Dev | 补充 `settings.updated` 和 8 个 `launcher.*` 事件类型；事件总数更新为 18。 |
 | 2026-06-03 10:05 | Maimai Dev | 移除 `/api/events` 查询参数透传说明，事件会话只保留 WebSocket 连接和广播职责。 |
 | 2026-06-03 09:50 | Maimai Dev | 远程关机事件收敛为立即执行和失败两类，事件总数改为 9，payload 改为 `executedAt` 形状，移除排程/撤销事件说明。 |
 | 2026-06-02 20:38 | Maimai Dev | 新增远程关机事件类型，更新客户端重连和已落地事件消费说明，移除旧 Wave 待办描述并归档。 |
