@@ -60,7 +60,7 @@ internal sealed class AvaloniaLauncherWindowHost : ILauncherWindowHost
     {
         return _uiThread.InvokeAsync(() =>
         {
-            if (_window is not null) _window.WindowState = WindowState.Minimized;
+            _window?.Hide();
 
             if (_viewModel is not null) _viewModel.IsVisible = false;
             return Task.CompletedTask;

@@ -134,13 +134,19 @@ internal sealed class Win32TrayIconHost : ITrayIconHost
 /// </summary>
 internal sealed class Win32MessagePump : IUiThreadPump
 {
-    private const int MOD_NOREPEAT = 0x4000;
-    private const uint WM_APP_REGISTER_STOP_HOTKEY = 0x8001;
+    private const int GWLP_USERDATA = -21;
+    private const int PM_REMOVE = 0x0001;
+    private const int RIDEV_INPUTSINK = 0x00000100;
+    private const int RID_INPUT = 0x10000003;
+    private const int RIM_TYPEKEYBOARD = 1;
+    private const int WH_KEYBOARD = 2;
+    private const uint WM_CREATE = 0x0001;
+    private const uint WM_DESTROY = 0x0002;
+    private const uint WM_INPUT = 0x00FF;
     private const uint WM_QUIT = 0x0012;
-    private const uint WM_HOTKEY = 0x0312;
-    private const int StopHotKeyId = 0x4D48;
     private int? _stopShortcutVirtualKey;
     private volatile bool _running;
+    private IntPtr _messageWindow;
     private Action? _onStopShortcut;
     private uint _threadId;
     private Thread? _uiThread;
@@ -154,6 +160,7 @@ internal sealed class Win32MessagePump : IUiThreadPump
             try
             {
                 _threadId = GetCurrentThreadId();
+                _messageWindow = RawInputMessageWindow.Create(this);
                 onReady();
                 ready.Set();
                 RunMessageLoop();
@@ -185,15 +192,12 @@ internal sealed class Win32MessagePump : IUiThreadPump
         var virtualKey = ResolveVirtualKey(key);
         if (virtualKey is null) return;
         _stopShortcutVirtualKey = virtualKey.Value;
-        if (_threadId == 0) return;
-
-        PostThreadMessageW(_threadId, WM_APP_REGISTER_STOP_HOTKEY, IntPtr.Zero, IntPtr.Zero);
     }
 
     public void Stop()
     {
         _running = false;
-        if (_threadId != 0) UnregisterHotKey(IntPtr.Zero, StopHotKeyId);
+        if (_messageWindow != IntPtr.Zero) DestroyWindow(_messageWindow);
         if (_threadId != 0) PostThreadMessageW(_threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
 
         if (_uiThread is not null)
@@ -210,21 +214,37 @@ internal sealed class Win32MessagePump : IUiThreadPump
             var result = GetMessageW(out var msg, IntPtr.Zero, 0, 0);
             if (result == 0 || result == -1) break;
 
-            if (msg.message == WM_HOTKEY && msg.wParam.ToInt32() == StopHotKeyId)
-            {
-                ThreadPool.QueueUserWorkItem(_ => _onStopShortcut?.Invoke());
-                continue;
-            }
-
-            if (msg.message == WM_APP_REGISTER_STOP_HOTKEY && _stopShortcutVirtualKey is { } virtualKey)
-            {
-                UnregisterHotKey(IntPtr.Zero, StopHotKeyId);
-                RegisterHotKey(IntPtr.Zero, StopHotKeyId, MOD_NOREPEAT, virtualKey);
-                continue;
-            }
-
             TranslateMessage(ref msg);
             DispatchMessageW(ref msg);
+        }
+    }
+
+    private void HandleRawInput(IntPtr lParam)
+    {
+        if (_stopShortcutVirtualKey is not { } targetKey) return;
+
+        var size = 0;
+        GetRawInputData(lParam, RID_INPUT, IntPtr.Zero, ref size, Marshal.SizeOf<RAWINPUTHEADER>());
+        if (size <= 0) return;
+
+        var buffer = Marshal.AllocHGlobal(size);
+        try
+        {
+            var read = GetRawInputData(lParam, RID_INPUT, buffer, ref size, Marshal.SizeOf<RAWINPUTHEADER>());
+            if (read != size) return;
+
+            var input = Marshal.PtrToStructure<RAWINPUT>(buffer);
+            if (input.header.dwType != RIM_TYPEKEYBOARD) return;
+
+            // Message 0x0100 is WM_KEYDOWN; 0x0104 is WM_SYSKEYDOWN.
+            if (input.keyboard.Message is not (0x0100 or 0x0104)) return;
+            if (input.keyboard.VKey != targetKey) return;
+
+            ThreadPool.QueueUserWorkItem(_ => _onStopShortcut?.Invoke());
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
         }
     }
 
@@ -267,10 +287,181 @@ internal sealed class Win32MessagePump : IUiThreadPump
     private static extern uint GetCurrentThreadId();
 
     [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vk);
+    private static extern bool DestroyWindow(IntPtr hWnd);
 
     [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+    private static extern uint GetRawInputData(IntPtr hRawInput, int uiCommand, IntPtr pData, ref int pcbSize,
+        int cbSizeHeader);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool RegisterRawInputDevices(RAWINPUTDEVICE[] pRawInputDevices, uint uiNumDevices,
+        uint cbSize);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern ushort RegisterClassW(ref WNDCLASS lpWndClass);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr CreateWindowExW(
+        int dwExStyle,
+        string lpClassName,
+        string lpWindowName,
+        int dwStyle,
+        int x,
+        int y,
+        int nWidth,
+        int nHeight,
+        IntPtr hWndParent,
+        IntPtr hMenu,
+        IntPtr hInstance,
+        IntPtr lpParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr DefWindowProcW(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetWindowLongPtrW(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr GetWindowLongPtrW(IntPtr hWnd, int nIndex);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr GetModuleHandleW(string? lpModuleName);
+
+    private delegate IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    private sealed class RawInputMessageWindow
+    {
+        private static readonly WndProc WindowProc = WndProc;
+        private const string ClassName = "MaimaiHomeAgentRawInputWindow";
+
+        public static IntPtr Create(Win32MessagePump owner)
+        {
+            var instance = GetModuleHandleW(null);
+            var wc = new WNDCLASS
+            {
+                lpfnWndProc = WindowProc,
+                hInstance = instance,
+                lpszClassName = ClassName
+            };
+            RegisterClassW(ref wc);
+
+            var handle = GCHandle.Alloc(owner);
+            var window = CreateWindowExW(0, ClassName, ClassName, 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, instance,
+                GCHandle.ToIntPtr(handle));
+            if (window == IntPtr.Zero) handle.Free();
+            return window;
+        }
+
+        private static IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+        {
+            if (msg == WM_CREATE)
+            {
+                var createStruct = Marshal.PtrToStructure<CREATESTRUCT>(lParam);
+                SetWindowLongPtrW(hWnd, GWLP_USERDATA, createStruct.lpCreateParams);
+                var devices = new[]
+                {
+                    new RAWINPUTDEVICE
+                    {
+                        usUsagePage = 0x01,
+                        usUsage = 0x06,
+                        dwFlags = RIDEV_INPUTSINK,
+                        hwndTarget = hWnd
+                    }
+                };
+                RegisterRawInputDevices(devices, 1, (uint)Marshal.SizeOf<RAWINPUTDEVICE>());
+            }
+            else if (msg == WM_INPUT)
+            {
+                var owner = GetOwner(hWnd);
+                owner?.HandleRawInput(lParam);
+            }
+            else if (msg == WM_DESTROY)
+            {
+                var handle = GetWindowLongPtrW(hWnd, GWLP_USERDATA);
+                if (handle != IntPtr.Zero)
+                {
+                    GCHandle.FromIntPtr(handle).Free();
+                    SetWindowLongPtrW(hWnd, GWLP_USERDATA, IntPtr.Zero);
+                }
+            }
+
+            return DefWindowProcW(hWnd, msg, wParam, lParam);
+        }
+
+        private static Win32MessagePump? GetOwner(IntPtr hWnd)
+        {
+            var handle = GetWindowLongPtrW(hWnd, GWLP_USERDATA);
+            return handle == IntPtr.Zero ? null : GCHandle.FromIntPtr(handle).Target as Win32MessagePump;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct WNDCLASS
+    {
+        public uint style;
+        public WndProc lpfnWndProc;
+        public int cbClsExtra;
+        public int cbWndExtra;
+        public IntPtr hInstance;
+        public IntPtr hIcon;
+        public IntPtr hCursor;
+        public IntPtr hbrBackground;
+        public string? lpszMenuName;
+        public string lpszClassName;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct CREATESTRUCT
+    {
+        public IntPtr lpCreateParams;
+        public IntPtr hInstance;
+        public IntPtr hMenu;
+        public IntPtr hwndParent;
+        public int cy;
+        public int cx;
+        public int y;
+        public int x;
+        public int style;
+        public IntPtr lpszName;
+        public IntPtr lpszClass;
+        public int dwExStyle;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RAWINPUTDEVICE
+    {
+        public ushort usUsagePage;
+        public ushort usUsage;
+        public int dwFlags;
+        public IntPtr hwndTarget;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RAWINPUTHEADER
+    {
+        public int dwType;
+        public int dwSize;
+        public IntPtr hDevice;
+        public IntPtr wParam;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RAWINPUT
+    {
+        public RAWINPUTHEADER header;
+        public RAWKEYBOARD keyboard;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RAWKEYBOARD
+    {
+        public ushort MakeCode;
+        public ushort Flags;
+        public ushort Reserved;
+        public ushort VKey;
+        public uint Message;
+        public uint ExtraInformation;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct MSG

@@ -188,7 +188,7 @@ public class TrayAppTests
     {
         await _trayApp.StartAsync(CancellationToken.None);
 
-        _pumpMock.Verify(p => p.RegisterStopShortcut("F12", It.IsAny<Action>()), Times.Once);
+        _pumpMock.Verify(p => p.RegisterStopShortcut("F11", It.IsAny<Action>()), Times.Once);
     }
 
     [Fact]

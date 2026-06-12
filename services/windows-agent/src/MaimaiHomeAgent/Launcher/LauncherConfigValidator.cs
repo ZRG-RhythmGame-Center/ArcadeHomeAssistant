@@ -25,6 +25,9 @@ public static class LauncherConfigValidator
         if (string.IsNullOrWhiteSpace(options.StopKey))
             errors.Add(new LauncherConfigError("launcher_stop_key_required", "启动选择器关闭快捷键不能为空"));
 
+        if (string.Equals(options.StopKey?.Trim(), "F12", StringComparison.OrdinalIgnoreCase))
+            errors.Add(new LauncherConfigError("launcher_stop_key_reserved", "F12 是 Windows 调试器保留键，不能作为全局关闭快捷键"));
+
         if (!string.IsNullOrWhiteSpace(options.NavigateLeftKey) &&
             !string.IsNullOrWhiteSpace(options.NavigateRightKey) &&
             string.Equals(options.NavigateLeftKey.Trim(), options.NavigateRightKey.Trim(),

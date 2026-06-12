@@ -22,7 +22,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     private string? _remoteShutdownToken;
     private int _selectedCategoryIndex;
     private string? _statusMessage;
-    private string _stopKey = "F12";
+    private string _stopKey = "F11";
 
     public SettingsWindowViewModel(IAgentSettingsService settings, ILogger logger)
     {

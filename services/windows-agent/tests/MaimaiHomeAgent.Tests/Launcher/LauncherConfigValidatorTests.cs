@@ -138,4 +138,21 @@ public sealed class LauncherConfigValidatorTests
 
         Assert.Contains(errors, error => error.Error == "launcher_stop_key_conflict");
     }
+
+    [Fact]
+    public void Validate_WithF12StopKey_ReturnsReservedError()
+    {
+        var options = new LauncherOptions
+        {
+            NavigateLeftKey = "Left",
+            NavigateRightKey = "Right",
+            ConfirmKey = "Enter",
+            StopKey = "F12",
+            Items = new List<LauncherItemOptions>()
+        };
+
+        var errors = LauncherConfigValidator.Validate(options);
+
+        Assert.Contains(errors, error => error.Error == "launcher_stop_key_reserved");
+    }
 }

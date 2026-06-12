@@ -46,5 +46,5 @@ public sealed record LauncherNavigationOptions(
     string ConfirmKey,
     string StopKey)
 {
-    public static LauncherNavigationOptions Default { get; } = new("Left", "Right", "Enter", "F12");
+    public static LauncherNavigationOptions Default { get; } = new("Left", "Right", "Enter", "F11");
 }
