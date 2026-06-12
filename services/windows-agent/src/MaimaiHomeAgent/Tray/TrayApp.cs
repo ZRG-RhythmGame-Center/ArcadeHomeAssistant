@@ -1,31 +1,28 @@
-using MaimaiHomeAgent.Startup;
 using MaimaiHomeAgent.Launcher;
 using MaimaiHomeAgent.Settings;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using MaimaiHomeAgent.Startup;
 
 namespace MaimaiHomeAgent.Tray;
 
 /// <summary>
-/// System-tray hosted service. Creates a Win32 tray icon with status, settings,
-/// auto-start toggle, and exit menu items.
-///
-/// The Win32 specifics are isolated behind <see cref="ITrayIconHost"/> and
-/// <see cref="IUiThreadPump"/> so the class is testable without a real
-/// Windows message pump.
+///     System-tray hosted service. Creates a Win32 tray icon with status, settings,
+///     auto-start toggle, and exit menu items.
+///     The Win32 specifics are isolated behind <see cref="ITrayIconHost" /> and
+///     <see cref="IUiThreadPump" /> so the class is testable without a real
+///     Windows message pump.
 /// </summary>
 public sealed class TrayApp : IHostedService, IAsyncDisposable
 {
     private readonly AutoStartManager _autoStart;
+    private readonly ITrayIconHost _host;
     private readonly ILauncherService _launcher;
-    private readonly ISettingsWindowHost _settingsWindow;
     private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<TrayApp> _logger;
-    private ITrayIconHost _host;
     private readonly IUiThreadPump _pump;
+    private readonly ISettingsWindowHost _settingsWindow;
 
     /// <summary>
-    /// Production constructor — creates real Win32 implementations.
+    ///     Production constructor — creates real Win32 implementations.
     /// </summary>
     public TrayApp(
         AutoStartManager autoStart,
@@ -41,15 +38,15 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
         _logger = logger;
         _pump = new Win32MessagePump();
         _host = new Win32TrayIconHost(
-            getAutoStartEnabled: SafeIsAutoStartEnabled,
-            onOpenLauncher: OnOpenLauncherAsync,
-            onOpenSettings: OnOpenSettingsAsync,
-            onToggleAutoStart: OnToggleAutoStartAsync,
-            onExit: OnExit);
+            SafeIsAutoStartEnabled,
+            OnOpenLauncherAsync,
+            OnOpenSettingsAsync,
+            OnToggleAutoStartAsync,
+            OnExit);
     }
 
     /// <summary>
-    /// Seam constructor for tests — accepts injected implementations.
+    ///     Seam constructor for tests — accepts injected implementations.
     /// </summary>
     internal TrayApp(
         AutoStartManager autoStart,
@@ -69,12 +66,14 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
         _pump = pump;
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        await StopAsync(CancellationToken.None).ConfigureAwait(false);
+    }
+
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _pump.Start(() =>
-        {
-            _host.Create();
-        });
+        _pump.Start(() => { _host.Create(); });
 
         return Task.CompletedTask;
     }
@@ -83,15 +82,16 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
     {
         _pump.Stop();
 
-        try { _host.Dispose(); }
-        catch { /* best-effort */ }
+        try
+        {
+            _host.Dispose();
+        }
+        catch
+        {
+            /* best-effort */
+        }
 
         return Task.CompletedTask;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await StopAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
     // ------------------------------------------------------------------ //
@@ -99,16 +99,28 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
     // ------------------------------------------------------------------ //
 
     /// <summary>Test seam: directly invoke the exit handler.</summary>
-    internal void SimulateExit() => OnExit();
+    internal void SimulateExit()
+    {
+        OnExit();
+    }
 
     /// <summary>Test seam: directly invoke the auto-start toggle handler.</summary>
-    internal Task SimulateToggleAutoStartAsync() => OnToggleAutoStartAsync();
+    internal Task SimulateToggleAutoStartAsync()
+    {
+        return OnToggleAutoStartAsync();
+    }
 
     /// <summary>Test seam: directly invoke the settings handler.</summary>
-    internal Task SimulateOpenSettingsAsync() => OnOpenSettingsAsync();
+    internal Task SimulateOpenSettingsAsync()
+    {
+        return OnOpenSettingsAsync();
+    }
 
     /// <summary>Test seam: directly invoke the launcher handler.</summary>
-    internal Task SimulateOpenLauncherAsync() => OnOpenLauncherAsync();
+    internal Task SimulateOpenLauncherAsync()
+    {
+        return OnOpenLauncherAsync();
+    }
 
     // ------------------------------------------------------------------ //
     //  Private handlers                                                   //
@@ -121,23 +133,17 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
             var nowEnabled = await _autoStart.IsEnabledAsync().ConfigureAwait(false);
             bool ok;
             if (nowEnabled)
-            {
                 ok = await _autoStart.DisableAsync().ConfigureAwait(false);
-            }
             else
-            {
                 ok = await _autoStart.EnableAsync().ConfigureAwait(false);
-            }
 
             var afterToggle = await _autoStart.IsEnabledAsync().ConfigureAwait(false);
             _host.UpdateAutoStartChecked(afterToggle);
 
             if (!ok)
-            {
                 _logger.LogWarning(
                     "Tray: schtasks operation failed; auto-start state remains {Enabled}.",
                     afterToggle);
-            }
         }
         catch (Exception ex)
         {
@@ -179,9 +185,9 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
         try
         {
             return _autoStart
-                .IsEnabledAsync()
-                .Wait(TimeSpan.FromSeconds(2))
-                && _autoStart.IsEnabledAsync().GetAwaiter().GetResult();
+                       .IsEnabledAsync()
+                       .Wait(TimeSpan.FromSeconds(2))
+                   && _autoStart.IsEnabledAsync().GetAwaiter().GetResult();
         }
         catch
         {
@@ -194,7 +200,13 @@ internal static class TaskExtensions
 {
     public static bool Wait(this Task task, TimeSpan timeout)
     {
-        try { return task.Wait(timeout); }
-        catch { return false; }
+        try
+        {
+            return task.Wait(timeout);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

@@ -1,4 +1,5 @@
 using MaimaiHomeAgent.Startup;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace MaimaiHomeAgent.Tests.Startup;
@@ -100,7 +101,7 @@ public class AutoStartManagerTests
         var ok = await manager.EnableAsync();
 
         Assert.False(ok);
-        Assert.Contains(logger.Records, r => r.Level == Microsoft.Extensions.Logging.LogLevel.Warning);
+        Assert.Contains(logger.Records, r => r.Level == LogLevel.Warning);
     }
 
     [Fact]
@@ -116,35 +117,38 @@ public class AutoStartManagerTests
         var ok = await manager.DisableAsync();
 
         Assert.False(ok);
-        Assert.Contains(logger.Records, r => r.Level == Microsoft.Extensions.Logging.LogLevel.Warning);
+        Assert.Contains(logger.Records, r => r.Level == LogLevel.Warning);
     }
 
-    private static string BuildTaskXml(string command) =>
-        $"""
-         <?xml version="1.0" encoding="UTF-16"?>
-         <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-           <Triggers>
-             <LogonTrigger>
-               <Enabled>true</Enabled>
-             </LogonTrigger>
-           </Triggers>
-           <Actions Context="Author">
-             <Exec>
-               <Command>{command}</Command>
-             </Exec>
-           </Actions>
-         </Task>
-         """;
+    private static string BuildTaskXml(string command)
+    {
+        return $"""
+                <?xml version="1.0" encoding="UTF-16"?>
+                <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+                  <Triggers>
+                    <LogonTrigger>
+                      <Enabled>true</Enabled>
+                    </LogonTrigger>
+                  </Triggers>
+                  <Actions Context="Author">
+                    <Exec>
+                      <Command>{command}</Command>
+                    </Exec>
+                  </Actions>
+                </Task>
+                """;
+    }
 
     private sealed class RecordingProcessRunner : IProcessRunner
     {
         private readonly ProcessResult _result;
-        public List<(string FileName, string Arguments)> Calls { get; } = new();
 
         public RecordingProcessRunner(ProcessResult result)
         {
             _result = result;
         }
+
+        public List<(string FileName, string Arguments)> Calls { get; } = new();
 
         public Task<ProcessResult> RunAsync(string fileName, string arguments, CancellationToken ct = default)
         {
@@ -153,22 +157,30 @@ public class AutoStartManagerTests
         }
     }
 
-    private sealed class RecordingLogger<T> : Microsoft.Extensions.Logging.ILogger<T>
+    private sealed class RecordingLogger<T> : ILogger<T>
     {
-        public record Record(Microsoft.Extensions.Logging.LogLevel Level, string Message, Exception? Exception);
         public List<Record> Records { get; } = new();
 
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+        {
+            return null;
+        }
+
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
 
         public void Log<TState>(
-            Microsoft.Extensions.Logging.LogLevel logLevel,
-            Microsoft.Extensions.Logging.EventId eventId,
+            LogLevel logLevel,
+            EventId eventId,
             TState state,
             Exception? exception,
             Func<TState, Exception?, string> formatter)
         {
             Records.Add(new Record(logLevel, formatter(state, exception), exception));
         }
+
+        public record Record(LogLevel Level, string Message, Exception? Exception);
     }
 }

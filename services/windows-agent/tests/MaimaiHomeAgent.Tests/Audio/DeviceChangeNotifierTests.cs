@@ -3,14 +3,13 @@ using MaimaiHomeAgent.Audio;
 using MaimaiHomeAgent.Realtime;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using Xunit;
 
 namespace MaimaiHomeAgent.Tests.Audio;
 
 /// <summary>
-/// Unit tests for <see cref="DeviceChangeNotifier"/>. Verifies the hosted-service
-/// lifecycle (idempotent register/unregister, swallowed COMException on stop)
-/// and that callback paths publish through <see cref="EventPublisher"/>.
+///     Unit tests for <see cref="DeviceChangeNotifier" />. Verifies the hosted-service
+///     lifecycle (idempotent register/unregister, swallowed COMException on stop)
+///     and that callback paths publish through <see cref="EventPublisher" />.
 /// </summary>
 public class DeviceChangeNotifierTests
 {
@@ -110,7 +109,7 @@ public class DeviceChangeNotifierTests
             .Setup(a => a.ListDevicesAsync())
             .ReturnsAsync(new[]
             {
-                new AudioDevice(deviceId, "Speakers", true, DeviceState.Active),
+                new AudioDevice(deviceId, "Speakers", true, DeviceState.Active)
             });
 
         var hub = new RecordingHub();
@@ -326,8 +325,8 @@ public class DeviceChangeNotifierTests
         {
             CachedDevices = new[]
             {
-                new AudioDevice(defaultDevice, "Speakers", false, DeviceState.Active),
-            },
+                new AudioDevice(defaultDevice, "Speakers", false, DeviceState.Active)
+            }
         };
         var hub = new RecordingHub();
         var notifier = new DeviceChangeNotifier(
@@ -367,13 +366,19 @@ public class DeviceChangeNotifierTests
 
     private sealed class RecordingHub : EventHub
     {
-        public RecordingHub() : base(NullLogger<EventHub>.Instance) { }
+        public RecordingHub() : base(NullLogger<EventHub>.Instance)
+        {
+        }
 
         public List<EventEnvelope> Broadcasts { get; } = new();
 
         public override Task BroadcastAsync(EventEnvelope envelope, CancellationToken ct = default)
         {
-            lock (Broadcasts) { Broadcasts.Add(envelope); }
+            lock (Broadcasts)
+            {
+                Broadcasts.Add(envelope);
+            }
+
             return Task.CompletedTask;
         }
 
@@ -382,9 +387,14 @@ public class DeviceChangeNotifierTests
             var deadline = DateTimeOffset.UtcNow + timeout;
             while (DateTimeOffset.UtcNow < deadline)
             {
-                lock (Broadcasts) { if (Broadcasts.Count >= count) return; }
+                lock (Broadcasts)
+                {
+                    if (Broadcasts.Count >= count) return;
+                }
+
                 await Task.Delay(10);
             }
+
             throw new TimeoutException(
                 $"Expected {count} broadcasts within {timeout}; got {Broadcasts.Count}.");
         }
@@ -398,18 +408,6 @@ public class DeviceChangeNotifierTests
         public int ListDevicesCount { get; private set; }
         public bool InvalidatedBeforeListDevices { get; private set; }
         public IReadOnlyList<AudioDevice>? CachedDevices { get; init; }
-
-        public Task<AudioState> GetStateAsync() => throw new NotSupportedException();
-        public Task SetVolumeAsync(double level) => throw new NotSupportedException();
-        public Task SetMuteAsync(bool muted) => throw new NotSupportedException();
-        public Task SetDefaultDeviceAsync(Guid deviceId) => throw new NotSupportedException();
-
-        public Task<IReadOnlyList<AudioDevice>> ListDevicesAsync()
-        {
-            ListDevicesCount++;
-            InvalidatedBeforeListDevices = _invalidated;
-            return Task.FromResult<IReadOnlyList<AudioDevice>>(Array.Empty<AudioDevice>());
-        }
 
         public void InvalidateDeviceCache()
         {
@@ -432,6 +430,33 @@ public class DeviceChangeNotifierTests
                 .Select(device => device with { IsDefault = device.Id == defaultDeviceId })
                 .ToArray();
             return true;
+        }
+
+        public Task<AudioState> GetStateAsync()
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task SetVolumeAsync(double level)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task SetMuteAsync(bool muted)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task SetDefaultDeviceAsync(Guid deviceId)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<IReadOnlyList<AudioDevice>> ListDevicesAsync()
+        {
+            ListDevicesCount++;
+            InvalidatedBeforeListDevices = _invalidated;
+            return Task.FromResult<IReadOnlyList<AudioDevice>>(Array.Empty<AudioDevice>());
         }
     }
 }

@@ -2,27 +2,26 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using MaimaiHomeAgent.Settings;
-using Microsoft.Extensions.Logging;
 
 namespace MaimaiHomeAgent.Ui.Avalonia.Settings;
 
 public sealed class SettingsWindowViewModel : INotifyPropertyChanged
 {
-    private readonly IAgentSettingsService _settings;
     private readonly ILogger _logger;
+    private readonly IAgentSettingsService _settings;
 
     private string? _adminPassword;
     private bool _autoStartEnabled;
-    private bool _launcherShowOnStart;
-    private int _canvasWidth = 1080;
     private int _canvasHeight = 1920;
+    private int _canvasWidth = 1080;
+    private string _confirmKey = "Enter";
+    private bool _launcherShowOnStart;
     private string _navigateLeftKey = "Left";
     private string _navigateRightKey = "Right";
-    private string _confirmKey = "Enter";
     private bool _remoteShutdownEnabled;
     private string? _remoteShutdownToken;
-    private string? _statusMessage;
     private int _selectedCategoryIndex;
+    private string? _statusMessage;
 
     public SettingsWindowViewModel(IAgentSettingsService settings, ILogger logger)
     {
@@ -30,23 +29,82 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
         _logger = logger;
     }
 
-    public event PropertyChangedEventHandler? PropertyChanged;
+    public string? AdminPassword
+    {
+        get => _adminPassword;
+        set => SetField(ref _adminPassword, value);
+    }
 
-    public string? AdminPassword { get => _adminPassword; set => SetField(ref _adminPassword, value); }
-    public bool AutoStartEnabled { get => _autoStartEnabled; set => SetField(ref _autoStartEnabled, value); }
-    public bool LauncherShowOnStart { get => _launcherShowOnStart; set => SetField(ref _launcherShowOnStart, value); }
-    public int CanvasWidth { get => _canvasWidth; set => SetField(ref _canvasWidth, value); }
-    public int CanvasHeight { get => _canvasHeight; set => SetField(ref _canvasHeight, value); }
-    public string NavigateLeftKey { get => _navigateLeftKey; set => SetField(ref _navigateLeftKey, value); }
-    public string NavigateRightKey { get => _navigateRightKey; set => SetField(ref _navigateRightKey, value); }
-    public string ConfirmKey { get => _confirmKey; set => SetField(ref _confirmKey, value); }
-    public bool RemoteShutdownEnabled { get => _remoteShutdownEnabled; set => SetField(ref _remoteShutdownEnabled, value); }
-    public string? RemoteShutdownToken { get => _remoteShutdownToken; set => SetField(ref _remoteShutdownToken, value); }
-    public string? StatusMessage { get => _statusMessage; set => SetField(ref _statusMessage, value); }
-    public int SelectedCategoryIndex { get => _selectedCategoryIndex; set => SetField(ref _selectedCategoryIndex, value); }
+    public bool AutoStartEnabled
+    {
+        get => _autoStartEnabled;
+        set => SetField(ref _autoStartEnabled, value);
+    }
+
+    public bool LauncherShowOnStart
+    {
+        get => _launcherShowOnStart;
+        set => SetField(ref _launcherShowOnStart, value);
+    }
+
+    public int CanvasWidth
+    {
+        get => _canvasWidth;
+        set => SetField(ref _canvasWidth, value);
+    }
+
+    public int CanvasHeight
+    {
+        get => _canvasHeight;
+        set => SetField(ref _canvasHeight, value);
+    }
+
+    public string NavigateLeftKey
+    {
+        get => _navigateLeftKey;
+        set => SetField(ref _navigateLeftKey, value);
+    }
+
+    public string NavigateRightKey
+    {
+        get => _navigateRightKey;
+        set => SetField(ref _navigateRightKey, value);
+    }
+
+    public string ConfirmKey
+    {
+        get => _confirmKey;
+        set => SetField(ref _confirmKey, value);
+    }
+
+    public bool RemoteShutdownEnabled
+    {
+        get => _remoteShutdownEnabled;
+        set => SetField(ref _remoteShutdownEnabled, value);
+    }
+
+    public string? RemoteShutdownToken
+    {
+        get => _remoteShutdownToken;
+        set => SetField(ref _remoteShutdownToken, value);
+    }
+
+    public string? StatusMessage
+    {
+        get => _statusMessage;
+        set => SetField(ref _statusMessage, value);
+    }
+
+    public int SelectedCategoryIndex
+    {
+        get => _selectedCategoryIndex;
+        set => SetField(ref _selectedCategoryIndex, value);
+    }
 
     public ObservableCollection<LauncherItemViewModel> LauncherItems { get; } = new();
     public ObservableCollection<FileRootViewModel> FileRoots { get; } = new();
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     public async Task LoadAsync(CancellationToken ct = default)
     {
@@ -64,16 +122,10 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
             RemoteShutdownToken = snapshot.RemoteShutdown.ControlToken;
 
             LauncherItems.Clear();
-            foreach (var item in snapshot.Launcher.Items)
-            {
-                LauncherItems.Add(LauncherItemViewModel.FromDto(item));
-            }
+            foreach (var item in snapshot.Launcher.Items) LauncherItems.Add(LauncherItemViewModel.FromDto(item));
 
             FileRoots.Clear();
-            foreach (var root in snapshot.FileRoots)
-            {
-                FileRoots.Add(FileRootViewModel.FromDto(root));
-            }
+            foreach (var root in snapshot.FileRoots) FileRoots.Add(FileRootViewModel.FromDto(root));
 
             AdminPassword = null;
             StatusMessage = null;
@@ -169,55 +221,161 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
 
 public sealed class LauncherItemViewModel : INotifyPropertyChanged
 {
+    private string _commandLine = "";
+    private bool _enabled = true;
+    private string? _iconPath;
     private string _id = "";
+    private string _key = "";
     private string _name = "";
     private string? _note;
-    private string? _iconPath;
-    private string _commandLine = "";
-    private string? _workingDirectory;
+    private int _orderIndex;
     private string _stopCommandLine = "";
     private string? _stopWorkingDirectory;
-    private string _key = "";
-    private int _orderIndex;
-    private bool _enabled = true;
+    private string? _workingDirectory;
+
+    public string Id
+    {
+        get => _id;
+        set
+        {
+            _id = value;
+            OnChanged();
+        }
+    }
+
+    public string Name
+    {
+        get => _name;
+        set
+        {
+            _name = value;
+            OnChanged();
+        }
+    }
+
+    public string? Note
+    {
+        get => _note;
+        set
+        {
+            _note = value;
+            OnChanged();
+        }
+    }
+
+    public string? IconPath
+    {
+        get => _iconPath;
+        set
+        {
+            _iconPath = value;
+            OnChanged();
+        }
+    }
+
+    public string CommandLine
+    {
+        get => _commandLine;
+        set
+        {
+            _commandLine = value;
+            OnChanged();
+        }
+    }
+
+    public string? WorkingDirectory
+    {
+        get => _workingDirectory;
+        set
+        {
+            _workingDirectory = value;
+            OnChanged();
+        }
+    }
+
+    public string StopCommandLine
+    {
+        get => _stopCommandLine;
+        set
+        {
+            _stopCommandLine = value;
+            OnChanged();
+        }
+    }
+
+    public string? StopWorkingDirectory
+    {
+        get => _stopWorkingDirectory;
+        set
+        {
+            _stopWorkingDirectory = value;
+            OnChanged();
+        }
+    }
+
+    public string Key
+    {
+        get => _key;
+        set
+        {
+            _key = value;
+            OnChanged();
+        }
+    }
+
+    public int OrderIndex
+    {
+        get => _orderIndex;
+        set
+        {
+            _orderIndex = value;
+            OnChanged();
+        }
+    }
+
+    public bool Enabled
+    {
+        get => _enabled;
+        set
+        {
+            _enabled = value;
+            OnChanged();
+        }
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string Id { get => _id; set { _id = value; OnChanged(); } }
-    public string Name { get => _name; set { _name = value; OnChanged(); } }
-    public string? Note { get => _note; set { _note = value; OnChanged(); } }
-    public string? IconPath { get => _iconPath; set { _iconPath = value; OnChanged(); } }
-    public string CommandLine { get => _commandLine; set { _commandLine = value; OnChanged(); } }
-    public string? WorkingDirectory { get => _workingDirectory; set { _workingDirectory = value; OnChanged(); } }
-    public string StopCommandLine { get => _stopCommandLine; set { _stopCommandLine = value; OnChanged(); } }
-    public string? StopWorkingDirectory { get => _stopWorkingDirectory; set { _stopWorkingDirectory = value; OnChanged(); } }
-    public string Key { get => _key; set { _key = value; OnChanged(); } }
-    public int OrderIndex { get => _orderIndex; set { _orderIndex = value; OnChanged(); } }
-    public bool Enabled { get => _enabled; set { _enabled = value; OnChanged(); } }
-
-    public LauncherItemSettingsDto ToDto(int order) => new(
-        Id, Name, Name, Note, IconPath,
-        CommandLine, WorkingDirectory,
-        StopCommandLine, StopWorkingDirectory,
-        Key, OrderIndex, Enabled);
-
-    public static LauncherItemViewModel FromDto(LauncherItemSettingsDto dto) => new()
+    public LauncherItemSettingsDto ToDto(int order)
     {
-        Id = dto.Id,
-        Name = dto.Name,
-        Note = dto.Note,
-        IconPath = dto.IconPath,
-        CommandLine = dto.CommandLine,
-        WorkingDirectory = dto.WorkingDirectory,
-        StopCommandLine = dto.StopCommandLine,
-        StopWorkingDirectory = dto.StopWorkingDirectory,
-        Key = dto.Key,
-        OrderIndex = dto.Order,
-        Enabled = dto.Enabled
-    };
+        return new LauncherItemSettingsDto(
+            Id, Name, Name, Note, IconPath,
+            CommandLine, WorkingDirectory,
+            StopCommandLine, StopWorkingDirectory,
+            Key, OrderIndex, Enabled);
+    }
 
-    private void OnChanged([CallerMemberName] string? name = null) =>
+    public static LauncherItemViewModel FromDto(LauncherItemSettingsDto dto)
+    {
+        return new LauncherItemViewModel
+        {
+            Id = dto.Id,
+            Name = dto.Name,
+            Note = dto.Note,
+            IconPath = dto.IconPath,
+            CommandLine = dto.CommandLine,
+            WorkingDirectory = dto.WorkingDirectory,
+            StopCommandLine = dto.StopCommandLine,
+            StopWorkingDirectory = dto.StopWorkingDirectory,
+            Key = dto.Key,
+            OrderIndex = dto.Order,
+            Enabled = dto.Enabled
+        };
+    }
+
+    private void OnChanged([CallerMemberName] string? name = null)
+    {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
 }
 
 public sealed class FileRootViewModel : INotifyPropertyChanged
@@ -227,23 +385,66 @@ public sealed class FileRootViewModel : INotifyPropertyChanged
     private string _path = "";
     private bool _readOnly;
 
+    public string Id
+    {
+        get => _id;
+        set
+        {
+            _id = value;
+            OnChanged();
+        }
+    }
+
+    public string Name
+    {
+        get => _name;
+        set
+        {
+            _name = value;
+            OnChanged();
+        }
+    }
+
+    public string Path
+    {
+        get => _path;
+        set
+        {
+            _path = value;
+            OnChanged();
+        }
+    }
+
+    public bool ReadOnly
+    {
+        get => _readOnly;
+        set
+        {
+            _readOnly = value;
+            OnChanged();
+        }
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string Id { get => _id; set { _id = value; OnChanged(); } }
-    public string Name { get => _name; set { _name = value; OnChanged(); } }
-    public string Path { get => _path; set { _path = value; OnChanged(); } }
-    public bool ReadOnly { get => _readOnly; set { _readOnly = value; OnChanged(); } }
-
-    public FileRootSettingsDto ToDto() => new(Id, Name, Path, ReadOnly);
-
-    public static FileRootViewModel FromDto(FileRootSettingsDto dto) => new()
+    public FileRootSettingsDto ToDto()
     {
-        Id = dto.Id,
-        Name = dto.Name,
-        Path = dto.Path,
-        ReadOnly = dto.ReadOnly
-    };
+        return new FileRootSettingsDto(Id, Name, Path, ReadOnly);
+    }
 
-    private void OnChanged([CallerMemberName] string? name = null) =>
+    public static FileRootViewModel FromDto(FileRootSettingsDto dto)
+    {
+        return new FileRootViewModel
+        {
+            Id = dto.Id,
+            Name = dto.Name,
+            Path = dto.Path,
+            ReadOnly = dto.ReadOnly
+        };
+    }
+
+    private void OnChanged([CallerMemberName] string? name = null)
+    {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
 }

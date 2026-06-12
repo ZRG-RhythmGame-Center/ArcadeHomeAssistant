@@ -11,7 +11,8 @@ namespace MaimaiHomeAgent.Tests.Settings;
 
 public sealed class AgentSettingsServiceTests : IDisposable
 {
-    private readonly string _tempDir = Path.Combine(Path.GetTempPath(), "maimai-settings-tests-" + Guid.NewGuid().ToString("N"));
+    private readonly string _tempDir =
+        Path.Combine(Path.GetTempPath(), "maimai-settings-tests-" + Guid.NewGuid().ToString("N"));
 
     public AgentSettingsServiceTests()
     {
@@ -20,16 +21,13 @@ public sealed class AgentSettingsServiceTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_tempDir))
-        {
-            Directory.Delete(_tempDir, recursive: true);
-        }
+        if (Directory.Exists(_tempDir)) Directory.Delete(_tempDir, true);
     }
 
     [Fact]
     public async Task GetAsync_DoesNotExposeAdminPassword()
     {
-        var service = CreateService(adminPassword: "seganmsl");
+        var service = CreateService("seganmsl");
 
         var settings = await service.GetAsync();
 
@@ -43,11 +41,11 @@ public sealed class AgentSettingsServiceTests : IDisposable
         var service = CreateService(configPath: configPath);
 
         var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(
-            AdminPassword: "",
-            AutoStartEnabled: null,
-            Launcher: null,
-            FileRoots: null,
-            RemoteShutdown: null));
+            "",
+            null,
+            null,
+            null,
+            null));
 
         Assert.True(result.Success);
         Assert.False(File.Exists(configPath));
@@ -67,8 +65,10 @@ public sealed class AgentSettingsServiceTests : IDisposable
             "Enter",
             new[]
             {
-                new LauncherItemSettingsDto("a", "A", "Title A", null, null, "echo a", null, "echo stop a", null, "A", 1, true),
-                new LauncherItemSettingsDto("b", "B", "Title B", null, null, "echo b", null, "echo stop b", null, "a", 2, true)
+                new LauncherItemSettingsDto("a", "A", "Title A", null, null, "echo a", null, "echo stop a", null, "A",
+                    1, true),
+                new LauncherItemSettingsDto("b", "B", "Title B", null, null, "echo b", null, "echo stop b", null, "a",
+                    2, true)
             });
 
         var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(null, null, launcher, null, null));
@@ -89,7 +89,11 @@ public sealed class AgentSettingsServiceTests : IDisposable
             "Left",
             "Right",
             "Enter",
-            new[] { new LauncherItemSettingsDto("mai", "maimai", "maimai", null, null, "echo mai", null, "echo stop", null, "M", 1, true) });
+            new[]
+            {
+                new LauncherItemSettingsDto("mai", "maimai", "maimai", null, null, "echo mai", null, "echo stop", null,
+                    "M", 1, true)
+            });
 
         var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(null, null, launcher, null, null));
 
@@ -143,8 +147,14 @@ public sealed class AgentSettingsServiceTests : IDisposable
 
         public T CurrentValue { get; }
 
-        public T Get(string? name) => CurrentValue;
+        public T Get(string? name)
+        {
+            return CurrentValue;
+        }
 
-        public IDisposable? OnChange(Action<T, string?> listener) => null;
+        public IDisposable? OnChange(Action<T, string?> listener)
+        {
+            return null;
+        }
     }
 }

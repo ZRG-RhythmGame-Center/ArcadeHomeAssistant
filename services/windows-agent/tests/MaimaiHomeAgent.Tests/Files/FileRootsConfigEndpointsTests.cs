@@ -3,10 +3,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using MaimaiHomeAgent.Files;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 
 namespace MaimaiHomeAgent.Tests.Files;
 
@@ -41,10 +39,7 @@ public class FileRootsConfigEndpointsTests : IAsyncLifetime
         await _app.DisposeAsync();
         _client.Dispose();
 
-        if (Directory.Exists(_tempDir))
-        {
-            Directory.Delete(_tempDir, recursive: true);
-        }
+        if (Directory.Exists(_tempDir)) Directory.Delete(_tempDir, true);
     }
 
     [Fact]

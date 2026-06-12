@@ -119,30 +119,33 @@ public sealed class LauncherServiceTests
             NullLogger<LauncherService>.Instance);
     }
 
-    private static LauncherOptions CreateOptions() => new()
+    private static LauncherOptions CreateOptions()
     {
-        Items = new()
+        return new LauncherOptions
         {
-            new LauncherItemOptions
+            Items = new List<LauncherItemOptions>
             {
-                Id = "mai",
-                Name = "maimai",
-                CommandLine = "start-mai",
-                StopCommandLine = "stop-mai",
-                Key = "A",
-                Enabled = true
-            },
-            new LauncherItemOptions
-            {
-                Id = "disabled",
-                Name = "Disabled",
-                CommandLine = "start-disabled",
-                StopCommandLine = "stop-disabled",
-                Key = "B",
-                Enabled = false
+                new()
+                {
+                    Id = "mai",
+                    Name = "maimai",
+                    CommandLine = "start-mai",
+                    StopCommandLine = "stop-mai",
+                    Key = "A",
+                    Enabled = true
+                },
+                new()
+                {
+                    Id = "disabled",
+                    Name = "Disabled",
+                    CommandLine = "start-disabled",
+                    StopCommandLine = "stop-disabled",
+                    Key = "B",
+                    Enabled = false
+                }
             }
-        }
-    };
+        };
+    }
 
     private sealed class FakeProcessRunner : IProcessRunner
     {
@@ -159,12 +162,12 @@ public sealed class LauncherServiceTests
 
     private sealed class FakeLauncherWindowHost : ILauncherWindowHost
     {
-        public bool IsVisible { get; private set; }
         public bool ShowCalled { get; private set; }
         public bool MinimizeCalled { get; private set; }
         public bool HideCalled { get; private set; }
         public IReadOnlyList<LauncherItemRuntime> LastItems { get; private set; } = Array.Empty<LauncherItemRuntime>();
         public LauncherNavigationOptions? LastNavigation { get; private set; }
+        public bool IsVisible { get; private set; }
 
         public Task ShowAsync(
             IReadOnlyList<LauncherItemRuntime> items,
@@ -203,8 +206,14 @@ public sealed class LauncherServiceTests
 
         public T CurrentValue { get; }
 
-        public T Get(string? name) => CurrentValue;
+        public T Get(string? name)
+        {
+            return CurrentValue;
+        }
 
-        public IDisposable? OnChange(Action<T, string?> listener) => null;
+        public IDisposable? OnChange(Action<T, string?> listener)
+        {
+            return null;
+        }
     }
 }

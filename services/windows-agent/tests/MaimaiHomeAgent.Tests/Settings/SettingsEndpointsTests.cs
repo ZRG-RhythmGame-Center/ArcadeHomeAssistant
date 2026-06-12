@@ -5,7 +5,6 @@ using System.Text.Json;
 using MaimaiHomeAgent.Admin;
 using MaimaiHomeAgent.Settings;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -98,15 +97,22 @@ public sealed class SettingsEndpointsTests : IAsyncLifetime
         private readonly AgentSettingsSnapshot _settings = new(
             true,
             false,
-            new LauncherSettingsDto(false, 1080, 1920, "Left", "Right", "Enter", Array.Empty<LauncherItemSettingsDto>()),
+            new LauncherSettingsDto(false, 1080, 1920, "Left", "Right", "Enter",
+                Array.Empty<LauncherItemSettingsDto>()),
             Array.Empty<FileRootSettingsDto>(),
             new RemoteShutdownSettingsDto(false, null));
 
         public SettingsUpdateResult? NextResult { get; set; }
 
-        public Task<AgentSettingsSnapshot> GetAsync(CancellationToken ct = default) => Task.FromResult(_settings);
+        public Task<AgentSettingsSnapshot> GetAsync(CancellationToken ct = default)
+        {
+            return Task.FromResult(_settings);
+        }
 
-        public Task<SettingsUpdateResult> UpdateAsync(AgentSettingsUpdateRequest request, CancellationToken ct = default) =>
-            Task.FromResult(NextResult ?? SettingsUpdateResult.Ok(_settings));
+        public Task<SettingsUpdateResult> UpdateAsync(AgentSettingsUpdateRequest request,
+            CancellationToken ct = default)
+        {
+            return Task.FromResult(NextResult ?? SettingsUpdateResult.Ok(_settings));
+        }
     }
 }

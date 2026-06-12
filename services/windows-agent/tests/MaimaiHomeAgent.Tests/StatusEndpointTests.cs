@@ -2,26 +2,23 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Xunit;
 
 namespace MaimaiHomeAgent.Tests;
 
 /// <summary>
-/// Integration tests for the <c>GET /api/status</c> endpoint. Uses
-/// <see cref="WebApplicationFactory{TEntryPoint}"/> to spin up the full
-/// ASP.NET Core pipeline in-process.
-///
-/// Joined to the "WafProgramTests" collection so it shares the same
-/// serialization context as the other WAF-based test classes and avoids
-/// Serilog static-logger conflicts.
+///     Integration tests for the <c>GET /api/status</c> endpoint. Uses
+///     <see cref="WebApplicationFactory{TEntryPoint}" /> to spin up the full
+///     ASP.NET Core pipeline in-process.
+///     Joined to the "WafProgramTests" collection so it shares the same
+///     serialization context as the other WAF-based test classes and avoids
+///     Serilog static-logger conflicts.
 /// </summary>
 [Collection("WafProgramTests")]
 public class StatusEndpointTests : IDisposable
 {
-    private readonly StatusTestFactory _factory;
     private readonly HttpClient _client;
+    private readonly StatusTestFactory _factory;
 
     public StatusEndpointTests()
     {
@@ -203,7 +200,7 @@ public class StatusEndpointTests : IDisposable
     }
 
     /// <summary>
-    /// /api/status includes a baseUrl field for mobile AgentStatus.baseUrl.
+    ///     /api/status includes a baseUrl field for mobile AgentStatus.baseUrl.
     /// </summary>
     [Fact]
     public async Task GetStatus_ContainsBaseUrl()
@@ -260,10 +257,7 @@ public class StatusEndpointTests : IDisposable
                 var hosted = services
                     .Where(d => d.ServiceType == typeof(IHostedService))
                     .ToList();
-                foreach (var d in hosted)
-                {
-                    services.Remove(d);
-                }
+                foreach (var d in hosted) services.Remove(d);
             });
         }
     }

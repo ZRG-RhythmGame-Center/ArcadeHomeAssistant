@@ -1,32 +1,28 @@
 using MaimaiHomeAgent.Files;
-using Xunit.Sdk;
 
 namespace MaimaiHomeAgent.Tests.Files;
 
 public class PathGuardTests : IDisposable
 {
-    private readonly string _rootPath;
     private readonly FileRoot _root;
+    private readonly string _rootPath;
 
     public PathGuardTests()
     {
         _rootPath = Path.Combine(Path.GetTempPath(), "maimai-pathguard-tests-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_rootPath);
         _root = new FileRoot(
-            Id: "test",
-            Name: "Test Root",
-            Path: _rootPath,
-            ReadOnly: false);
+            "test",
+            "Test Root",
+            _rootPath,
+            false);
     }
 
     public void Dispose()
     {
         try
         {
-            if (Directory.Exists(_rootPath))
-            {
-                Directory.Delete(_rootPath, recursive: true);
-            }
+            if (Directory.Exists(_rootPath)) Directory.Delete(_rootPath, true);
         }
         catch
         {
@@ -135,16 +131,13 @@ public class PathGuardTests : IDisposable
     public void ResolveSafe_AcceptsDriveRootItselfWhenEmpty()
     {
         var drive = DriveInfo.GetDrives().FirstOrDefault(static d => d.IsReady);
-        if (drive is null)
-        {
-            return;
-        }
+        if (drive is null) return;
 
         var driveRoot = new FileRoot(
-            Id: "drive",
-            Name: "Drive Root",
-            Path: drive.RootDirectory.FullName,
-            ReadOnly: false);
+            "drive",
+            "Drive Root",
+            drive.RootDirectory.FullName,
+            false);
 
         var result = PathGuard.ResolveSafe(driveRoot, "");
 
@@ -157,22 +150,16 @@ public class PathGuardTests : IDisposable
     public void ResolveSafe_AcceptsDriveRootChildDirectory()
     {
         var drive = DriveInfo.GetDrives().FirstOrDefault(static d => d.IsReady);
-        if (drive is null)
-        {
-            return;
-        }
+        if (drive is null) return;
 
         var child = drive.RootDirectory.EnumerateDirectories().FirstOrDefault();
-        if (child is null)
-        {
-            return;
-        }
+        if (child is null) return;
 
         var driveRoot = new FileRoot(
-            Id: "drive",
-            Name: "Drive Root",
-            Path: drive.RootDirectory.FullName,
-            ReadOnly: false);
+            "drive",
+            "Drive Root",
+            drive.RootDirectory.FullName,
+            false);
 
         var result = PathGuard.ResolveSafe(driveRoot, child.Name);
 
@@ -186,10 +173,10 @@ public class PathGuardTests : IDisposable
     {
         // Use TEMP env var which definitely exists on Windows
         var rootWithEnvVar = new FileRoot(
-            Id: "env",
-            Name: "Env Root",
-            Path: "%TEMP%",
-            ReadOnly: false);
+            "env",
+            "Env Root",
+            "%TEMP%",
+            false);
 
         var result = PathGuard.ResolveSafe(rootWithEnvVar, "subdir/file.txt");
 
@@ -260,7 +247,13 @@ public class PathGuardTests : IDisposable
         }
         finally
         {
-            try { Directory.Delete(outsideDir, recursive: true); } catch { }
+            try
+            {
+                Directory.Delete(outsideDir, true);
+            }
+            catch
+            {
+            }
         }
     }
 

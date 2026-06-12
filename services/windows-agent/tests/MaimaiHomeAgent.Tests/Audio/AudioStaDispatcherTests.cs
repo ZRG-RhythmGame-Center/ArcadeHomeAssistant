@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using MaimaiHomeAgent.Audio;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -62,10 +60,7 @@ public class AudioStaDispatcherTests
 
         // Fill the bounded channel (capacity 5).
         var pending = new List<Task<int>>();
-        for (var i = 0; i < 5; i++)
-        {
-            pending.Add(dispatcher.InvokeAsync(() => Task.FromResult(1)));
-        }
+        for (var i = 0; i < 5; i++) pending.Add(dispatcher.InvokeAsync(() => Task.FromResult(1)));
 
         // 6th queued item must throw immediately.
         await Assert.ThrowsAsync<AudioServiceBusyException>(async () =>
@@ -104,7 +99,14 @@ public class AudioStaDispatcherTests
 
         // Allow the in-flight item to finish so the worker exits cleanly.
         release.SetResult(0);
-        try { await blocking; } catch { /* ignore */ }
+        try
+        {
+            await blocking;
+        }
+        catch
+        {
+            /* ignore */
+        }
 
         await dispatcher.DisposeAsync();
 

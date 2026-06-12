@@ -1,12 +1,12 @@
+using System.Diagnostics;
 using MaimaiHomeAgent.Startup;
-using Xunit;
 
 namespace MaimaiHomeAgent.Tests.Startup;
 
 /// <summary>
-/// Integration tests for <see cref="ProcessRunner"/>. Exercises the real
-/// <see cref="System.Diagnostics.Process"/> API using built-in Windows
-/// commands so no external tools are required.
+///     Integration tests for <see cref="ProcessRunner" />. Exercises the real
+///     <see cref="System.Diagnostics.Process" /> API using built-in Windows
+///     commands so no external tools are required.
 /// </summary>
 [Trait("Category", "Windows")]
 public class ProcessRunnerTests
@@ -62,7 +62,7 @@ public class ProcessRunnerTests
 
         // Snapshot the ping.exe processes that exist BEFORE we run, so the
         // teardown assertion can identify the new process precisely.
-        var pingsBefore = System.Diagnostics.Process.GetProcessesByName("ping")
+        var pingsBefore = Process.GetProcessesByName("ping")
             .Select(p => p.Id)
             .ToHashSet();
         try
@@ -80,28 +80,32 @@ public class ProcessRunnerTests
             // RunAsync returns. We give the OS a brief moment to reap the PID.
             for (var i = 0; i < 20; i++)
             {
-                var pingsNow = System.Diagnostics.Process.GetProcessesByName("ping")
+                var pingsNow = Process.GetProcessesByName("ping")
                     .Select(p => p.Id)
                     .ToHashSet();
                 pingsNow.ExceptWith(pingsBefore);
-                if (pingsNow.Count == 0)
-                {
-                    return; // success: no orphaned ping.exe survived cancellation.
-                }
+                if (pingsNow.Count == 0) return; // success: no orphaned ping.exe survived cancellation.
                 await Task.Delay(50);
             }
+
             Assert.Fail("ping.exe spawned by ProcessRunner.RunAsync was not killed within 1s after cancellation");
         }
         finally
         {
             // Defensive: if the assertion failed, kill any leaked ping.exe so
             // the test process does not hang on shutdown.
-            foreach (var p in System.Diagnostics.Process.GetProcessesByName("ping"))
+            foreach (var p in Process.GetProcessesByName("ping"))
             {
                 if (!pingsBefore.Contains(p.Id))
-                {
-                    try { p.Kill(); } catch { /* best effort */ }
-                }
+                    try
+                    {
+                        p.Kill();
+                    }
+                    catch
+                    {
+                        /* best effort */
+                    }
+
                 p.Dispose();
             }
         }

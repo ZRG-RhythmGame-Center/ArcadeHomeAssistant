@@ -26,10 +26,7 @@ internal sealed class AvaloniaUiThread : IAvaloniaUiThread, IDisposable
     public Task InvokeAsync(Func<Task> action, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(action);
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(AvaloniaUiThread));
-        }
+        if (_disposed) throw new ObjectDisposedException(nameof(AvaloniaUiThread));
 
         var tcs = new TaskCompletionSource();
         Dispatcher.UIThread.Post(async () =>
@@ -50,10 +47,7 @@ internal sealed class AvaloniaUiThread : IAvaloniaUiThread, IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
+        if (_disposed) return;
 
         _disposed = true;
         try
@@ -61,9 +55,7 @@ internal sealed class AvaloniaUiThread : IAvaloniaUiThread, IDisposable
             Dispatcher.UIThread.Post(() =>
             {
                 if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-                {
                     desktop.Shutdown();
-                }
             });
         }
         catch
@@ -93,8 +85,10 @@ internal sealed class AvaloniaUiThread : IAvaloniaUiThread, IDisposable
         }
     }
 
-    private static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<AvaloniaApp>()
+    private static AppBuilder BuildAvaloniaApp()
+    {
+        return AppBuilder.Configure<AvaloniaApp>()
             .UsePlatformDetect()
             .LogToTrace();
+    }
 }

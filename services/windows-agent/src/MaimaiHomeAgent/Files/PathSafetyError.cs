@@ -1,8 +1,8 @@
 namespace MaimaiHomeAgent.Files;
 
 /// <summary>
-/// Reasons a path can be rejected by <see cref="PathGuard"/>.
-/// Callers map these to HTTP 403 (or 400 for malformed input) — never 500.
+///     Reasons a path can be rejected by <see cref="PathGuard" />.
+///     Callers map these to HTTP 403 (or 400 for malformed input) — never 500.
 /// </summary>
 public enum PathSafetyError
 {
@@ -19,5 +19,5 @@ public enum PathSafetyError
     SymlinkEscape,
 
     /// <summary>An intermediate directory between the root and the target is a reparse point (symlink/junction).</summary>
-    ReparsePointInPath,
+    ReparsePointInPath
 }

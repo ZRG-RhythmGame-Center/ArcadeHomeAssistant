@@ -15,9 +15,7 @@ internal sealed class AvaloniaApp : Application
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        }
 
         base.OnFrameworkInitializationCompleted();
     }

@@ -1,8 +1,8 @@
 namespace MaimaiHomeAgent.Audio;
 
 /// <summary>
-/// Thrown when the dedicated audio STA dispatcher's bounded queue is full and
-/// a new request cannot be accepted. Maps to HTTP 503 in API layers.
+///     Thrown when the dedicated audio STA dispatcher's bounded queue is full and
+///     a new request cannot be accepted. Maps to HTTP 503 in API layers.
 /// </summary>
 public sealed class AudioServiceBusyException : Exception
 {
@@ -23,9 +23,9 @@ public sealed class AudioServiceBusyException : Exception
 }
 
 /// <summary>
-/// Domain wrapper for failures originating in Core Audio COM calls. The
-/// underlying <see cref="System.Runtime.InteropServices.COMException"/> (if
-/// any) is preserved as <see cref="Exception.InnerException"/>.
+///     Domain wrapper for failures originating in Core Audio COM calls. The
+///     underlying <see cref="System.Runtime.InteropServices.COMException" /> (if
+///     any) is preserved as <see cref="Exception.InnerException" />.
 /// </summary>
 public sealed class AudioOperationException : Exception
 {
@@ -41,7 +41,7 @@ public sealed class AudioOperationException : Exception
 }
 
 /// <summary>
-/// Thrown when a requested audio device id is unknown or unavailable.
+///     Thrown when a requested audio device id is unknown or unavailable.
 /// </summary>
 public sealed class AudioDeviceNotFoundException : Exception
 {

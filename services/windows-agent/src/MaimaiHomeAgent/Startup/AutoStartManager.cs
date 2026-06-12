@@ -1,31 +1,33 @@
+using System.ComponentModel;
 using System.Xml.Linq;
-using Microsoft.Extensions.Logging;
 
 namespace MaimaiHomeAgent.Startup;
 
 /// <summary>
-/// Manages auto-start integration via Windows Task Scheduler (<c>schtasks.exe</c>).
-/// Uses <c>/SC ONLOGON /RL LIMITED</c> so the scheduled task is created at user
-/// scope, no admin elevation required.
+///     Manages auto-start integration via Windows Task Scheduler (<c>schtasks.exe</c>).
+///     Uses <c>/SC ONLOGON /RL LIMITED</c> so the scheduled task is created at user
+///     scope, no admin elevation required.
 /// </summary>
 public sealed class AutoStartManager : IAutoStartManager
 {
     /// <summary>
-    /// Scheduled task name. Stable across versions because <see cref="IsEnabledAsync"/>
-    /// looks it up by name to detect already-installed installs.
+    ///     Scheduled task name. Stable across versions because <see cref="IsEnabledAsync" />
+    ///     looks it up by name to detect already-installed installs.
     /// </summary>
     public const string TaskName = "MaimaiHomeAgent";
 
-    private readonly IProcessRunner _runner;
     private readonly IElevatedProcessRunner? _elevatedRunner;
     private readonly ILogger<AutoStartManager> _logger;
+
+    private readonly IProcessRunner _runner;
 
     public AutoStartManager(IProcessRunner runner, ILogger<AutoStartManager> logger)
         : this(runner, null, logger)
     {
     }
 
-    public AutoStartManager(IProcessRunner runner, IElevatedProcessRunner? elevatedRunner, ILogger<AutoStartManager> logger)
+    public AutoStartManager(IProcessRunner runner, IElevatedProcessRunner? elevatedRunner,
+        ILogger<AutoStartManager> logger)
     {
         _runner = runner;
         _elevatedRunner = elevatedRunner;
@@ -33,10 +35,10 @@ public sealed class AutoStartManager : IAutoStartManager
     }
 
     /// <summary>
-    /// Returns true when a scheduled task named <see cref="TaskName"/> exists AND
-    /// its &lt;Command&gt; matches the current process executable path
-    /// (case-insensitive). Mismatched path → false (a stale task from a previous
-    /// install location should be re-enabled by the user).
+    ///     Returns true when a scheduled task named <see cref="TaskName" /> exists AND
+    ///     its &lt;Command&gt; matches the current process executable path
+    ///     (case-insensitive). Mismatched path → false (a stale task from a previous
+    ///     install location should be re-enabled by the user).
     /// </summary>
     public async Task<bool> IsEnabledAsync(CancellationToken ct = default)
     {
@@ -45,23 +47,15 @@ public sealed class AutoStartManager : IAutoStartManager
             .ConfigureAwait(false);
 
         if (result.ExitCode != 0)
-        {
             // schtasks exits 1 when the task does not exist. NOT a warning —
             // this is the normal "auto-start disabled" path.
             return false;
-        }
 
         var commandFromTask = ExtractCommandFromXml(result.StandardOutput);
-        if (string.IsNullOrWhiteSpace(commandFromTask))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(commandFromTask)) return false;
 
         var currentExe = Environment.ProcessPath;
-        if (string.IsNullOrWhiteSpace(currentExe))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(currentExe)) return false;
 
         return string.Equals(
             commandFromTask.Trim().Trim('"'),
@@ -70,14 +64,14 @@ public sealed class AutoStartManager : IAutoStartManager
     }
 
     /// <summary>
-    /// Creates or replaces (<c>/F</c>) the auto-start task pointing at the
-    /// current executable. Returns true on success, false on schtasks failure
-    /// (logged as warning, never throws).
+    ///     Creates or replaces (<c>/F</c>) the auto-start task pointing at the
+    ///     current executable. Returns true on success, false on schtasks failure
+    ///     (logged as warning, never throws).
     /// </summary>
     public async Task<bool> EnableAsync(CancellationToken ct = default)
     {
         var exe = Environment.ProcessPath
-            ?? throw new InvalidOperationException("Environment.ProcessPath is null; cannot enable auto-start.");
+                  ?? throw new InvalidOperationException("Environment.ProcessPath is null; cannot enable auto-start.");
 
         // /TR value must be quoted so that paths containing spaces survive
         // schtasks' tokenization. /SC ONLOGON + /RL LIMITED creates a
@@ -101,8 +95,8 @@ public sealed class AutoStartManager : IAutoStartManager
     }
 
     /// <summary>
-    /// Deletes the auto-start task. Returns true on success, false on schtasks
-    /// failure (logged as warning, never throws).
+    ///     Deletes the auto-start task. Returns true on success, false on schtasks
+    ///     failure (logged as warning, never throws).
     /// </summary>
     public async Task<bool> DisableAsync(CancellationToken ct = default)
     {
@@ -125,17 +119,14 @@ public sealed class AutoStartManager : IAutoStartManager
 
     private async Task<ProcessResult> RunAutoStartMutationAsync(string arguments, CancellationToken ct)
     {
-        if (_elevatedRunner is null)
-        {
-            return await _runner.RunAsync("schtasks.exe", arguments, ct).ConfigureAwait(false);
-        }
+        if (_elevatedRunner is null) return await _runner.RunAsync("schtasks.exe", arguments, ct).ConfigureAwait(false);
 
         try
         {
             var exitCode = await _elevatedRunner.RunAsync("schtasks.exe", arguments, ct).ConfigureAwait(false);
             return new ProcessResult(exitCode, string.Empty, string.Empty);
         }
-        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == 1223)
+        catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
             // ERROR_CANCELLED: the user dismissed the UAC prompt.
             return new ProcessResult(1, string.Empty, "UAC prompt was cancelled by the user.");
@@ -143,8 +134,8 @@ public sealed class AutoStartManager : IAutoStartManager
     }
 
     /// <summary>
-    /// Parses schtasks /XML output and returns the &lt;Command&gt; element value.
-    /// Returns null on parse failure or missing element.
+    ///     Parses schtasks /XML output and returns the &lt;Command&gt; element value.
+    ///     Returns null on parse failure or missing element.
     /// </summary>
     private static string? ExtractCommandFromXml(string xml)
     {

@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
 namespace MaimaiHomeAgent.Power;
@@ -21,32 +20,19 @@ public static class PowerEndpoints
             IOptionsMonitor<RemoteShutdownOptions> options,
             CancellationToken ct) =>
         {
-            if (body is null || body.Confirm != true)
-            {
-                return Results.BadRequest(new { error = "confirm_required" });
-            }
+            if (body is null || body.Confirm != true) return Results.BadRequest(new { error = "confirm_required" });
 
-            if (!shutdown.IsAvailable)
-            {
-                return UnavailableResult(shutdown.GetStatus());
-            }
+            if (!shutdown.IsAvailable) return UnavailableResult(shutdown.GetStatus());
 
-            if (!IsAuthorized(ctx, options.CurrentValue))
-            {
-                return UnauthorizedResult();
-            }
+            if (!IsAuthorized(ctx, options.CurrentValue)) return UnauthorizedResult();
 
             var result = await shutdown
                 .ExecuteAsync(DescribeRequester(ctx), ct)
                 .ConfigureAwait(false);
 
-            if (result.Accepted)
-            {
-                return Results.Ok(result.Status);
-            }
+            if (result.Accepted) return Results.Ok(result.Status);
 
             if (result.Conflict)
-            {
                 return Results.Json(
                     new
                     {
@@ -55,10 +41,8 @@ public static class PowerEndpoints
                         status = result.Status
                     },
                     statusCode: StatusCodes.Status409Conflict);
-            }
 
             if (result.Error == "shutdown_failed")
-            {
                 return Results.Json(
                     new
                     {
@@ -67,7 +51,6 @@ public static class PowerEndpoints
                         status = result.Status
                     },
                     statusCode: StatusCodes.Status502BadGateway);
-            }
 
             return UnavailableResult(result.Status);
         });
@@ -78,28 +61,19 @@ public static class PowerEndpoints
     private static bool IsAuthorized(HttpContext ctx, RemoteShutdownOptions options)
     {
         var expected = options.ControlToken;
-        if (string.IsNullOrWhiteSpace(expected))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(expected)) return false;
 
         var header = ctx.Request.Headers.Authorization.ToString();
         const string prefix = "Bearer ";
-        if (!header.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
+        if (!header.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return false;
 
         var provided = header[prefix.Length..].Trim();
-        if (string.IsNullOrEmpty(provided))
-        {
-            return false;
-        }
+        if (string.IsNullOrEmpty(provided)) return false;
 
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var providedBytes = Encoding.UTF8.GetBytes(provided);
         return expectedBytes.Length == providedBytes.Length &&
-            CryptographicOperations.FixedTimeEquals(expectedBytes, providedBytes);
+               CryptographicOperations.FixedTimeEquals(expectedBytes, providedBytes);
     }
 
     private static string DescribeRequester(HttpContext ctx)
@@ -108,17 +82,20 @@ public static class PowerEndpoints
         return string.IsNullOrWhiteSpace(remoteIp) ? "unknown" : remoteIp;
     }
 
-    private static IResult UnauthorizedResult() =>
-        Results.Json(
+    private static IResult UnauthorizedResult()
+    {
+        return Results.Json(
             new
             {
                 error = "unauthorized",
                 message = "远程关机需要有效控制令牌"
             },
             statusCode: StatusCodes.Status401Unauthorized);
+    }
 
-    private static IResult UnavailableResult(RemoteShutdownStatusDto status) =>
-        Results.Json(
+    private static IResult UnavailableResult(RemoteShutdownStatusDto status)
+    {
+        return Results.Json(
             new
             {
                 error = "remote_shutdown_unavailable",
@@ -126,4 +103,5 @@ public static class PowerEndpoints
                 status
             },
             statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
 }

@@ -1,8 +1,8 @@
 namespace MaimaiHomeAgent.Files;
 
 /// <summary>
-/// Read-only registry of configured <see cref="FileRoot"/> entries, with
-/// support for hot-reload from configuration.
+///     Read-only registry of configured <see cref="FileRoot" /> entries, with
+///     support for hot-reload from configuration.
 /// </summary>
 public interface IFileRootService
 {

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using MaimaiHomeAgent.Audio;
 using MaimaiHomeAgent.Realtime;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -6,11 +5,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace MaimaiHomeAgent.Tests.Realtime;
 
 /// <summary>
-/// Unit tests for <see cref="EventPublisher"/>. The publisher is a thin
-/// domain-semantic wrapper around <see cref="EventHub"/>. We verify each
-/// publish method emits an envelope with the correct event type and payload
-/// shape by capturing broadcasts on a recording subclass of EventHub —
-/// this avoids spinning up real WebSocket pairs purely for assertion.
+///     Unit tests for <see cref="EventPublisher" />. The publisher is a thin
+///     domain-semantic wrapper around <see cref="EventHub" />. We verify each
+///     publish method emits an envelope with the correct event type and payload
+///     shape by capturing broadcasts on a recording subclass of EventHub —
+///     this avoids spinning up real WebSocket pairs purely for assertion.
 /// </summary>
 public sealed class EventPublisherTests
 {
@@ -38,7 +37,7 @@ public sealed class EventPublisherTests
         var devices = new[]
         {
             new DeviceResponse("11111111-1111-1111-1111-111111111111", "Speakers", true, "active"),
-            new DeviceResponse("22222222-2222-2222-2222-222222222222", "Headphones", false, "active"),
+            new DeviceResponse("22222222-2222-2222-2222-222222222222", "Headphones", false, "active")
         };
 
         publisher.PublishAudioDeviceChanged(devices);
@@ -59,7 +58,7 @@ public sealed class EventPublisherTests
     {
         var hub = new RecordingEventHub();
         var publisher = new EventPublisher(hub);
-        var payload = new FileEventDto("downloads", "old/file.txt", NewPath: "new/file.txt");
+        var payload = new FileEventDto("downloads", "old/file.txt", "new/file.txt");
 
         publisher.PublishFileEvent(eventType, payload);
         await hub.WaitForBroadcastAsync(1);
@@ -120,13 +119,19 @@ public sealed class EventPublisherTests
 
     private sealed class RecordingEventHub : EventHub
     {
-        public RecordingEventHub() : base(NullLogger<EventHub>.Instance) { }
+        public RecordingEventHub() : base(NullLogger<EventHub>.Instance)
+        {
+        }
 
         public List<EventEnvelope> Broadcasts { get; } = new();
 
         public override Task BroadcastAsync(EventEnvelope envelope, CancellationToken ct = default)
         {
-            lock (Broadcasts) { Broadcasts.Add(envelope); }
+            lock (Broadcasts)
+            {
+                Broadcasts.Add(envelope);
+            }
+
             return Task.CompletedTask;
         }
 
@@ -135,18 +140,27 @@ public sealed class EventPublisherTests
             var deadline = DateTimeOffset.UtcNow + (timeout ?? TimeSpan.FromSeconds(2));
             while (DateTimeOffset.UtcNow < deadline)
             {
-                lock (Broadcasts) { if (Broadcasts.Count >= count) return; }
+                lock (Broadcasts)
+                {
+                    if (Broadcasts.Count >= count) return;
+                }
+
                 await Task.Delay(5);
             }
+
             throw new TimeoutException($"Expected {count} broadcasts within deadline; got {Broadcasts.Count}.");
         }
     }
 
     private sealed class HangingEventHub : EventHub
     {
-        public HangingEventHub() : base(NullLogger<EventHub>.Instance) { }
+        public HangingEventHub() : base(NullLogger<EventHub>.Instance)
+        {
+        }
 
         public override Task BroadcastAsync(EventEnvelope envelope, CancellationToken ct = default)
-            => Task.Delay(TimeSpan.FromMinutes(1), ct);
+        {
+            return Task.Delay(TimeSpan.FromMinutes(1), ct);
+        }
     }
 }

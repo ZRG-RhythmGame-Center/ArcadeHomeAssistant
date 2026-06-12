@@ -1,8 +1,8 @@
 namespace MaimaiHomeAgent.Files;
 
 /// <summary>
-/// Outcome of <see cref="PathGuard.ResolveSafe"/>. Either an Ok with the
-/// fully-normalized absolute path, or a Fail with a typed error.
+///     Outcome of <see cref="PathGuard.ResolveSafe" />. Either an Ok with the
+///     fully-normalized absolute path, or a Fail with a typed error.
 /// </summary>
 public sealed record PathGuardResult
 {

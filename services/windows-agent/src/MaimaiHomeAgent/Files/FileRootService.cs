@@ -1,12 +1,9 @@
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-
 namespace MaimaiHomeAgent.Files;
 
 /// <summary>
-/// In-memory implementation of <see cref="IFileRootService"/> that reads its
-/// initial state from configuration section <c>FileRoots</c> and supports
-/// thread-safe hot-reload via <see cref="Reload"/>.
+///     In-memory implementation of <see cref="IFileRootService" /> that reads its
+///     initial state from configuration section <c>FileRoots</c> and supports
+///     thread-safe hot-reload via <see cref="Reload" />.
 /// </summary>
 public sealed class FileRootService : IFileRootService, IDisposable
 {
@@ -27,6 +24,11 @@ public sealed class FileRootService : IFileRootService, IDisposable
             _roots.Count);
     }
 
+    public void Dispose()
+    {
+        _lock.Dispose();
+    }
+
     public IReadOnlyList<FileRoot> ListRoots()
     {
         _lock.EnterReadLock();
@@ -43,21 +45,15 @@ public sealed class FileRootService : IFileRootService, IDisposable
 
     public FileRoot? FindById(string id)
     {
-        if (string.IsNullOrEmpty(id))
-        {
-            return null;
-        }
+        if (string.IsNullOrEmpty(id)) return null;
 
         _lock.EnterReadLock();
         try
         {
             for (var i = 0; i < _roots.Count; i++)
-            {
                 if (string.Equals(_roots[i].Id, id, StringComparison.Ordinal))
-                {
                     return _roots[i];
-                }
-            }
+
             return null;
         }
         finally
@@ -86,31 +82,24 @@ public sealed class FileRootService : IFileRootService, IDisposable
             normalized.Count);
     }
 
-    public void Dispose()
-    {
-        _lock.Dispose();
-    }
-
     private static List<FileRoot> NormalizeRoots(IEnumerable<FileRoot> source)
     {
         var result = new List<FileRoot>();
         foreach (var raw in source)
         {
-            if (raw is null)
-            {
-                continue;
-            }
+            if (raw is null) continue;
 
             // Pre-expand env vars so consumers see real paths in ListRoots(),
             // but PathGuard still re-expands defensively at validation time.
             var expandedPath = Environment.ExpandEnvironmentVariables(raw.Path ?? string.Empty);
 
             result.Add(new FileRoot(
-                Id: raw.Id ?? string.Empty,
-                Name: raw.Name ?? raw.Id ?? string.Empty,
-                Path: expandedPath,
-                ReadOnly: raw.ReadOnly));
+                raw.Id ?? string.Empty,
+                raw.Name ?? raw.Id ?? string.Empty,
+                expandedPath,
+                raw.ReadOnly));
         }
+
         return result;
     }
 
@@ -118,25 +107,17 @@ public sealed class FileRootService : IFileRootService, IDisposable
     {
         var result = new List<FileRoot>();
         foreach (var child in section.GetChildren())
-        {
             if (child.GetChildren().Any())
             {
                 var root = child.Get<FileRoot>();
-                if (root is not null)
-                {
-                    result.Add(root);
-                }
+                if (root is not null) result.Add(root);
             }
             else if (!string.IsNullOrWhiteSpace(child.Value))
             {
-                if (child.Value.Trim() == "*")
-                {
-                    return LoadMachineRoots();
-                }
+                if (child.Value.Trim() == "*") return LoadMachineRoots();
 
                 result.Add(CreateRootFromPath(child.Value, result.Count + 1));
             }
-        }
 
         return result.Count == 0 ? LoadMachineRoots() : result;
     }
@@ -152,7 +133,7 @@ public sealed class FileRootService : IFileRootService, IDisposable
                     ? rootPath
                     : $"{drive.VolumeLabel} ({rootPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)})";
                 var id = ToRootId(rootPath, 1);
-                return new FileRoot(id, label, rootPath, ReadOnly: false);
+                return new FileRoot(id, label, rootPath, false);
             })
             .ToList();
     }
@@ -162,13 +143,10 @@ public sealed class FileRootService : IFileRootService, IDisposable
         var expandedPath = Environment.ExpandEnvironmentVariables(path);
         var trimmed = expandedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         var name = Path.GetFileName(trimmed);
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            name = expandedPath;
-        }
+        if (string.IsNullOrWhiteSpace(name)) name = expandedPath;
 
         var id = ToRootId(name, fallbackIndex);
-        return new FileRoot(id, name, path, ReadOnly: false);
+        return new FileRoot(id, name, path, false);
     }
 
     private static string ToRootId(string name, int fallbackIndex)

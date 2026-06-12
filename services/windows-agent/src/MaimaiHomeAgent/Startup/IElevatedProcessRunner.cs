@@ -19,7 +19,7 @@ public sealed class ElevatedProcessRunner : IElevatedProcessRunner
         };
 
         using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException($"Failed to start elevated process: {fileName}");
+                            ?? throw new InvalidOperationException($"Failed to start elevated process: {fileName}");
         await process.WaitForExitAsync(ct).ConfigureAwait(false);
         return process.ExitCode;
     }

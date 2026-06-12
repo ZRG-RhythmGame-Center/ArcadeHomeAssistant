@@ -5,17 +5,15 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using MaimaiHomeAgent.Launcher;
-using MaimaiHomeAgent.Ui.Avalonia;
-using Microsoft.Extensions.Logging;
 
 namespace MaimaiHomeAgent.Ui.Avalonia.Launcher;
 
 internal sealed class AvaloniaLauncherWindowHost : ILauncherWindowHost
 {
-    private readonly IAvaloniaUiThread _uiThread;
     private readonly ILogger<AvaloniaLauncherWindowHost> _logger;
-    private LauncherWindow? _window;
+    private readonly IAvaloniaUiThread _uiThread;
     private LauncherWindowViewModel? _viewModel;
+    private LauncherWindow? _window;
 
     public AvaloniaLauncherWindowHost(
         IAvaloniaUiThread uiThread,
@@ -31,54 +29,59 @@ internal sealed class AvaloniaLauncherWindowHost : ILauncherWindowHost
         IReadOnlyList<LauncherItemRuntime> items,
         LauncherNavigationOptions navigation,
         Func<string, CancellationToken, Task> onKeySelected,
-        CancellationToken ct = default) => _uiThread.InvokeAsync(() =>
+        CancellationToken ct = default)
     {
-        if (_window is null)
+        return _uiThread.InvokeAsync(() =>
         {
-            _viewModel = new LauncherWindowViewModel(items, navigation, onKeySelected, _logger);
-            _window = new LauncherWindow(_viewModel);
-            _window.Closed += (_, _) =>
+            if (_window is null)
             {
-                _window = null;
-                if (_viewModel is not null) _viewModel.IsVisible = false;
-            };
-        }
-        else
-        {
-            _viewModel!.Update(items, navigation, onKeySelected);
-        }
+                _viewModel = new LauncherWindowViewModel(items, navigation, onKeySelected, _logger);
+                _window = new LauncherWindow(_viewModel);
+                _window.Closed += (_, _) =>
+                {
+                    _window = null;
+                    if (_viewModel is not null) _viewModel.IsVisible = false;
+                };
+            }
+            else
+            {
+                _viewModel!.Update(items, navigation, onKeySelected);
+            }
 
-        _window.Show();
-        _window.Activate();
-        _window.WindowState = WindowState.Maximized;
-        _viewModel!.IsVisible = true;
-        return Task.CompletedTask;
-    }, ct);
+            _window.Show();
+            _window.Activate();
+            _window.WindowState = WindowState.Maximized;
+            _viewModel!.IsVisible = true;
+            return Task.CompletedTask;
+        }, ct);
+    }
 
-    public Task MinimizeAsync(CancellationToken ct = default) => _uiThread.InvokeAsync(() =>
+    public Task MinimizeAsync(CancellationToken ct = default)
     {
-        if (_window is not null)
+        return _uiThread.InvokeAsync(() =>
         {
-            _window.WindowState = WindowState.Minimized;
-        }
-        if (_viewModel is not null) _viewModel.IsVisible = false;
-        return Task.CompletedTask;
-    }, ct);
+            if (_window is not null) _window.WindowState = WindowState.Minimized;
 
-    public Task HideAsync(CancellationToken ct = default) => _uiThread.InvokeAsync(() =>
+            if (_viewModel is not null) _viewModel.IsVisible = false;
+            return Task.CompletedTask;
+        }, ct);
+    }
+
+    public Task HideAsync(CancellationToken ct = default)
     {
-        _window?.Hide();
-        if (_viewModel is not null) _viewModel.IsVisible = false;
-        return Task.CompletedTask;
-    }, ct);
+        return _uiThread.InvokeAsync(() =>
+        {
+            _window?.Hide();
+            if (_viewModel is not null) _viewModel.IsVisible = false;
+            return Task.CompletedTask;
+        }, ct);
+    }
 }
 
 internal sealed class LauncherWindowViewModel
 {
-    private IReadOnlyList<LauncherItemRuntime> _items;
-    private LauncherNavigationOptions _navigation;
-    private Func<string, CancellationToken, Task> _onKeySelected;
     private readonly ILogger _logger;
+    private Func<string, CancellationToken, Task> _onKeySelected;
 
     public LauncherWindowViewModel(
         IReadOnlyList<LauncherItemRuntime> items,
@@ -86,44 +89,43 @@ internal sealed class LauncherWindowViewModel
         Func<string, CancellationToken, Task> onKeySelected,
         ILogger logger)
     {
-        _items = items;
-        _navigation = navigation;
+        Items = items;
+        Navigation = navigation;
         _onKeySelected = onKeySelected;
         _logger = logger;
     }
 
     public bool IsVisible { get; set; }
     public int SelectedIndex { get; set; }
-    public IReadOnlyList<LauncherItemRuntime> Items => _items;
-    public LauncherNavigationOptions Navigation => _navigation;
+    public IReadOnlyList<LauncherItemRuntime> Items { get; private set; }
 
-    public void Update(IReadOnlyList<LauncherItemRuntime> items, LauncherNavigationOptions navigation, Func<string, CancellationToken, Task> onKeySelected)
+    public LauncherNavigationOptions Navigation { get; private set; }
+
+    public void Update(IReadOnlyList<LauncherItemRuntime> items, LauncherNavigationOptions navigation,
+        Func<string, CancellationToken, Task> onKeySelected)
     {
-        _items = items;
-        _navigation = navigation;
+        Items = items;
+        Navigation = navigation;
         _onKeySelected = onKeySelected;
-        if (SelectedIndex >= _items.Count)
-        {
-            SelectedIndex = Math.Max(0, _items.Count - 1);
-        }
+        if (SelectedIndex >= Items.Count) SelectedIndex = Math.Max(0, Items.Count - 1);
     }
 
     public void MoveLeft()
     {
-        if (_items.Count == 0) return;
-        SelectedIndex = (SelectedIndex - 1 + _items.Count) % _items.Count;
+        if (Items.Count == 0) return;
+        SelectedIndex = (SelectedIndex - 1 + Items.Count) % Items.Count;
     }
 
     public void MoveRight()
     {
-        if (_items.Count == 0) return;
-        SelectedIndex = (SelectedIndex + 1) % _items.Count;
+        if (Items.Count == 0) return;
+        SelectedIndex = (SelectedIndex + 1) % Items.Count;
     }
 
     public async Task ConfirmAsync()
     {
-        if (_items.Count == 0) return;
-        var item = _items[SelectedIndex];
+        if (Items.Count == 0) return;
+        var item = Items[SelectedIndex];
         try
         {
             await _onKeySelected(item.Id, CancellationToken.None).ConfigureAwait(false);
@@ -144,6 +146,7 @@ internal sealed class LauncherWindowViewModel
 internal sealed class LauncherWindow : Window
 {
     private const float PortraitAspectRatio = 9f / 16f;
+
     // Design canvas is 1080x1920. The visible game art is the lower 1080x1080 square,
     // i.e. y in [840, 1920]. Its center is y = 1380.
     private const double VisibleSquareCenterYRatio = 1380d / 1920d;
@@ -238,6 +241,7 @@ internal sealed class LauncherWindow : Window
                 contentWidth = w;
                 maxHeight = contentWidth / PortraitAspectRatio;
             }
+
             contentArea.Width = contentWidth;
             contentArea.Height = maxHeight;
             RenderCards();
@@ -276,8 +280,8 @@ internal sealed class LauncherWindow : Window
             var scale = i == _vm.SelectedIndex ? 1.2 : 0.9;
             var w = cardWidth * scale;
             var h = cardHeight * scale;
-            var x = centerX - (w / 2) + relative * (cardWidth + cardGap);
-            var y = centerY - (h / 2);
+            var x = centerX - w / 2 + relative * (cardWidth + cardGap);
+            var y = centerY - h / 2;
 
             var card = BuildCard(_vm.Items[i], i == _vm.SelectedIndex, w, h);
             Canvas.SetLeft(card, x);

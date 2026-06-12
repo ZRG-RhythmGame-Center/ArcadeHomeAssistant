@@ -1,15 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace MaimaiHomeAgent.Files;
 
 /// <summary>
-/// Endpoints for reading and updating file root configuration.
-/// GET /api/config returns the full configuration (discovery, fileRoots, listenAddress).
-/// PUT /api/config/file-roots updates the file roots list with validation and persistence.
+///     Endpoints for reading and updating file root configuration.
+///     GET /api/config returns the full configuration (discovery, fileRoots, listenAddress).
+///     PUT /api/config/file-roots updates the file roots list with validation and persistence.
 /// </summary>
 public static class FileRootsConfigEndpoints
 {
@@ -34,9 +32,9 @@ public static class FileRootsConfigEndpoints
         var fileRootsDto = roots.Select(r => new FileRootDto(r.Id, r.Name, r.ReadOnly)).ToList();
 
         var response = new ConfigResponse(
-            Discovery: configuration.GetSection("Discovery").Get<object>() ?? new { },
-            FileRoots: fileRootsDto,
-            ListenAddress: "http://0.0.0.0:8765"
+            configuration.GetSection("Discovery").Get<object>() ?? new { },
+            fileRootsDto,
+            "http://0.0.0.0:8765"
         );
 
         return TypedResults.Ok(response);
@@ -53,41 +51,31 @@ public static class FileRootsConfigEndpoints
         {
             var payload = await context.Request.ReadFromJsonAsync<FileRootUpdateDto[]>();
             if (payload == null || payload.Length == 0)
-            {
                 return TypedResults.BadRequest("File roots list cannot be empty");
-            }
 
             // Validate: check for duplicate IDs
             var ids = new HashSet<string>();
             foreach (var item in payload)
-            {
                 if (!ids.Add(item.Id ?? string.Empty))
-                {
                     return TypedResults.BadRequest($"Duplicate file root ID: {item.Id}");
-                }
-            }
 
             // Validate: check that all paths exist and are directories
             foreach (var item in payload)
             {
                 if (string.IsNullOrWhiteSpace(item.Path))
-                {
                     return TypedResults.BadRequest("File root path cannot be empty");
-                }
 
                 var expandedPath = Environment.ExpandEnvironmentVariables(item.Path);
                 if (!Directory.Exists(expandedPath))
-                {
                     return TypedResults.BadRequest($"Path does not exist or is not a directory: {item.Path}");
-                }
             }
 
             // Convert to FileRoot records
             var newRoots = payload.Select(dto => new FileRoot(
-                Id: dto.Id ?? string.Empty,
-                Name: dto.Name ?? dto.Id ?? string.Empty,
-                Path: dto.Path ?? string.Empty,
-                ReadOnly: dto.ReadOnly
+                dto.Id ?? string.Empty,
+                dto.Name ?? dto.Id ?? string.Empty,
+                dto.Path ?? string.Empty,
+                dto.ReadOnly
             )).ToList();
 
             // Persist to appsettings.user.json using atomic write
@@ -99,9 +87,9 @@ public static class FileRootsConfigEndpoints
             // Return updated config
             var fileRootsDto = newRoots.Select(r => new FileRootDto(r.Id, r.Name, r.ReadOnly)).ToList();
             var response = new ConfigResponse(
-                Discovery: configuration.GetSection("Discovery").Get<object>() ?? new { },
-                FileRoots: fileRootsDto,
-                ListenAddress: "http://0.0.0.0:8765"
+                configuration.GetSection("Discovery").Get<object>() ?? new { },
+                fileRootsDto,
+                "http://0.0.0.0:8765"
             );
 
             return TypedResults.Ok(response);
@@ -154,7 +142,7 @@ public static class FileRootsConfigEndpoints
 
             // Atomic write: write to temp file, then move with overwrite
             await File.WriteAllTextAsync(tempPath, json);
-            File.Move(tempPath, userConfigPath, overwrite: true);
+            File.Move(tempPath, userConfigPath, true);
 
             logger.LogInformation(
                 "Persisted {Count} file root(s) to {Path}",
@@ -167,35 +155,38 @@ public static class FileRootsConfigEndpoints
             // Clean up temp file if it exists
             try
             {
-                if (File.Exists(tempPath))
-                {
-                    File.Delete(tempPath);
-                }
+                if (File.Exists(tempPath)) File.Delete(tempPath);
             }
             catch
             {
                 // Ignore cleanup errors
             }
+
             throw;
         }
     }
 
     private sealed record ConfigResponse(
-        [property: JsonPropertyName("discovery")] object Discovery,
-        [property: JsonPropertyName("fileRoots")] List<FileRootDto> FileRoots,
-        [property: JsonPropertyName("listenAddress")] string ListenAddress
+        [property: JsonPropertyName("discovery")]
+        object Discovery,
+        [property: JsonPropertyName("fileRoots")]
+        List<FileRootDto> FileRoots,
+        [property: JsonPropertyName("listenAddress")]
+        string ListenAddress
     );
 
     private sealed record FileRootDto(
         [property: JsonPropertyName("id")] string Id,
         [property: JsonPropertyName("name")] string Name,
-        [property: JsonPropertyName("readOnly")] bool ReadOnly
+        [property: JsonPropertyName("readOnly")]
+        bool ReadOnly
     );
 
     private sealed record FileRootUpdateDto(
         [property: JsonPropertyName("id")] string? Id,
         [property: JsonPropertyName("name")] string? Name,
         [property: JsonPropertyName("path")] string? Path,
-        [property: JsonPropertyName("readOnly")] bool ReadOnly
+        [property: JsonPropertyName("readOnly")]
+        bool ReadOnly
     );
 }

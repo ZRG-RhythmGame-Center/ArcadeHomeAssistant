@@ -1,4 +1,6 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
 
@@ -30,10 +32,7 @@ internal sealed class SettingsWindow : Window
         };
         categories.SelectionChanged += (_, _) =>
         {
-            if (DataContext is SettingsWindowViewModel vm)
-            {
-                vm.SelectedCategoryIndex = categories.SelectedIndex;
-            }
+            if (DataContext is SettingsWindowViewModel vm) vm.SelectedCategoryIndex = categories.SelectedIndex;
         };
         Grid.SetRowSpan(categories, 2);
         root.Children.Add(categories);
@@ -67,21 +66,24 @@ internal sealed class SettingsWindow : Window
         return root;
     }
 
-    private Control BuildCategoryPage(int index, SettingsWindowViewModel vm) => index switch
+    private Control BuildCategoryPage(int index, SettingsWindowViewModel vm)
     {
-        0 => BuildAdminPage(vm),
-        1 => BuildLauncherPage(vm),
-        2 => BuildLauncherItemsPage(vm),
-        3 => BuildFileRootsPage(vm),
-        4 => BuildRemoteShutdownPage(vm),
-        _ => new TextBlock { Text = "未知分类" }
-    };
+        return index switch
+        {
+            0 => BuildAdminPage(vm),
+            1 => BuildLauncherPage(vm),
+            2 => BuildLauncherItemsPage(vm),
+            3 => BuildFileRootsPage(vm),
+            4 => BuildRemoteShutdownPage(vm),
+            _ => new TextBlock { Text = "未知分类" }
+        };
+    }
 
     private static Control BuildAdminPage(SettingsWindowViewModel vm)
     {
-        var panel = new StackPanel { Spacing = 12, Margin = new global::Avalonia.Thickness(16) };
+        var panel = new StackPanel { Spacing = 12, Margin = new Thickness(16) };
         panel.Children.Add(new TextBlock { Text = "管理员", FontSize = 18, FontWeight = FontWeight.Bold });
-        panel.Children.Add(LabeledTextBox("管理员密码", vm.AdminPassword ?? "", text => vm.AdminPassword = text, revealPassword: true));
+        panel.Children.Add(LabeledTextBox("管理员密码", vm.AdminPassword ?? "", text => vm.AdminPassword = text, true));
         panel.Children.Add(new TextBlock
         {
             Text = "留空表示不修改当前管理员密码。",
@@ -93,10 +95,11 @@ internal sealed class SettingsWindow : Window
 
     private static Control BuildLauncherPage(SettingsWindowViewModel vm)
     {
-        var panel = new StackPanel { Spacing = 12, Margin = new global::Avalonia.Thickness(16) };
+        var panel = new StackPanel { Spacing = 12, Margin = new Thickness(16) };
         panel.Children.Add(new TextBlock { Text = "启动器", FontSize = 18, FontWeight = FontWeight.Bold });
         panel.Children.Add(LabeledCheckBox("Windows 开机自启", vm.AutoStartEnabled, v => vm.AutoStartEnabled = v));
-        panel.Children.Add(LabeledCheckBox("Agent 启动后自动显示启动器", vm.LauncherShowOnStart, v => vm.LauncherShowOnStart = v));
+        panel.Children.Add(LabeledCheckBox("Agent 启动后自动显示启动器", vm.LauncherShowOnStart,
+            v => vm.LauncherShowOnStart = v));
         panel.Children.Add(LabeledNumberBox("画布宽度", vm.CanvasWidth, v => vm.CanvasWidth = v));
         panel.Children.Add(LabeledNumberBox("画布高度", vm.CanvasHeight, v => vm.CanvasHeight = v));
         panel.Children.Add(LabeledTextBox("左移按键", vm.NavigateLeftKey, v => vm.NavigateLeftKey = v));
@@ -111,13 +114,13 @@ internal sealed class SettingsWindow : Window
         {
             ColumnDefinitions = ColumnDefinitions.Parse("240,*"),
             RowDefinitions = RowDefinitions.Parse("*,Auto"),
-            Margin = new global::Avalonia.Thickness(16)
+            Margin = new Thickness(16)
         };
 
         var list = new ListBox
         {
             ItemsSource = vm.LauncherItems,
-            DisplayMemberBinding = new global::Avalonia.Data.Binding("Name")
+            DisplayMemberBinding = new Binding("Name")
         };
 
         var detail = new ScrollViewer();
@@ -125,19 +128,20 @@ internal sealed class SettingsWindow : Window
 
         list.SelectionChanged += (_, _) =>
         {
-            if (list.SelectedItem is LauncherItemViewModel item)
-            {
-                detail.Content = BuildLauncherItemDetail(item);
-            }
+            if (list.SelectedItem is LauncherItemViewModel item) detail.Content = BuildLauncherItemDetail(item);
         };
 
         panel.Children.Add(list);
         panel.Children.Add(detail);
 
-        var buttons = new StackPanel { Orientation = global::Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         Grid.SetRow(buttons, 1);
         var addBtn = new Button { Content = "新增" };
-        addBtn.Click += (_, _) => { vm.AddLauncherItem(); list.SelectedIndex = vm.LauncherItems.Count - 1; };
+        addBtn.Click += (_, _) =>
+        {
+            vm.AddLauncherItem();
+            list.SelectedIndex = vm.LauncherItems.Count - 1;
+        };
         var removeBtn = new Button { Content = "删除" };
         removeBtn.Click += (_, _) =>
         {
@@ -152,7 +156,7 @@ internal sealed class SettingsWindow : Window
 
     private static Control BuildLauncherItemDetail(LauncherItemViewModel item)
     {
-        var panel = new StackPanel { Spacing = 8, Margin = new global::Avalonia.Thickness(12, 0, 0, 0) };
+        var panel = new StackPanel { Spacing = 8, Margin = new Thickness(12, 0, 0, 0) };
         panel.Children.Add(LabeledTextBox("ID", item.Id ?? "", v => item.Id = v));
         panel.Children.Add(LabeledTextBox("名称", item.Name ?? "", v => item.Name = v));
         panel.Children.Add(LabeledTextBox("备注", item.Note ?? "", v => item.Note = v));
@@ -160,7 +164,8 @@ internal sealed class SettingsWindow : Window
         panel.Children.Add(LabeledTextBox("启动命令", item.CommandLine ?? "", v => item.CommandLine = v));
         panel.Children.Add(LabeledTextBox("启动工作目录", item.WorkingDirectory ?? "", v => item.WorkingDirectory = v));
         panel.Children.Add(LabeledTextBox("关闭命令", item.StopCommandLine ?? "", v => item.StopCommandLine = v));
-        panel.Children.Add(LabeledTextBox("关闭工作目录", item.StopWorkingDirectory ?? "", v => item.StopWorkingDirectory = v));
+        panel.Children.Add(
+            LabeledTextBox("关闭工作目录", item.StopWorkingDirectory ?? "", v => item.StopWorkingDirectory = v));
         panel.Children.Add(LabeledNumberBox("排序", item.OrderIndex, v => item.OrderIndex = v));
         panel.Children.Add(LabeledCheckBox("启用", item.Enabled, v => item.Enabled = v));
         return panel;
@@ -172,13 +177,13 @@ internal sealed class SettingsWindow : Window
         {
             ColumnDefinitions = ColumnDefinitions.Parse("240,*"),
             RowDefinitions = RowDefinitions.Parse("*,Auto"),
-            Margin = new global::Avalonia.Thickness(16)
+            Margin = new Thickness(16)
         };
 
         var list = new ListBox
         {
             ItemsSource = vm.FileRoots,
-            DisplayMemberBinding = new global::Avalonia.Data.Binding("Name")
+            DisplayMemberBinding = new Binding("Name")
         };
 
         var detail = new ScrollViewer();
@@ -186,19 +191,20 @@ internal sealed class SettingsWindow : Window
 
         list.SelectionChanged += (_, _) =>
         {
-            if (list.SelectedItem is FileRootViewModel item)
-            {
-                detail.Content = BuildFileRootDetail(item);
-            }
+            if (list.SelectedItem is FileRootViewModel item) detail.Content = BuildFileRootDetail(item);
         };
 
         panel.Children.Add(list);
         panel.Children.Add(detail);
 
-        var buttons = new StackPanel { Orientation = global::Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         Grid.SetRow(buttons, 1);
         var addBtn = new Button { Content = "新增" };
-        addBtn.Click += (_, _) => { vm.AddFileRoot(); list.SelectedIndex = vm.FileRoots.Count - 1; };
+        addBtn.Click += (_, _) =>
+        {
+            vm.AddFileRoot();
+            list.SelectedIndex = vm.FileRoots.Count - 1;
+        };
         var removeBtn = new Button { Content = "删除" };
         removeBtn.Click += (_, _) =>
         {
@@ -213,7 +219,7 @@ internal sealed class SettingsWindow : Window
 
     private static Control BuildFileRootDetail(FileRootViewModel item)
     {
-        var panel = new StackPanel { Spacing = 8, Margin = new global::Avalonia.Thickness(12, 0, 0, 0) };
+        var panel = new StackPanel { Spacing = 8, Margin = new Thickness(12, 0, 0, 0) };
         panel.Children.Add(LabeledTextBox("ID", item.Id ?? "", v => item.Id = v));
         panel.Children.Add(LabeledTextBox("名称", item.Name ?? "", v => item.Name = v));
         panel.Children.Add(LabeledTextBox("路径", item.Path ?? "", v => item.Path = v));
@@ -223,7 +229,7 @@ internal sealed class SettingsWindow : Window
 
     private static Control BuildRemoteShutdownPage(SettingsWindowViewModel vm)
     {
-        var panel = new StackPanel { Spacing = 12, Margin = new global::Avalonia.Thickness(16) };
+        var panel = new StackPanel { Spacing = 12, Margin = new Thickness(16) };
         panel.Children.Add(new TextBlock { Text = "远程关机", FontSize = 18, FontWeight = FontWeight.Bold });
         panel.Children.Add(LabeledCheckBox("启用远程关机", vm.RemoteShutdownEnabled, v => vm.RemoteShutdownEnabled = v));
         panel.Children.Add(LabeledTextBox("控制令牌", vm.RemoteShutdownToken ?? "", v => vm.RemoteShutdownToken = v));
@@ -234,47 +240,37 @@ internal sealed class SettingsWindow : Window
     {
         var panel = new StackPanel
         {
-            Orientation = global::Avalonia.Layout.Orientation.Horizontal,
+            Orientation = Orientation.Horizontal,
             HorizontalAlignment = HorizontalAlignment.Right,
             Spacing = 8,
-            Margin = new global::Avalonia.Thickness(16, 8)
+            Margin = new Thickness(16, 8)
         };
 
         var status = new TextBlock
         {
             VerticalAlignment = VerticalAlignment.Center,
-            Margin = new global::Avalonia.Thickness(0, 0, 16, 0)
+            Margin = new Thickness(0, 0, 16, 0)
         };
         DataContextChanged += (_, _) =>
         {
             if (DataContext is SettingsWindowViewModel vm)
-            {
                 vm.PropertyChanged += (_, args) =>
                 {
                     if (args.PropertyName == nameof(SettingsWindowViewModel.StatusMessage))
-                    {
                         status.Text = vm.StatusMessage;
-                    }
                 };
-            }
         };
 
         var saveBtn = new Button { Content = "保存" };
         saveBtn.Click += async (_, _) =>
         {
-            if (DataContext is SettingsWindowViewModel vm)
-            {
-                await vm.SaveAsync();
-            }
+            if (DataContext is SettingsWindowViewModel vm) await vm.SaveAsync();
         };
 
         var reloadBtn = new Button { Content = "重新加载" };
         reloadBtn.Click += async (_, _) =>
         {
-            if (DataContext is SettingsWindowViewModel vm)
-            {
-                await vm.LoadAsync();
-            }
+            if (DataContext is SettingsWindowViewModel vm) await vm.LoadAsync();
         };
 
         var closeBtn = new Button { Content = "关闭" };
@@ -287,7 +283,8 @@ internal sealed class SettingsWindow : Window
         return panel;
     }
 
-    private static Control LabeledTextBox(string label, string value, Action<string> onChanged, bool revealPassword = false)
+    private static Control LabeledTextBox(string label, string value, Action<string> onChanged,
+        bool revealPassword = false)
     {
         var row = new StackPanel { Spacing = 4 };
         row.Children.Add(new TextBlock { Text = label, FontSize = 12, Foreground = Brushes.Gray });

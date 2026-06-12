@@ -85,7 +85,7 @@ public sealed class EventHubTests
         var options = Options.Create(new HeartbeatOptions
         {
             PingInterval = TimeSpan.FromMilliseconds(50),
-            PongTimeout = TimeSpan.FromMilliseconds(100),
+            PongTimeout = TimeSpan.FromMilliseconds(100)
         });
         var heartbeat = new HeartbeatService(hub, options, NullLogger<HeartbeatService>.Instance);
 
@@ -105,8 +105,15 @@ public sealed class EventHubTests
         await WaitForAsync(() => hub.SessionCount == 0, TimeSpan.FromSeconds(2));
         Assert.Equal(0, hub.SessionCount);
 
-        try { await clientWs.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
-        catch { /* connection may already be closed */ }
+        try
+        {
+            await clientWs.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None);
+        }
+        catch
+        {
+            /* connection may already be closed */
+        }
+
         await addTask;
     }
 
@@ -128,8 +135,15 @@ public sealed class EventHubTests
         Assert.Null(ex);
         Assert.Equal(0, hub.SessionCount);
 
-        try { await clientWs.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
-        catch { /* connection may already be closed */ }
+        try
+        {
+            await clientWs.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None);
+        }
+        catch
+        {
+            /* connection may already be closed */
+        }
+
         await addTask;
     }
 
@@ -143,10 +157,8 @@ public sealed class EventHubTests
             if (predicate()) return;
             await Task.Delay(10);
         }
-        if (!predicate())
-        {
-            throw new TimeoutException("WaitForAsync predicate did not become true in time.");
-        }
+
+        if (!predicate()) throw new TimeoutException("WaitForAsync predicate did not become true in time.");
     }
 
     private static async Task<string> ReadTextMessageAsync(WebSocket socket, CancellationToken ct)
@@ -157,14 +169,9 @@ public sealed class EventHubTests
         {
             var result = await socket.ReceiveAsync(buffer, ct);
             if (result.MessageType == WebSocketMessageType.Close)
-            {
                 throw new InvalidOperationException("Connection closed while expecting text.");
-            }
             ms.Write(buffer, 0, result.Count);
-            if (result.EndOfMessage)
-            {
-                return Encoding.UTF8.GetString(ms.ToArray());
-            }
+            if (result.EndOfMessage) return Encoding.UTF8.GetString(ms.ToArray());
         }
     }
 
@@ -177,8 +184,8 @@ public sealed class EventHubTests
         var serverStream = new DuplexStream(clientToServer.Reader.AsStream(), serverToClient.Writer.AsStream());
         var clientStream = new DuplexStream(serverToClient.Reader.AsStream(), clientToServer.Writer.AsStream());
 
-        var server = WebSocket.CreateFromStream(serverStream, isServer: true, subProtocol: null, keepAliveInterval: TimeSpan.FromMinutes(2));
-        var client = WebSocket.CreateFromStream(clientStream, isServer: false, subProtocol: null, keepAliveInterval: TimeSpan.FromMinutes(2));
+        var server = WebSocket.CreateFromStream(serverStream, true, null, TimeSpan.FromMinutes(2));
+        var client = WebSocket.CreateFromStream(clientStream, false, null, TimeSpan.FromMinutes(2));
         return (server, client);
     }
 
@@ -186,22 +193,74 @@ public sealed class EventHubTests
     {
         private readonly Stream _read;
         private readonly Stream _write;
-        public DuplexStream(Stream read, Stream write) { _read = read; _write = write; }
+
+        public DuplexStream(Stream read, Stream write)
+        {
+            _read = read;
+            _write = write;
+        }
+
         public override bool CanRead => true;
         public override bool CanWrite => true;
         public override bool CanSeek => false;
         public override long Length => throw new NotSupportedException();
-        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
-        public override void Flush() => _write.Flush();
-        public override Task FlushAsync(CancellationToken ct) => _write.FlushAsync(ct);
-        public override int Read(byte[] buffer, int offset, int count) => _read.Read(buffer, offset, count);
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct) => _read.ReadAsync(buffer, offset, count, ct);
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default) => _read.ReadAsync(buffer, ct);
-        public override void Write(byte[] buffer, int offset, int count) => _write.Write(buffer, offset, count);
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken ct) => _write.WriteAsync(buffer, offset, count, ct);
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ct = default) => _write.WriteAsync(buffer, ct);
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+            _write.Flush();
+        }
+
+        public override Task FlushAsync(CancellationToken ct)
+        {
+            return _write.FlushAsync(ct);
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return _read.Read(buffer, offset, count);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct)
+        {
+            return _read.ReadAsync(buffer, offset, count, ct);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
+        {
+            return _read.ReadAsync(buffer, ct);
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            _write.Write(buffer, offset, count);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken ct)
+        {
+            return _write.WriteAsync(buffer, offset, count, ct);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ct = default)
+        {
+            return _write.WriteAsync(buffer, ct);
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -209,6 +268,7 @@ public sealed class EventHubTests
                 _read.Dispose();
                 _write.Dispose();
             }
+
             base.Dispose(disposing);
         }
     }

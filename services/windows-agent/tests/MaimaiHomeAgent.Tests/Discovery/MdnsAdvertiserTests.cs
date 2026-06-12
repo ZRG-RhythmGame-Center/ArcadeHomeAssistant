@@ -1,4 +1,3 @@
-using System.Net.NetworkInformation;
 using MaimaiHomeAgent.Discovery;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,7 +15,7 @@ public class MdnsAdvertiserTests
         var options = Options.Create(new DiscoveryOptions { Enabled = true, Port = 8765 });
         var loggerMock = new Mock<ILogger<MdnsAdvertiser>>();
         var appLifetimeMock = new Mock<IHostApplicationLifetime>();
-        
+
         var advertiser = new MdnsAdvertiser(options, loggerMock.Object, appLifetimeMock.Object);
 
         // Act
@@ -34,7 +33,7 @@ public class MdnsAdvertiserTests
         var options = Options.Create(new DiscoveryOptions { Enabled = true, Port = 8765 });
         var loggerMock = new Mock<ILogger<MdnsAdvertiser>>();
         var appLifetimeMock = new Mock<IHostApplicationLifetime>();
-        
+
         var advertiser = new MdnsAdvertiser(options, loggerMock.Object, appLifetimeMock.Object);
         await advertiser.StartAsync(CancellationToken.None);
 
@@ -42,7 +41,7 @@ public class MdnsAdvertiserTests
         advertiser.TriggerNetworkChanged();
         advertiser.TriggerNetworkChanged();
         advertiser.TriggerNetworkChanged();
-        
+
         // Wait for debounce to settle (500ms + buffer)
         await Task.Delay(700);
 
@@ -65,7 +64,7 @@ public class MdnsAdvertiserTests
         var options = Options.Create(new DiscoveryOptions { Enabled = true, Port = 8765 });
         var loggerMock = new Mock<ILogger<MdnsAdvertiser>>();
         var appLifetimeMock = new Mock<IHostApplicationLifetime>();
-        
+
         var advertiser = new MdnsAdvertiser(options, loggerMock.Object, appLifetimeMock.Object);
         await advertiser.StartAsync(CancellationToken.None);
 

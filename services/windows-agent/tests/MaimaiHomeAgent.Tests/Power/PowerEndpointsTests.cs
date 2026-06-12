@@ -1,12 +1,10 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using MaimaiHomeAgent.Power;
 using MaimaiHomeAgent.Realtime;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -149,10 +147,7 @@ public sealed class PowerEndpointsTests : IAsyncLifetime
         public Task ExecuteShutdownAsync(CancellationToken ct = default)
         {
             ExecuteCalls++;
-            if (Failure is not null)
-            {
-                throw Failure;
-            }
+            if (Failure is not null) throw Failure;
             return Task.CompletedTask;
         }
     }

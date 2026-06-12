@@ -1,29 +1,29 @@
+using System.IO.Pipelines;
 using System.Net;
 using System.Net.Http.Json;
+using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using MaimaiHomeAgent.Audio;
 using MaimaiHomeAgent.Realtime;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using Xunit;
 
 namespace MaimaiHomeAgent.Tests.Audio;
 
 /// <summary>
-/// Integration tests for the /api/audio endpoints registered via
-/// <c>AudioEndpoints.MapAudioEndpoints</c>. Uses an in-process TestServer with
-/// a mocked <see cref="IAudioService"/> so we never touch real Core Audio COM.
+///     Integration tests for the /api/audio endpoints registered via
+///     <c>AudioEndpoints.MapAudioEndpoints</c>. Uses an in-process TestServer with
+///     a mocked <see cref="IAudioService" /> so we never touch real Core Audio COM.
 /// </summary>
 public class AudioEndpointsTests : IAsyncLifetime
 {
     private WebApplication _app = null!;
-    private HttpClient _client = null!;
     private Mock<IAudioService> _audioMock = null!;
+    private HttpClient _client = null!;
     private EventHub _hub = null!;
 
     public async Task InitializeAsync()
@@ -261,7 +261,7 @@ public class AudioEndpointsTests : IAsyncLifetime
         Assert.Equal(EventTypes.AudioState, doc.RootElement.GetProperty("type").GetString());
         Assert.Equal(0.7d, doc.RootElement.GetProperty("payload").GetProperty("masterVolume").GetDouble(), 5);
 
-        await clientWs.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None);
+        await clientWs.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None);
         await addTask;
     }
 
@@ -288,7 +288,7 @@ public class AudioEndpointsTests : IAsyncLifetime
         Assert.Equal(EventTypes.AudioState, doc.RootElement.GetProperty("type").GetString());
         Assert.True(doc.RootElement.GetProperty("payload").GetProperty("muted").GetBoolean());
 
-        await clientWs.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None);
+        await clientWs.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None);
         await addTask;
     }
 
@@ -318,19 +318,33 @@ public class AudioEndpointsTests : IAsyncLifetime
         {
             var result = await clientWs.ReceiveAsync(readBuffer, readCts.Token);
             // If we got a frame, ensure it's not an audio.state event.
-            if (result.MessageType == System.Net.WebSockets.WebSocketMessageType.Text)
+            if (result.MessageType == WebSocketMessageType.Text)
             {
                 var text = Encoding.UTF8.GetString(readBuffer, 0, result.Count);
                 using var doc = JsonDocument.Parse(text);
                 Assert.NotEqual(EventTypes.AudioState, doc.RootElement.GetProperty("type").GetString());
             }
         }
-        catch (OperationCanceledException) { threw = true; }
-        catch (System.Net.WebSockets.WebSocketException) { threw = true; }
+        catch (OperationCanceledException)
+        {
+            threw = true;
+        }
+        catch (WebSocketException)
+        {
+            threw = true;
+        }
+
         Assert.True(threw, "Expected no broadcast on GET state, but a frame was received.");
 
-        try { await clientWs.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None); }
-        catch (System.Net.WebSockets.WebSocketException) { /* aborted by cancelled receive — fine */ }
+        try
+        {
+            await clientWs.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None);
+        }
+        catch (WebSocketException)
+        {
+            /* aborted by cancelled receive — fine */
+        }
+
         await addTask;
     }
 
@@ -344,39 +358,32 @@ public class AudioEndpointsTests : IAsyncLifetime
             if (predicate()) return;
             await Task.Delay(10);
         }
-        if (!predicate())
-        {
-            throw new TimeoutException("WaitForAsync predicate did not become true in time.");
-        }
+
+        if (!predicate()) throw new TimeoutException("WaitForAsync predicate did not become true in time.");
     }
 
-    private static async Task<string> ReadTextMessageAsync(System.Net.WebSockets.WebSocket socket, CancellationToken ct)
+    private static async Task<string> ReadTextMessageAsync(WebSocket socket, CancellationToken ct)
     {
         var buffer = new byte[8192];
         using var ms = new MemoryStream();
         while (true)
         {
             var result = await socket.ReceiveAsync(buffer, ct);
-            if (result.MessageType == System.Net.WebSockets.WebSocketMessageType.Close)
-            {
+            if (result.MessageType == WebSocketMessageType.Close)
                 throw new InvalidOperationException("Connection closed while expecting text.");
-            }
             ms.Write(buffer, 0, result.Count);
-            if (result.EndOfMessage)
-            {
-                return Encoding.UTF8.GetString(ms.ToArray());
-            }
+            if (result.EndOfMessage) return Encoding.UTF8.GetString(ms.ToArray());
         }
     }
 
-    private static (System.Net.WebSockets.WebSocket Server, System.Net.WebSockets.WebSocket Client) CreateLinkedWebSocketPair()
+    private static (WebSocket Server, WebSocket Client) CreateLinkedWebSocketPair()
     {
-        var serverToClient = new System.IO.Pipelines.Pipe();
-        var clientToServer = new System.IO.Pipelines.Pipe();
+        var serverToClient = new Pipe();
+        var clientToServer = new Pipe();
         var serverStream = new DuplexStream(clientToServer.Reader.AsStream(), serverToClient.Writer.AsStream());
         var clientStream = new DuplexStream(serverToClient.Reader.AsStream(), clientToServer.Writer.AsStream());
-        var server = System.Net.WebSockets.WebSocket.CreateFromStream(serverStream, isServer: true, subProtocol: null, keepAliveInterval: TimeSpan.FromMinutes(2));
-        var client = System.Net.WebSockets.WebSocket.CreateFromStream(clientStream, isServer: false, subProtocol: null, keepAliveInterval: TimeSpan.FromMinutes(2));
+        var server = WebSocket.CreateFromStream(serverStream, true, null, TimeSpan.FromMinutes(2));
+        var client = WebSocket.CreateFromStream(clientStream, false, null, TimeSpan.FromMinutes(2));
         return (server, client);
     }
 
@@ -384,22 +391,74 @@ public class AudioEndpointsTests : IAsyncLifetime
     {
         private readonly Stream _read;
         private readonly Stream _write;
-        public DuplexStream(Stream read, Stream write) { _read = read; _write = write; }
+
+        public DuplexStream(Stream read, Stream write)
+        {
+            _read = read;
+            _write = write;
+        }
+
         public override bool CanRead => true;
         public override bool CanWrite => true;
         public override bool CanSeek => false;
         public override long Length => throw new NotSupportedException();
-        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
-        public override void Flush() => _write.Flush();
-        public override Task FlushAsync(CancellationToken ct) => _write.FlushAsync(ct);
-        public override int Read(byte[] buffer, int offset, int count) => _read.Read(buffer, offset, count);
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct) => _read.ReadAsync(buffer, offset, count, ct);
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default) => _read.ReadAsync(buffer, ct);
-        public override void Write(byte[] buffer, int offset, int count) => _write.Write(buffer, offset, count);
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken ct) => _write.WriteAsync(buffer, offset, count, ct);
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ct = default) => _write.WriteAsync(buffer, ct);
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush()
+        {
+            _write.Flush();
+        }
+
+        public override Task FlushAsync(CancellationToken ct)
+        {
+            return _write.FlushAsync(ct);
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return _read.Read(buffer, offset, count);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct)
+        {
+            return _read.ReadAsync(buffer, offset, count, ct);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
+        {
+            return _read.ReadAsync(buffer, ct);
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            _write.Write(buffer, offset, count);
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken ct)
+        {
+            return _write.WriteAsync(buffer, offset, count, ct);
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ct = default)
+        {
+            return _write.WriteAsync(buffer, ct);
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -407,6 +466,7 @@ public class AudioEndpointsTests : IAsyncLifetime
                 _read.Dispose();
                 _write.Dispose();
             }
+
             base.Dispose(disposing);
         }
     }

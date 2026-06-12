@@ -1,30 +1,27 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text;
 using System.Text.Json;
 using MaimaiHomeAgent.Audio;
 using MaimaiHomeAgent.Realtime;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using Xunit;
 
 namespace MaimaiHomeAgent.Tests.Audio;
 
 /// <summary>
-/// Integration tests for the /api/audio/devices and /api/audio/default-device
-/// endpoints registered via <c>DeviceEndpoints.MapDeviceEndpoints</c>. Mirrors
-/// the host pattern in <see cref="AudioEndpointsTests"/> with a mocked
-/// <see cref="IAudioService"/>.
+///     Integration tests for the /api/audio/devices and /api/audio/default-device
+///     endpoints registered via <c>DeviceEndpoints.MapDeviceEndpoints</c>. Mirrors
+///     the host pattern in <see cref="AudioEndpointsTests" /> with a mocked
+///     <see cref="IAudioService" />.
 /// </summary>
 public class DeviceEndpointsTests : IAsyncLifetime
 {
     private WebApplication _app = null!;
-    private HttpClient _client = null!;
     private Mock<IAudioService> _audioMock = null!;
+    private HttpClient _client = null!;
 
     public async Task InitializeAsync()
     {
@@ -59,7 +56,7 @@ public class DeviceEndpointsTests : IAsyncLifetime
             .ReturnsAsync(new[]
             {
                 new AudioDevice(id1, "Speakers", true, DeviceState.Active),
-                new AudioDevice(id2, "Headphones", false, DeviceState.Disabled),
+                new AudioDevice(id2, "Headphones", false, DeviceState.Disabled)
             });
 
         var response = await _client.GetAsync("/api/audio/devices");
@@ -109,7 +106,7 @@ public class DeviceEndpointsTests : IAsyncLifetime
             .Setup(s => s.ListDevicesAsync())
             .ReturnsAsync(new[]
             {
-                new AudioDevice(deviceId, "Headphones", true, DeviceState.Active),
+                new AudioDevice(deviceId, "Headphones", true, DeviceState.Active)
             });
 
         var response = await _client.PostAsJsonAsync(
@@ -213,7 +210,7 @@ public class DeviceEndpointsTests : IAsyncLifetime
             new AudioDevice(Guid.NewGuid(), "A", false, DeviceState.Active),
             new AudioDevice(Guid.NewGuid(), "B", false, DeviceState.Disabled),
             new AudioDevice(Guid.NewGuid(), "C", false, DeviceState.NotPresent),
-            new AudioDevice(Guid.NewGuid(), "D", false, DeviceState.Unplugged),
+            new AudioDevice(Guid.NewGuid(), "D", false, DeviceState.Unplugged)
         };
 
         var projected = DeviceEndpoints.Project(devices);

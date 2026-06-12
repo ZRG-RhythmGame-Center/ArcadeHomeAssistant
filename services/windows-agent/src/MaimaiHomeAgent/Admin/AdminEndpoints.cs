@@ -8,10 +8,7 @@ public static class AdminEndpoints
 
         app.MapPost("/api/admin/session", (AdminLoginRequest? request, AdminGuard guard) =>
         {
-            if (guard.IsValidPassword(request?.Password))
-            {
-                return Results.Ok(new AdminSessionResponse(true));
-            }
+            if (guard.IsValidPassword(request?.Password)) return Results.Ok(new AdminSessionResponse(true));
 
             return UnauthorizedResult();
         });
@@ -19,14 +16,16 @@ public static class AdminEndpoints
         return app;
     }
 
-    public static IResult UnauthorizedResult() =>
-        Results.Json(
+    public static IResult UnauthorizedResult()
+    {
+        return Results.Json(
             new
             {
                 error = "admin_unauthorized",
                 message = "管理员密码无效"
             },
             statusCode: StatusCodes.Status401Unauthorized);
+    }
 }
 
 public sealed record AdminLoginRequest(string? Password);

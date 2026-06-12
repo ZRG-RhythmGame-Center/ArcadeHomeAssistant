@@ -1,35 +1,34 @@
 using System.Threading.Channels;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace MaimaiHomeAgent.Audio;
 
 /// <summary>
-/// Dispatches audio work onto a single dedicated STA thread.
-///
-/// Legacy dispatcher for audio work that needs a dedicated STA thread. The
-/// current NAudio service does not use this type, but tests and older builds may
-/// still reference the abstraction.
-///
-/// A bounded <see cref="Channel{T}"/> (capacity 5) gives us flow control:
-/// when the queue is full we fail fast with
-/// <see cref="AudioServiceBusyException"/> instead of letting the request
-/// thread pool back up.
+///     Dispatches audio work onto a single dedicated STA thread.
+///     Legacy dispatcher for audio work that needs a dedicated STA thread. The
+///     current NAudio service does not use this type, but tests and older builds may
+///     still reference the abstraction.
+///     A bounded <see cref="Channel{T}" /> (capacity 5) gives us flow control:
+///     when the queue is full we fail fast with
+///     <see cref="AudioServiceBusyException" /> instead of letting the request
+///     thread pool back up.
 /// </summary>
 public sealed class AudioStaDispatcher : IHostedService, IAsyncDisposable, IAudioStaDispatcher
 {
     private const int QueueCapacity = 5;
-
-    private readonly ILogger<AudioStaDispatcher> _logger;
     private readonly Channel<WorkItem> _channel;
     private readonly CancellationTokenSource _cts = new();
+
+    private readonly ILogger<AudioStaDispatcher> _logger;
+
     private readonly TaskCompletionSource _threadStartedTcs =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     private readonly TaskCompletionSource _threadStoppedTcs =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    private Thread? _staThread;
     private int _disposed;
+
+    private Thread? _staThread;
 
     public AudioStaDispatcher(ILogger<AudioStaDispatcher> logger)
     {
@@ -38,21 +37,61 @@ public sealed class AudioStaDispatcher : IHostedService, IAsyncDisposable, IAudi
         {
             FullMode = BoundedChannelFullMode.Wait,
             SingleReader = true,
-            SingleWriter = false,
+            SingleWriter = false
+        });
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed == 0) await StopAsync(CancellationToken.None).ConfigureAwait(false);
+        _cts.Dispose();
+    }
+
+    /// <summary>
+    ///     Runs <paramref name="work" /> on the dedicated STA thread and returns
+    ///     its result. Throws <see cref="AudioServiceBusyException" /> if the
+    ///     dispatch queue is at capacity.
+    /// </summary>
+    public async Task<T> InvokeAsync<T>(Func<Task<T>> work)
+    {
+        ArgumentNullException.ThrowIfNull(work);
+
+        if (_disposed != 0) throw new ObjectDisposedException(nameof(AudioStaDispatcher));
+
+        var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var item = new WorkItem(async () =>
+        {
+            var result = await work().ConfigureAwait(false);
+            return result;
+        }, tcs);
+
+        if (!_channel.Writer.TryWrite(item)) throw new AudioServiceBusyException();
+
+        var raw = await tcs.Task.ConfigureAwait(false);
+        return (T)raw!;
+    }
+
+    /// <summary>
+    ///     Overload for fire-and-forget style work that returns no value.
+    /// </summary>
+    public Task InvokeAsync(Func<Task> work)
+    {
+        ArgumentNullException.ThrowIfNull(work);
+        return InvokeAsync<object?>(async () =>
+        {
+            await work().ConfigureAwait(false);
+            return null;
         });
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        if (_staThread is not null)
-        {
-            return Task.CompletedTask;
-        }
+        if (_staThread is not null) return Task.CompletedTask;
 
         _staThread = new Thread(StaThreadLoop)
         {
             Name = "Audio STA Dispatcher",
-            IsBackground = true,
+            IsBackground = true
         };
         _staThread.SetApartmentState(ApartmentState.STA);
         _staThread.Start();
@@ -62,10 +101,7 @@ public sealed class AudioStaDispatcher : IHostedService, IAsyncDisposable, IAudi
 
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
-        {
-            return Task.CompletedTask;
-        }
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return Task.CompletedTask;
 
         // Refuse new writes and tell the worker to stop blocking in
         // WaitToReadAsync.
@@ -77,56 +113,10 @@ public sealed class AudioStaDispatcher : IHostedService, IAsyncDisposable, IAudi
         // a resource the in-flight work depends on may need StopAsync to
         // return so they can release it. The worker exits naturally once it
         // finishes the in-flight item and finds the channel completed.
-        while (_channel.Reader.TryRead(out var item))
-        {
-            item.Completion.TrySetCanceled(cancellationToken);
-        }
+        while (_channel.Reader.TryRead(out var item)) item.Completion.TrySetCanceled(cancellationToken);
 
         _logger.LogInformation("Audio STA dispatcher stop signalled.");
         return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Runs <paramref name="work"/> on the dedicated STA thread and returns
-    /// its result. Throws <see cref="AudioServiceBusyException"/> if the
-    /// dispatch queue is at capacity.
-    /// </summary>
-    public async Task<T> InvokeAsync<T>(Func<Task<T>> work)
-    {
-        ArgumentNullException.ThrowIfNull(work);
-
-        if (_disposed != 0)
-        {
-            throw new ObjectDisposedException(nameof(AudioStaDispatcher));
-        }
-
-        var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var item = new WorkItem(async () =>
-        {
-            var result = await work().ConfigureAwait(false);
-            return (object?)result;
-        }, tcs);
-
-        if (!_channel.Writer.TryWrite(item))
-        {
-            throw new AudioServiceBusyException();
-        }
-
-        var raw = await tcs.Task.ConfigureAwait(false);
-        return (T)raw!;
-    }
-
-    /// <summary>
-    /// Overload for fire-and-forget style work that returns no value.
-    /// </summary>
-    public Task InvokeAsync(Func<Task> work)
-    {
-        ArgumentNullException.ThrowIfNull(work);
-        return InvokeAsync<object?>(async () =>
-        {
-            await work().ConfigureAwait(false);
-            return null;
-        });
     }
 
     private void StaThreadLoop()
@@ -148,10 +138,7 @@ public sealed class AudioStaDispatcher : IHostedService, IAsyncDisposable, IAudi
                     {
                         var waitTask = reader.WaitToReadAsync(_cts.Token).AsTask();
                         var ready = waitTask.GetAwaiter().GetResult();
-                        if (!ready)
-                        {
-                            break;
-                        }
+                        if (!ready) break;
                         continue;
                     }
                 }
@@ -176,10 +163,7 @@ public sealed class AudioStaDispatcher : IHostedService, IAsyncDisposable, IAudi
             }
 
             // Cancel any items that landed after the writer was completed.
-            while (reader.TryRead(out var leftover))
-            {
-                leftover.Completion.TrySetCanceled(_cts.Token);
-            }
+            while (reader.TryRead(out var leftover)) leftover.Completion.TrySetCanceled(_cts.Token);
         }
         catch (Exception ex)
         {
@@ -190,15 +174,6 @@ public sealed class AudioStaDispatcher : IHostedService, IAsyncDisposable, IAudi
         {
             _threadStoppedTcs.TrySetResult();
         }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (_disposed == 0)
-        {
-            await StopAsync(CancellationToken.None).ConfigureAwait(false);
-        }
-        _cts.Dispose();
     }
 
     private readonly record struct WorkItem(

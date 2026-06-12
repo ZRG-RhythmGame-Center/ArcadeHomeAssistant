@@ -1,21 +1,20 @@
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 
 namespace MaimaiHomeAgent.Realtime;
 
 /// <summary>
-/// Owns a single client WebSocket connection and exposes safe send / receive primitives.
-/// Sends are serialized through a SemaphoreSlim because <see cref="WebSocket"/> only
-/// supports one outstanding SendAsync at a time.
+///     Owns a single client WebSocket connection and exposes safe send / receive primitives.
+///     Sends are serialized through a SemaphoreSlim because <see cref="WebSocket" /> only
+///     supports one outstanding SendAsync at a time.
 /// </summary>
 public sealed class WebSocketSession : IAsyncDisposable
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly ILogger? _logger;
 
     private readonly SemaphoreSlim _sendLock = new(1, 1);
-    private readonly ILogger? _logger;
 
     public WebSocketSession(WebSocket socket, ILogger? logger = null)
     {
@@ -31,14 +30,27 @@ public sealed class WebSocketSession : IAsyncDisposable
     public DateTimeOffset ConnectedAt { get; }
     public DateTimeOffset LastPongAt { get; private set; }
 
+    public ValueTask DisposeAsync()
+    {
+        _sendLock.Dispose();
+        Socket.Dispose();
+        return ValueTask.CompletedTask;
+    }
+
     /// <summary>
-    /// Updates the last-pong timestamp. The receive loop calls this whenever any
-    /// frame arrives from the client (text, binary, or pong-shaped JSON).
+    ///     Updates the last-pong timestamp. The receive loop calls this whenever any
+    ///     frame arrives from the client (text, binary, or pong-shaped JSON).
     /// </summary>
-    public void MarkPong(DateTimeOffset at) => LastPongAt = at;
+    public void MarkPong(DateTimeOffset at)
+    {
+        LastPongAt = at;
+    }
 
     /// <summary>Test seam: bypass MarkPong to simulate an idle client.</summary>
-    internal void OverrideLastPongAtForTests(DateTimeOffset at) => LastPongAt = at;
+    internal void OverrideLastPongAtForTests(DateTimeOffset at)
+    {
+        LastPongAt = at;
+    }
 
     public async Task SendJsonAsync(EventEnvelope envelope, CancellationToken ct = default)
     {
@@ -49,9 +61,9 @@ public sealed class WebSocketSession : IAsyncDisposable
     }
 
     /// <summary>
-    /// Sends a small ping payload as a text frame. We deliberately avoid the
-    /// raw control-frame ping because <see cref="WebSocket.SendAsync"/> does not
-    /// expose ping; clients must respond by echoing or by sending any frame.
+    ///     Sends a small ping payload as a text frame. We deliberately avoid the
+    ///     raw control-frame ping because <see cref="WebSocket.SendAsync" /> does not
+    ///     expose ping; clients must respond by echoing or by sending any frame.
     /// </summary>
     public async Task SendPingAsync(CancellationToken ct = default)
     {
@@ -62,16 +74,15 @@ public sealed class WebSocketSession : IAsyncDisposable
     public async Task CloseAsync(WebSocketCloseStatus status, string? description, CancellationToken ct = default)
     {
         if (Socket.State is WebSocketState.Open or WebSocketState.CloseReceived)
-        {
             try
             {
                 await Socket.CloseAsync(status, description, ct).ConfigureAwait(false);
             }
-            catch (Exception ex) when (ex is WebSocketException or OperationCanceledException or ObjectDisposedException)
+            catch (Exception ex) when
+                (ex is WebSocketException or OperationCanceledException or ObjectDisposedException)
             {
                 _logger?.LogDebug(ex, "WebSocket close failed for session {SessionId}.", Id);
             }
-        }
     }
 
     private async Task SendRawAsync(byte[] payload, WebSocketMessageType type, CancellationToken ct)
@@ -82,7 +93,7 @@ public sealed class WebSocketSession : IAsyncDisposable
         try
         {
             if (Socket.State != WebSocketState.Open) return;
-            await Socket.SendAsync(payload, type, endOfMessage: true, ct).ConfigureAwait(false);
+            await Socket.SendAsync(payload, type, true, ct).ConfigureAwait(false);
         }
         finally
         {
@@ -91,9 +102,9 @@ public sealed class WebSocketSession : IAsyncDisposable
     }
 
     /// <summary>
-    /// Drains incoming frames so the WebSocket stays alive and we can update
-    /// <see cref="LastPongAt"/>. Returns when the peer closes or the cancellation
-    /// token fires.
+    ///     Drains incoming frames so the WebSocket stays alive and we can update
+    ///     <see cref="LastPongAt" />. Returns when the peer closes or the cancellation
+    ///     token fires.
     /// </summary>
     public async Task ReceiveLoopAsync(CancellationToken ct)
     {
@@ -107,7 +118,10 @@ public sealed class WebSocketSession : IAsyncDisposable
                 {
                     result = await Socket.ReceiveAsync(buffer, ct).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException) { break; }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
                 catch (WebSocketException ex)
                 {
                     _logger?.LogDebug(ex, "WebSocket receive failed for session {SessionId}.", Id);
@@ -131,12 +145,5 @@ public sealed class WebSocketSession : IAsyncDisposable
         {
             _logger?.LogDebug("Receive loop exiting for session {SessionId}.", Id);
         }
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        _sendLock.Dispose();
-        Socket.Dispose();
-        return ValueTask.CompletedTask;
     }
 }

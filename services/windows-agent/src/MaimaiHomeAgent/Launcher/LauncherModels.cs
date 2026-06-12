@@ -10,11 +10,21 @@ public sealed record LauncherStatusDto(
 
 public sealed record StartLauncherItemRequest(string? ItemId);
 
-public sealed record LauncherActionResult(bool Accepted, LauncherStatusDto Status, string? Error = null, string? Message = null)
+public sealed record LauncherActionResult(
+    bool Accepted,
+    LauncherStatusDto Status,
+    string? Error = null,
+    string? Message = null)
 {
-    public static LauncherActionResult Ok(LauncherStatusDto status) => new(true, status);
+    public static LauncherActionResult Ok(LauncherStatusDto status)
+    {
+        return new LauncherActionResult(true, status);
+    }
 
-    public static LauncherActionResult Rejected(LauncherStatusDto status, string error, string message) => new(false, status, error, message);
+    public static LauncherActionResult Rejected(LauncherStatusDto status, string error, string message)
+    {
+        return new LauncherActionResult(false, status, error, message);
+    }
 }
 
 public sealed record LauncherItemRuntime(

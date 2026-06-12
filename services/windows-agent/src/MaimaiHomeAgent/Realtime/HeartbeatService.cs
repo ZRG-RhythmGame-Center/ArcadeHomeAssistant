@@ -1,13 +1,11 @@
 using System.Net.WebSockets;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace MaimaiHomeAgent.Realtime;
 
 /// <summary>
-/// Tunables for the WebSocket heartbeat loop. Pulled from configuration via
-/// <see cref="IOptions{T}"/> so production and tests can dial them independently.
+///     Tunables for the WebSocket heartbeat loop. Pulled from configuration via
+///     <see cref="IOptions{T}" /> so production and tests can dial them independently.
 /// </summary>
 public sealed class HeartbeatOptions
 {
@@ -17,15 +15,15 @@ public sealed class HeartbeatOptions
 }
 
 /// <summary>
-/// Periodically pings every active session and reaps connections that have not
-/// produced any traffic within <see cref="HeartbeatOptions.PongTimeout"/>. Tests
-/// can drive the loop directly via <see cref="RunOnceAsync"/>.
+///     Periodically pings every active session and reaps connections that have not
+///     produced any traffic within <see cref="HeartbeatOptions.PongTimeout" />. Tests
+///     can drive the loop directly via <see cref="RunOnceAsync" />.
 /// </summary>
 public sealed class HeartbeatService : IHostedService, IDisposable
 {
     private readonly EventHub _hub;
-    private readonly HeartbeatOptions _options;
     private readonly ILogger<HeartbeatService> _logger;
+    private readonly HeartbeatOptions _options;
 
     private CancellationTokenSource? _cts;
     private Task? _loop;
@@ -35,6 +33,11 @@ public sealed class HeartbeatService : IHostedService, IDisposable
         _hub = hub ?? throw new ArgumentNullException(nameof(hub));
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
+    public void Dispose()
+    {
+        _cts?.Dispose();
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -50,12 +53,22 @@ public sealed class HeartbeatService : IHostedService, IDisposable
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         if (_cts is null) return;
-        try { _cts.Cancel(); } catch (ObjectDisposedException) { }
-        if (_loop is not null)
+        try
         {
-            try { await _loop.WaitAsync(cancellationToken).ConfigureAwait(false); }
-            catch (Exception ex) when (ex is OperationCanceledException or TaskCanceledException) { }
+            _cts.Cancel();
         }
+        catch (ObjectDisposedException)
+        {
+        }
+
+        if (_loop is not null)
+            try
+            {
+                await _loop.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is OperationCanceledException or TaskCanceledException)
+            {
+            }
     }
 
     private async Task RunLoopAsync(CancellationToken ct)
@@ -69,7 +82,10 @@ public sealed class HeartbeatService : IHostedService, IDisposable
             {
                 await Task.Delay(interval, ct).ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { break; }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
 
             try
             {
@@ -83,8 +99,8 @@ public sealed class HeartbeatService : IHostedService, IDisposable
     }
 
     /// <summary>
-    /// Pings every live session and removes any whose <see cref="WebSocketSession.LastPongAt"/>
-    /// is older than <see cref="HeartbeatOptions.PongTimeout"/> from <paramref name="now"/>.
+    ///     Pings every live session and removes any whose <see cref="WebSocketSession.LastPongAt" />
+    ///     is older than <see cref="HeartbeatOptions.PongTimeout" /> from <paramref name="now" />.
     /// </summary>
     public async Task RunOnceAsync(DateTimeOffset now, CancellationToken ct)
     {
@@ -105,18 +121,13 @@ public sealed class HeartbeatService : IHostedService, IDisposable
                     session.Id, idle);
                 continue;
             }
+
             pingTasks.Add(PingSafelyAsync(session, ct));
         }
 
-        if (pingTasks.Count > 0)
-        {
-            await Task.WhenAll(pingTasks).ConfigureAwait(false);
-        }
+        if (pingTasks.Count > 0) await Task.WhenAll(pingTasks).ConfigureAwait(false);
 
-        foreach (var id in staleIds)
-        {
-            await _hub.RemoveAsync(id, ct).ConfigureAwait(false);
-        }
+        foreach (var id in staleIds) await _hub.RemoveAsync(id, ct).ConfigureAwait(false);
     }
 
     private async Task PingSafelyAsync(WebSocketSession session, CancellationToken ct)
@@ -125,14 +136,10 @@ public sealed class HeartbeatService : IHostedService, IDisposable
         {
             await session.SendPingAsync(ct).ConfigureAwait(false);
         }
-        catch (Exception ex) when (ex is WebSocketException or OperationCanceledException or ObjectDisposedException or InvalidOperationException)
+        catch (Exception ex) when (ex is WebSocketException or OperationCanceledException or ObjectDisposedException
+                                       or InvalidOperationException)
         {
             _logger.LogDebug(ex, "Heartbeat ping failed for session {SessionId}.", session.Id);
         }
-    }
-
-    public void Dispose()
-    {
-        _cts?.Dispose();
     }
 }

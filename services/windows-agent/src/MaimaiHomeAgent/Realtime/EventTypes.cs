@@ -1,9 +1,9 @@
 namespace MaimaiHomeAgent.Realtime;
 
 /// <summary>
-/// Canonical event type strings broadcast over the /api/events WebSocket.
-/// Using constants keeps producers (audio/file watchers) and consumers (mobile/PC)
-/// in lockstep without magic strings.
+///     Canonical event type strings broadcast over the /api/events WebSocket.
+///     Using constants keeps producers (audio/file watchers) and consumers (mobile/PC)
+///     in lockstep without magic strings.
 /// </summary>
 public static class EventTypes
 {

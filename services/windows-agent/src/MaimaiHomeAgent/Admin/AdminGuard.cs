@@ -19,15 +19,15 @@ public sealed class AdminGuard
         return IsValidBearerToken(ctx.Request.Headers.Authorization.ToString());
     }
 
-    public bool IsValidPassword(string? password) => IsValidSecret(password?.Trim());
+    public bool IsValidPassword(string? password)
+    {
+        return IsValidSecret(password?.Trim());
+    }
 
     private bool IsValidBearerToken(string header)
     {
         const string prefix = "Bearer ";
-        if (!header.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
+        if (!header.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return false;
 
         return IsValidSecret(header[prefix.Length..].Trim());
     }
@@ -35,14 +35,11 @@ public sealed class AdminGuard
     private bool IsValidSecret(string? provided)
     {
         var expected = _options.CurrentValue.Password;
-        if (string.IsNullOrWhiteSpace(expected) || string.IsNullOrEmpty(provided))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(expected) || string.IsNullOrEmpty(provided)) return false;
 
         var expectedBytes = Encoding.UTF8.GetBytes(expected);
         var providedBytes = Encoding.UTF8.GetBytes(provided);
         return expectedBytes.Length == providedBytes.Length &&
-            CryptographicOperations.FixedTimeEquals(expectedBytes, providedBytes);
+               CryptographicOperations.FixedTimeEquals(expectedBytes, providedBytes);
     }
 }

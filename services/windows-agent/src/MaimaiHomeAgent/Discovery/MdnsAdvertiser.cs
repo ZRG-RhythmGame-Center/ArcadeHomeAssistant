@@ -9,15 +9,15 @@ public sealed class MdnsAdvertiser(
     ILogger<MdnsAdvertiser> logger,
     IHostApplicationLifetime appLifetime) : IHostedService
 {
-    private readonly DiscoveryOptions _options = options.Value;
-    private readonly ILogger<MdnsAdvertiser> _logger = logger;
     private readonly IHostApplicationLifetime _appLifetime = appLifetime;
+    private readonly ILogger<MdnsAdvertiser> _logger = logger;
+    private readonly DiscoveryOptions _options = options.Value;
+    private readonly SemaphoreSlim _restartSemaphore = new(1, 1);
+
+    private CancellationTokenSource? _restartCts;
 
     private ServiceDiscovery? _serviceDiscovery;
     private ServiceProfile? _serviceProfile;
-    
-    private CancellationTokenSource? _restartCts;
-    private readonly SemaphoreSlim _restartSemaphore = new(1, 1);
 
     public Task StartAsync(CancellationToken cancellationToken)
     {

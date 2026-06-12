@@ -1,24 +1,40 @@
+using System.Runtime.InteropServices;
 using MaimaiHomeAgent.Audio;
-using Xunit;
 
 namespace MaimaiHomeAgent.Tests.Audio;
 
 /// <summary>
-/// Tests for <see cref="NAudioDeviceNotificationSource"/> and the
-/// <see cref="IAudioDeviceNotificationSource"/> contract.
-///
-/// Notes on scope:
-/// - Double-register and unregister-without-register are pure state-machine
-///   logic that executes before any COM call, so they run on any platform.
-/// - The render-only filter lives in the private NotificationClient; it is
-///   tested indirectly via a <see cref="FakeNotificationSource"/> that
-///   replicates the same DataFlow guard, verifying the contract the
-///   DeviceChangeNotifier relies on.
-/// - Tests that require a live MMDeviceEnumerator are marked
-///   [Trait("Category","Windows")] so non-Windows CI can skip them.
+///     Tests for <see cref="NAudioDeviceNotificationSource" /> and the
+///     <see cref="IAudioDeviceNotificationSource" /> contract.
+///     Notes on scope:
+///     - Double-register and unregister-without-register are pure state-machine
+///     logic that executes before any COM call, so they run on any platform.
+///     - The render-only filter lives in the private NotificationClient; it is
+///     tested indirectly via a <see cref="FakeNotificationSource" /> that
+///     replicates the same DataFlow guard, verifying the contract the
+///     DeviceChangeNotifier relies on.
+///     - Tests that require a live MMDeviceEnumerator are marked
+///     [Trait("Category","Windows")] so non-Windows CI can skip them.
 /// </summary>
 public class NAudioDeviceNotificationSourceTests
 {
+    /// <summary>
+    ///     Discriminated union for DataFlow — mirrors NAudio's enum values so
+    ///     the test does not need to reference NAudio directly.
+    /// </summary>
+    public enum DataFlow
+    {
+        Render = 0,
+        Capture = 1,
+        All = 2
+    }
+
+    public enum Role
+    {
+        Console = 0,
+        Multimedia = 1,
+        Communications = 2
+    }
     // ------------------------------------------------------------------ //
     //  Pure state-machine tests (no COM required)                         //
     // ------------------------------------------------------------------ //
@@ -99,10 +115,10 @@ public class NAudioDeviceNotificationSourceTests
     // ------------------------------------------------------------------ //
 
     /// <summary>
-    /// The production NotificationClient only forwards OnDefaultDeviceChanged
-    /// when DataFlow == Render. This test verifies that contract via a fake
-    /// source that replicates the same guard, ensuring DeviceChangeNotifier
-    /// only receives render-role default-device changes.
+    ///     The production NotificationClient only forwards OnDefaultDeviceChanged
+    ///     when DataFlow == Render. This test verifies that contract via a fake
+    ///     source that replicates the same guard, ensuring DeviceChangeNotifier
+    ///     only receives render-role default-device changes.
     /// </summary>
     [Fact]
     public void OnDefaultDeviceChanged_RenderMultimediaRole_ForwardedToSink()
@@ -196,18 +212,13 @@ public class NAudioDeviceNotificationSourceTests
     //  Helpers                                                             //
     // ------------------------------------------------------------------ //
 
-    private static bool IsCOMOrPlatformException(Exception ex) =>
-        ex is System.Runtime.InteropServices.COMException
-        or System.Runtime.InteropServices.ExternalException
-        or PlatformNotSupportedException
-        or TypeInitializationException;
-
-    /// <summary>
-    /// Discriminated union for DataFlow — mirrors NAudio's enum values so
-    /// the test does not need to reference NAudio directly.
-    /// </summary>
-    public enum DataFlow { Render = 0, Capture = 1, All = 2 }
-    public enum Role { Console = 0, Multimedia = 1, Communications = 2 }
+    private static bool IsCOMOrPlatformException(Exception ex)
+    {
+        return ex is COMException
+            or ExternalException
+            or PlatformNotSupportedException
+            or TypeInitializationException;
+    }
 
     private sealed class RecordingSink : IAudioDeviceNotificationSink
     {
@@ -221,35 +232,61 @@ public class NAudioDeviceNotificationSourceTests
             if (deviceId is not null) DefaultDeviceChangedIds.Add(deviceId);
         }
 
-        public void OnDeviceAdded(string deviceId) => AddedIds.Add(deviceId);
-        public void OnDeviceRemoved(string deviceId) => RemovedIds.Add(deviceId);
-        public void OnDeviceStateChanged(string deviceId) => StateChangedIds.Add(deviceId);
+        public void OnDeviceAdded(string deviceId)
+        {
+            AddedIds.Add(deviceId);
+        }
+
+        public void OnDeviceRemoved(string deviceId)
+        {
+            RemovedIds.Add(deviceId);
+        }
+
+        public void OnDeviceStateChanged(string deviceId)
+        {
+            StateChangedIds.Add(deviceId);
+        }
     }
 
     /// <summary>
-    /// Fake <see cref="IAudioDeviceNotificationSource"/> that replicates the
-    /// render-only filter from <c>NAudioDeviceNotificationSource.NotificationClient</c>.
-    /// Used to test the contract without requiring a live COM enumerator.
+    ///     Fake <see cref="IAudioDeviceNotificationSource" /> that replicates the
+    ///     render-only filter from <c>NAudioDeviceNotificationSource.NotificationClient</c>.
+    ///     Used to test the contract without requiring a live COM enumerator.
     /// </summary>
     private sealed class FakeNotificationSource : IAudioDeviceNotificationSource
     {
         private IAudioDeviceNotificationSink? _sink;
 
-        public void Register(IAudioDeviceNotificationSink sink) => _sink = sink;
-        public void Unregister(IAudioDeviceNotificationSink sink) => _sink = null;
+        public void Register(IAudioDeviceNotificationSink sink)
+        {
+            _sink = sink;
+        }
+
+        public void Unregister(IAudioDeviceNotificationSink sink)
+        {
+            _sink = null;
+        }
 
         /// <summary>Simulates the NAudio IMMNotificationClient.OnDefaultDeviceChanged callback.</summary>
         public void SimulateDefaultDeviceChanged(DataFlow flow, Role role, string deviceId)
         {
             // Mirrors the production guard: only forward render multimedia default changes.
-            if (flow == DataFlow.Render && role == Role.Multimedia)
-            {
-                _sink?.OnDefaultDeviceChanged(deviceId);
-            }
+            if (flow == DataFlow.Render && role == Role.Multimedia) _sink?.OnDefaultDeviceChanged(deviceId);
         }
 
-        public void SimulateDeviceAdded(string deviceId) => _sink?.OnDeviceAdded(deviceId);
-        public void SimulateDeviceRemoved(string deviceId) => _sink?.OnDeviceRemoved(deviceId);
-        public void SimulateDeviceStateChanged(string deviceId) => _sink?.OnDeviceStateChanged(deviceId);
+        public void SimulateDeviceAdded(string deviceId)
+        {
+            _sink?.OnDeviceAdded(deviceId);
+        }
+
+        public void SimulateDeviceRemoved(string deviceId)
+        {
+            _sink?.OnDeviceRemoved(deviceId);
+        }
+
+        public void SimulateDeviceStateChanged(string deviceId)
+        {
+            _sink?.OnDeviceStateChanged(deviceId);
+        }
     }
 }

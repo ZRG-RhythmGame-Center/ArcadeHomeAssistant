@@ -12,9 +12,15 @@ public sealed record SettingsUpdateResult(
     AgentSettingsSnapshot? Settings,
     IReadOnlyList<SettingsValidationError> Errors)
 {
-    public static SettingsUpdateResult Ok(AgentSettingsSnapshot settings) => new(true, settings, Array.Empty<SettingsValidationError>());
+    public static SettingsUpdateResult Ok(AgentSettingsSnapshot settings)
+    {
+        return new SettingsUpdateResult(true, settings, Array.Empty<SettingsValidationError>());
+    }
 
-    public static SettingsUpdateResult Failed(IReadOnlyList<SettingsValidationError> errors) => new(false, null, errors);
+    public static SettingsUpdateResult Failed(IReadOnlyList<SettingsValidationError> errors)
+    {
+        return new SettingsUpdateResult(false, null, errors);
+    }
 }
 
 public sealed record SettingsValidationError(string Error, string Message);

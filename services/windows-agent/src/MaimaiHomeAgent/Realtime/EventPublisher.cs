@@ -4,18 +4,18 @@ using MaimaiHomeAgent.Audio;
 namespace MaimaiHomeAgent.Realtime;
 
 /// <summary>
-/// Domain-semantic facade over <see cref="EventHub"/>. Producers (audio
-/// endpoints, device watchers, file watchers) call the typed publish methods
-/// here instead of crafting <see cref="EventEnvelope"/> values themselves —
-/// this centralizes the JSON serialization options, the timestamp source, and
-/// the canonical event type strings.
+///     Domain-semantic facade over <see cref="EventHub" />. Producers (audio
+///     endpoints, device watchers, file watchers) call the typed publish methods
+///     here instead of crafting <see cref="EventEnvelope" /> values themselves —
+///     this centralizes the JSON serialization options, the timestamp source, and
+///     the canonical event type strings.
 /// </summary>
 /// <remarks>
-/// All publish methods are <b>fire-and-forget</b>: they assign
-/// <c>_ = hub.BroadcastAsync(...)</c> and return synchronously so HTTP
-/// handlers and COM callbacks never block on WebSocket I/O. Failures inside
-/// the hub are already swallowed per-session, so the discarded task can never
-/// fault into an unobserved-exception unless someone changes EventHub itself.
+///     All publish methods are <b>fire-and-forget</b>: they assign
+///     <c>_ = hub.BroadcastAsync(...)</c> and return synchronously so HTTP
+///     handlers and COM callbacks never block on WebSocket I/O. Failures inside
+///     the hub are already swallowed per-session, so the discarded task can never
+///     fault into an unobserved-exception unless someone changes EventHub itself.
 /// </remarks>
 public sealed class EventPublisher
 {
@@ -29,8 +29,8 @@ public sealed class EventPublisher
     }
 
     /// <summary>
-    /// Broadcasts an <see cref="EventTypes.AudioState"/> envelope after a
-    /// volume / mute / default-device change.
+    ///     Broadcasts an <see cref="EventTypes.AudioState" /> envelope after a
+    ///     volume / mute / default-device change.
     /// </summary>
     public void PublishAudioStateChanged(AudioStateDto state)
     {
@@ -39,8 +39,8 @@ public sealed class EventPublisher
     }
 
     /// <summary>
-    /// Broadcasts an <see cref="EventTypes.AudioDeviceChanged"/> envelope when
-    /// the set of audio devices (or the default selection) changes.
+    ///     Broadcasts an <see cref="EventTypes.AudioDeviceChanged" /> envelope when
+    ///     the set of audio devices (or the default selection) changes.
     /// </summary>
     public void PublishAudioDeviceChanged(IReadOnlyList<DeviceResponse> devices)
     {
@@ -49,9 +49,9 @@ public sealed class EventPublisher
     }
 
     /// <summary>
-    /// Broadcasts a file-system change envelope. The caller picks the type
-    /// (one of <see cref="EventTypes.FileCreated"/>, <see cref="EventTypes.FileDeleted"/>,
-    /// <see cref="EventTypes.FileRenamed"/>, <see cref="EventTypes.FileMoved"/>).
+    ///     Broadcasts a file-system change envelope. The caller picks the type
+    ///     (one of <see cref="EventTypes.FileCreated" />, <see cref="EventTypes.FileDeleted" />,
+    ///     <see cref="EventTypes.FileRenamed" />, <see cref="EventTypes.FileMoved" />).
     /// </summary>
     public void PublishFileEvent(string eventType, FileEventDto payload)
     {
@@ -61,9 +61,9 @@ public sealed class EventPublisher
     }
 
     /// <summary>
-    /// Broadcasts an <see cref="EventTypes.DeviceUnavailable"/> envelope when
-    /// the agent observes that a previously-known audio device is no longer
-    /// reachable. Payload is <c>{ deviceId }</c>.
+    ///     Broadcasts an <see cref="EventTypes.DeviceUnavailable" /> envelope when
+    ///     the agent observes that a previously-known audio device is no longer
+    ///     reachable. Payload is <c>{ deviceId }</c>.
     /// </summary>
     public void PublishDeviceUnavailable(string deviceId)
     {

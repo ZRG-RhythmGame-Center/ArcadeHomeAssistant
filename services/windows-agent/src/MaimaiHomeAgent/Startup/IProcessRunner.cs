@@ -4,12 +4,12 @@ using System.Text;
 namespace MaimaiHomeAgent.Startup;
 
 /// <summary>
-/// Result of running an external process. Captures exit code + stdout/stderr.
+///     Result of running an external process. Captures exit code + stdout/stderr.
 /// </summary>
 public sealed record ProcessResult(int ExitCode, string StandardOutput, string StandardError);
 
 /// <summary>
-/// Abstraction over <see cref="System.Diagnostics.Process"/> for testability.
+///     Abstraction over <see cref="System.Diagnostics.Process" /> for testability.
 /// </summary>
 public interface IProcessRunner
 {
@@ -17,7 +17,7 @@ public interface IProcessRunner
 }
 
 /// <summary>
-/// Default <see cref="IProcessRunner"/> using <see cref="System.Diagnostics.Process"/>.
+///     Default <see cref="IProcessRunner" /> using <see cref="System.Diagnostics.Process" />.
 /// </summary>
 public sealed class ProcessRunner : IProcessRunner
 {
@@ -30,7 +30,7 @@ public sealed class ProcessRunner : IProcessRunner
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8
         };
 
         using var process = new Process { StartInfo = psi };
@@ -46,7 +46,15 @@ public sealed class ProcessRunner : IProcessRunner
         catch (OperationCanceledException)
         {
             // Kill the process so the ReadToEnd tasks complete.
-            try { process.Kill(entireProcessTree: true); } catch { /* best-effort */ }
+            try
+            {
+                process.Kill(true);
+            }
+            catch
+            {
+                /* best-effort */
+            }
+
             await Task.WhenAll(stdoutTask, stderrTask).ConfigureAwait(false);
             throw;
         }

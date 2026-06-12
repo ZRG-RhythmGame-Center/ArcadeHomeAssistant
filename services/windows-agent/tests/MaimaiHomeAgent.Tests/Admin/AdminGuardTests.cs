@@ -41,8 +41,10 @@ public sealed class AdminGuardTests
         Assert.False(guard.IsAuthorized(ctx));
     }
 
-    private static AdminGuard CreateGuard(string password) =>
-        new(new StaticOptionsMonitor<AdminOptions>(new AdminOptions { Password = password }));
+    private static AdminGuard CreateGuard(string password)
+    {
+        return new AdminGuard(new StaticOptionsMonitor<AdminOptions>(new AdminOptions { Password = password }));
+    }
 
     private sealed class StaticOptionsMonitor<T> : IOptionsMonitor<T>
     {
@@ -53,8 +55,14 @@ public sealed class AdminGuardTests
 
         public T CurrentValue { get; }
 
-        public T Get(string? name) => CurrentValue;
+        public T Get(string? name)
+        {
+            return CurrentValue;
+        }
 
-        public IDisposable? OnChange(Action<T, string?> listener) => null;
+        public IDisposable? OnChange(Action<T, string?> listener)
+        {
+            return null;
+        }
     }
 }

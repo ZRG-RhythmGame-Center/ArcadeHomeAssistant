@@ -1,22 +1,20 @@
 using MaimaiHomeAgent.Realtime;
 using MaimaiHomeAgent.Startup;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace MaimaiHomeAgent.Launcher;
 
 public sealed class LauncherService : ILauncherService, IHostedService
 {
+    private readonly EventPublisher _events;
+    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly ILogger<LauncherService> _logger;
     private readonly IOptionsMonitor<LauncherOptions> _options;
     private readonly IProcessRunner _processRunner;
     private readonly ILauncherWindowHost _window;
-    private readonly EventPublisher _events;
-    private readonly ILogger<LauncherService> _logger;
-    private readonly SemaphoreSlim _gate = new(1, 1);
     private LauncherItemRuntime? _activeItem;
-    private string _state = "idle";
     private string? _lastError;
+    private string _state = "idle";
 
     public LauncherService(
         IOptionsMonitor<LauncherOptions> options,
@@ -34,17 +32,18 @@ public sealed class LauncherService : ILauncherService, IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        if (_options.CurrentValue.ShowOnAgentStart)
-        {
-            await ShowAsync(cancellationToken).ConfigureAwait(false);
-        }
+        if (_options.CurrentValue.ShowOnAgentStart) await ShowAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
 
-    public LauncherStatusDto GetStatus() => CreateStatus();
-
-    internal LauncherOptions GetCurrentOptions() => _options.CurrentValue;
+    public LauncherStatusDto GetStatus()
+    {
+        return CreateStatus();
+    }
 
     public async Task<LauncherActionResult> ShowAsync(CancellationToken ct = default)
     {
@@ -69,41 +68,39 @@ public sealed class LauncherService : ILauncherService, IHostedService
     public async Task<LauncherActionResult> StartItemAsync(string itemId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(itemId))
-        {
             return LauncherActionResult.Rejected(CreateStatus(), "launcher_item_id_required", "启动项 ID 不能为空");
-        }
 
         await _gate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             if (_activeItem is not null)
-            {
                 return LauncherActionResult.Rejected(CreateStatus(), "launcher_item_already_active", "已有启动项正在运行");
-            }
 
-            var item = GetEnabledItems().FirstOrDefault(candidate => string.Equals(candidate.Id, itemId, StringComparison.Ordinal));
+            var item = GetEnabledItems()
+                .FirstOrDefault(candidate => string.Equals(candidate.Id, itemId, StringComparison.Ordinal));
             if (item is null)
-            {
                 return LauncherActionResult.Rejected(CreateStatus(), "launcher_item_not_found", "启动项不存在或未启用");
-            }
 
             _state = "starting";
             _lastError = null;
-            _events.PublishLauncherEvent(EventTypes.LauncherItemStarted, new { item.Id, item.Name, startedAt = DateTimeOffset.UtcNow });
+            _events.PublishLauncherEvent(EventTypes.LauncherItemStarted,
+                new { item.Id, item.Name, startedAt = DateTimeOffset.UtcNow });
 
             var result = await RunCommandAsync(item.CommandLine, item.WorkingDirectory, ct).ConfigureAwait(false);
             if (result.ExitCode != 0)
             {
                 _state = "failed";
                 _lastError = BuildProcessError("启动命令执行失败", result);
-                _events.PublishLauncherEvent(EventTypes.LauncherItemFailed, new { item.Id, item.Name, error = _lastError, failedAt = DateTimeOffset.UtcNow });
+                _events.PublishLauncherEvent(EventTypes.LauncherItemFailed,
+                    new { item.Id, item.Name, error = _lastError, failedAt = DateTimeOffset.UtcNow });
                 return LauncherActionResult.Rejected(CreateStatus(), "launcher_item_start_failed", _lastError);
             }
 
             _activeItem = item;
             _state = "running";
             await _window.MinimizeAsync(ct).ConfigureAwait(false);
-            _events.PublishLauncherEvent(EventTypes.LauncherMinimized, new { item.Id, item.Name, minimizedAt = DateTimeOffset.UtcNow });
+            _events.PublishLauncherEvent(EventTypes.LauncherMinimized,
+                new { item.Id, item.Name, minimizedAt = DateTimeOffset.UtcNow });
             return LauncherActionResult.Ok(CreateStatus());
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -111,7 +108,8 @@ public sealed class LauncherService : ILauncherService, IHostedService
             _state = "failed";
             _lastError = ex.Message;
             _logger.LogError(ex, "Launcher item start failed.");
-            _events.PublishLauncherEvent(EventTypes.LauncherItemFailed, new { itemId, error = _lastError, failedAt = DateTimeOffset.UtcNow });
+            _events.PublishLauncherEvent(EventTypes.LauncherItemFailed,
+                new { itemId, error = _lastError, failedAt = DateTimeOffset.UtcNow });
             return LauncherActionResult.Rejected(CreateStatus(), "launcher_item_start_failed", _lastError);
         }
         finally
@@ -126,14 +124,13 @@ public sealed class LauncherService : ILauncherService, IHostedService
         try
         {
             if (_activeItem is null)
-            {
                 return LauncherActionResult.Rejected(CreateStatus(), "launcher_item_not_active", "当前没有正在运行的启动项");
-            }
 
             var item = _activeItem;
             _state = "stopping";
             _lastError = null;
-            _events.PublishLauncherEvent(EventTypes.LauncherItemStopStarted, new { item.Id, item.Name, startedAt = DateTimeOffset.UtcNow });
+            _events.PublishLauncherEvent(EventTypes.LauncherItemStopStarted,
+                new { item.Id, item.Name, startedAt = DateTimeOffset.UtcNow });
 
             var workingDirectory = string.IsNullOrWhiteSpace(item.StopWorkingDirectory)
                 ? item.WorkingDirectory
@@ -143,13 +140,15 @@ public sealed class LauncherService : ILauncherService, IHostedService
             {
                 _state = "stop_failed";
                 _lastError = BuildProcessError("关闭命令执行失败", result);
-                _events.PublishLauncherEvent(EventTypes.LauncherItemStopFailed, new { item.Id, item.Name, error = _lastError, failedAt = DateTimeOffset.UtcNow });
+                _events.PublishLauncherEvent(EventTypes.LauncherItemStopFailed,
+                    new { item.Id, item.Name, error = _lastError, failedAt = DateTimeOffset.UtcNow });
                 return LauncherActionResult.Rejected(CreateStatus(), "launcher_item_stop_failed", _lastError);
             }
 
             _activeItem = null;
             _state = "idle";
-            _events.PublishLauncherEvent(EventTypes.LauncherItemStopCompleted, new { item.Id, item.Name, completedAt = DateTimeOffset.UtcNow });
+            _events.PublishLauncherEvent(EventTypes.LauncherItemStopCompleted,
+                new { item.Id, item.Name, completedAt = DateTimeOffset.UtcNow });
             await ShowAsync(ct).ConfigureAwait(false);
             return LauncherActionResult.Ok(CreateStatus());
         }
@@ -158,7 +157,8 @@ public sealed class LauncherService : ILauncherService, IHostedService
             _state = "stop_failed";
             _lastError = ex.Message;
             _logger.LogError(ex, "Launcher item stop failed.");
-            _events.PublishLauncherEvent(EventTypes.LauncherItemStopFailed, new { error = _lastError, failedAt = DateTimeOffset.UtcNow });
+            _events.PublishLauncherEvent(EventTypes.LauncherItemStopFailed,
+                new { error = _lastError, failedAt = DateTimeOffset.UtcNow });
             return LauncherActionResult.Rejected(CreateStatus(), "launcher_item_stop_failed", _lastError);
         }
         finally
@@ -167,22 +167,30 @@ public sealed class LauncherService : ILauncherService, IHostedService
         }
     }
 
-    private IReadOnlyList<LauncherItemRuntime> GetEnabledItems() => _options.CurrentValue.Items
-        .Where(item => item.Enabled)
-        .OrderBy(item => item.Order)
-        .Select(item => new LauncherItemRuntime(
-            item.Id ?? string.Empty,
-            item.Name ?? string.Empty,
-            item.Title ?? string.Empty,
-            item.Note,
-            item.IconPath,
-            item.CommandLine ?? string.Empty,
-            item.WorkingDirectory,
-            item.StopCommandLine ?? string.Empty,
-            item.StopWorkingDirectory,
-            item.Key ?? string.Empty,
-            item.Order))
-        .ToList();
+    internal LauncherOptions GetCurrentOptions()
+    {
+        return _options.CurrentValue;
+    }
+
+    private IReadOnlyList<LauncherItemRuntime> GetEnabledItems()
+    {
+        return _options.CurrentValue.Items
+            .Where(item => item.Enabled)
+            .OrderBy(item => item.Order)
+            .Select(item => new LauncherItemRuntime(
+                item.Id ?? string.Empty,
+                item.Name ?? string.Empty,
+                item.Title ?? string.Empty,
+                item.Note,
+                item.IconPath,
+                item.CommandLine ?? string.Empty,
+                item.WorkingDirectory,
+                item.StopCommandLine ?? string.Empty,
+                item.StopWorkingDirectory,
+                item.Key ?? string.Empty,
+                item.Order))
+            .ToList();
+    }
 
     private Task<ProcessResult> RunCommandAsync(string commandLine, string? workingDirectory, CancellationToken ct)
     {
@@ -192,13 +200,16 @@ public sealed class LauncherService : ILauncherService, IHostedService
         return _processRunner.RunAsync("cmd.exe", command, ct);
     }
 
-    private LauncherStatusDto CreateStatus() => new(
-        IsVisible: _window.IsVisible,
-        HasActiveItem: _activeItem is not null,
-        ActiveItemId: _activeItem?.Id,
-        ActiveItemName: _activeItem?.Name,
-        State: _state,
-        LastError: _lastError);
+    private LauncherStatusDto CreateStatus()
+    {
+        return new LauncherStatusDto(
+            _window.IsVisible,
+            _activeItem is not null,
+            _activeItem?.Id,
+            _activeItem?.Name,
+            _state,
+            _lastError);
+    }
 
     private static string BuildProcessError(string prefix, ProcessResult result)
     {

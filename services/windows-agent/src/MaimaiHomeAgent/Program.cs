@@ -1,8 +1,8 @@
 using System.Reflection;
 using MaimaiHomeAgent.Admin;
 using MaimaiHomeAgent.Audio;
-using MaimaiHomeAgent.Files;
 using MaimaiHomeAgent.Discovery;
+using MaimaiHomeAgent.Files;
 using MaimaiHomeAgent.Launcher;
 using MaimaiHomeAgent.Power;
 using MaimaiHomeAgent.Realtime;
@@ -32,12 +32,10 @@ try
     var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     {
         Args = args,
-        ContentRootPath = AppContext.BaseDirectory,
+        ContentRootPath = AppContext.BaseDirectory
     });
     if (!builder.Environment.IsEnvironment("Testing"))
-    {
-        builder.Configuration.AddJsonFile("appsettings.user.json", optional: true, reloadOnChange: true);
-    }
+        builder.Configuration.AddJsonFile("appsettings.user.json", true, true);
 
     var logPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -49,8 +47,8 @@ try
         // Serilog's default AssemblyFinder cannot scan files in single-file publish.
         // Pass the sink assemblies explicitly so ReadFrom.Configuration resolves them.
         var serilogOptions = new ConfigurationReaderOptions(
-            typeof(Serilog.ConsoleLoggerConfigurationExtensions).Assembly,
-            typeof(Serilog.FileLoggerConfigurationExtensions).Assembly);
+            typeof(ConsoleLoggerConfigurationExtensions).Assembly,
+            typeof(FileLoggerConfigurationExtensions).Assembly);
 
         configuration
             .ReadFrom.Configuration(context.Configuration, serilogOptions)
@@ -101,10 +99,7 @@ try
 
     var app = builder.Build();
 
-    if (app.Environment.IsDevelopment())
-    {
-        app.MapOpenApi();
-    }
+    if (app.Environment.IsDevelopment()) app.MapOpenApi();
 
     app.UseSerilogRequestLogging();
     app.UseDefaultFiles();
@@ -184,8 +179,8 @@ finally
 }
 
 /// <summary>
-/// Exposed for <see cref="Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory{TEntryPoint}"/>.
-/// Top-level statements generate an internal Program class by default; the test
-/// host needs a public surface to bind to.
+///     Exposed for <see cref="Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory{TEntryPoint}" />.
+///     Top-level statements generate an internal Program class by default; the test
+///     host needs a public surface to bind to.
 /// </summary>
 public partial class Program;

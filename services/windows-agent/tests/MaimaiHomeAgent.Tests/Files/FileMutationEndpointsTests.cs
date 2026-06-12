@@ -3,28 +3,26 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MaimaiHomeAgent.Files;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace MaimaiHomeAgent.Tests.Files.Mutation;
 
 /// <summary>
-/// Integration tests for the file mutation endpoints (upload / download /
-/// delete / rename / move). Boots the real <c>Program</c> through
-/// <see cref="WebApplicationFactory{TEntryPoint}"/> so request size limits,
-/// JSON binding, and the antiforgery toggles all match production.
+///     Integration tests for the file mutation endpoints (upload / download /
+///     delete / rename / move). Boots the real <c>Program</c> through
+///     <see cref="WebApplicationFactory{TEntryPoint}" /> so request size limits,
+///     JSON binding, and the antiforgery toggles all match production.
 /// </summary>
 [Collection("WafProgramTests")]
 public sealed class FileMutationEndpointsTests : IDisposable
 {
-    private readonly string _rootPath;
-    private readonly string _readOnlyRootPath;
-    private readonly TestAgentFactory _factory;
     private readonly HttpClient _client;
+    private readonly TestAgentFactory _factory;
+    private readonly string _readOnlyRootPath;
+    private readonly string _rootPath;
 
     public FileMutationEndpointsTests()
     {
@@ -58,10 +56,7 @@ public sealed class FileMutationEndpointsTests : IDisposable
     {
         try
         {
-            if (Directory.Exists(path))
-            {
-                Directory.Delete(path, recursive: true);
-            }
+            if (Directory.Exists(path)) Directory.Delete(path, true);
         }
         catch
         {
@@ -76,7 +71,7 @@ public sealed class FileMutationEndpointsTests : IDisposable
     [Fact]
     public async Task Upload_Success_Returns201()
     {
-        using var content = BuildUploadForm("test", "hello.txt", Encoding.UTF8.GetBytes("hello world"), overwrite: false);
+        using var content = BuildUploadForm("test", "hello.txt", Encoding.UTF8.GetBytes("hello world"), false);
 
         var response = await _client.PostAsync("/api/files/upload", content);
 
@@ -98,7 +93,7 @@ public sealed class FileMutationEndpointsTests : IDisposable
         var existing = Path.Combine(_rootPath, "existing.txt");
         await File.WriteAllTextAsync(existing, "original");
 
-        using var content = BuildUploadForm("test", "existing.txt", Encoding.UTF8.GetBytes("replacement"), overwrite: false);
+        using var content = BuildUploadForm("test", "existing.txt", Encoding.UTF8.GetBytes("replacement"), false);
 
         var response = await _client.PostAsync("/api/files/upload", content);
 
@@ -116,7 +111,7 @@ public sealed class FileMutationEndpointsTests : IDisposable
         var existing = Path.Combine(_rootPath, "to-overwrite.txt");
         await File.WriteAllTextAsync(existing, "old");
 
-        using var content = BuildUploadForm("test", "to-overwrite.txt", Encoding.UTF8.GetBytes("new bytes"), overwrite: true);
+        using var content = BuildUploadForm("test", "to-overwrite.txt", Encoding.UTF8.GetBytes("new bytes"), true);
 
         var response = await _client.PostAsync("/api/files/upload", content);
 
@@ -133,7 +128,7 @@ public sealed class FileMutationEndpointsTests : IDisposable
         // reader allocates anything. Allocating once on 64-bit is fine.
         var bytes = new byte[105L * 1024 * 1024];
 
-        using var content = BuildUploadForm("test", "huge.bin", bytes, overwrite: false);
+        using var content = BuildUploadForm("test", "huge.bin", bytes, false);
 
         var response = await _client.PostAsync("/api/files/upload", content);
 
@@ -146,7 +141,7 @@ public sealed class FileMutationEndpointsTests : IDisposable
     [Fact]
     public async Task Upload_PathTraversal_Returns403()
     {
-        using var content = BuildUploadForm("test", "../escape.txt", Encoding.UTF8.GetBytes("nope"), overwrite: false);
+        using var content = BuildUploadForm("test", "../escape.txt", Encoding.UTF8.GetBytes("nope"), false);
 
         var response = await _client.PostAsync("/api/files/upload", content);
 
@@ -158,7 +153,7 @@ public sealed class FileMutationEndpointsTests : IDisposable
     [Fact]
     public async Task Upload_ReadOnlyRoot_Returns403()
     {
-        using var content = BuildUploadForm("ro", "x.txt", Encoding.UTF8.GetBytes("nope"), overwrite: false);
+        using var content = BuildUploadForm("ro", "x.txt", Encoding.UTF8.GetBytes("nope"), false);
 
         var response = await _client.PostAsync("/api/files/upload", content);
 
@@ -498,7 +493,8 @@ public sealed class FileMutationEndpointsTests : IDisposable
     // Helpers
     // -------------------------------------------------------------------------
 
-    private static MultipartFormDataContent BuildUploadForm(string rootId, string path, byte[] fileBytes, bool overwrite)
+    private static MultipartFormDataContent BuildUploadForm(string rootId, string path, byte[] fileBytes,
+        bool overwrite)
     {
         // The implementation parses overwrite by case-insensitive string match
         // on "true". Send the value as a plain form field rather than relying
@@ -518,15 +514,15 @@ public sealed class FileMutationEndpointsTests : IDisposable
     {
         var request = new HttpRequestMessage(method, url)
         {
-            Content = JsonContent.Create(body),
+            Content = JsonContent.Create(body)
         };
         return await _client.SendAsync(request);
     }
 
     /// <summary>
-    /// WAF host with two roots: <c>test</c> (writable) and <c>ro</c>
-    /// (read-only) plus all hosted services stripped so tests don't open
-    /// sockets or pin STA threads.
+    ///     WAF host with two roots: <c>test</c> (writable) and <c>ro</c>
+    ///     (read-only) plus all hosted services stripped so tests don't open
+    ///     sockets or pin STA threads.
     /// </summary>
     private sealed class TestAgentFactory(string rootPath, string readOnlyRootPath) : WebApplicationFactory<Program>
     {
@@ -546,7 +542,7 @@ public sealed class FileMutationEndpointsTests : IDisposable
                     ["FileRoots:1:Id"] = "ro",
                     ["FileRoots:1:Name"] = "Read-Only Root",
                     ["FileRoots:1:Path"] = readOnlyRootPath,
-                    ["FileRoots:1:ReadOnly"] = "true",
+                    ["FileRoots:1:ReadOnly"] = "true"
                 });
             });
 
@@ -555,10 +551,7 @@ public sealed class FileMutationEndpointsTests : IDisposable
                 var hosted = services
                     .Where(d => d.ServiceType == typeof(IHostedService))
                     .ToList();
-                foreach (var d in hosted)
-                {
-                    services.Remove(d);
-                }
+                foreach (var d in hosted) services.Remove(d);
             });
         }
     }

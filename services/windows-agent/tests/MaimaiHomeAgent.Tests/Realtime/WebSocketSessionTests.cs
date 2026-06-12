@@ -1,16 +1,16 @@
+using System.IO.Pipelines;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using MaimaiHomeAgent.Realtime;
 using Microsoft.Extensions.Logging.Abstractions;
-using Xunit;
 
 namespace MaimaiHomeAgent.Tests.Realtime;
 
 /// <summary>
-/// Unit tests for <see cref="WebSocketSession"/>. Uses in-memory WebSocket
-/// pairs created via <see cref="WebSocket.CreateFromStream"/> over a duplex
-/// pipe so no network is required.
+///     Unit tests for <see cref="WebSocketSession" />. Uses in-memory WebSocket
+///     pairs created via <see cref="WebSocket.CreateFromStream" /> over a duplex
+///     pipe so no network is required.
 /// </summary>
 public class WebSocketSessionTests
 {
@@ -103,10 +103,7 @@ public class WebSocketSessionTests
         // Read all frames from the client side.
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var received = new List<string>();
-        for (int i = 0; i < count; i++)
-        {
-            received.Add(await ReadTextMessageAsync(clientWs, cts.Token));
-        }
+        for (var i = 0; i < count; i++) received.Add(await ReadTextMessageAsync(clientWs, cts.Token));
 
         Assert.Equal(count, received.Count);
         // All frames must be valid JSON with the expected type.
@@ -289,8 +286,8 @@ public class WebSocketSessionTests
 
     private static (WebSocket Server, WebSocket Client) CreateLinkedPair()
     {
-        var serverToClient = new System.IO.Pipelines.Pipe();
-        var clientToServer = new System.IO.Pipelines.Pipe();
+        var serverToClient = new Pipe();
+        var clientToServer = new Pipe();
         var serverStream = new DuplexStream(
             clientToServer.Reader.AsStream(),
             serverToClient.Writer.AsStream());
@@ -298,11 +295,11 @@ public class WebSocketSessionTests
             serverToClient.Reader.AsStream(),
             clientToServer.Writer.AsStream());
         var server = WebSocket.CreateFromStream(
-            serverStream, isServer: true, subProtocol: null,
-            keepAliveInterval: TimeSpan.FromMinutes(2));
+            serverStream, true, null,
+            TimeSpan.FromMinutes(2));
         var client = WebSocket.CreateFromStream(
-            clientStream, isServer: false, subProtocol: null,
-            keepAliveInterval: TimeSpan.FromMinutes(2));
+            clientStream, false, null,
+            TimeSpan.FromMinutes(2));
         return (server, client);
     }
 
@@ -325,33 +322,82 @@ public class WebSocketSessionTests
     {
         private readonly Stream _read;
         private readonly Stream _write;
-        public DuplexStream(Stream read, Stream write) { _read = read; _write = write; }
+
+        public DuplexStream(Stream read, Stream write)
+        {
+            _read = read;
+            _write = write;
+        }
+
         public override bool CanRead => true;
         public override bool CanWrite => true;
         public override bool CanSeek => false;
         public override long Length => throw new NotSupportedException();
+
         public override long Position
         {
             get => throw new NotSupportedException();
             set => throw new NotSupportedException();
         }
-        public override void Flush() => _write.Flush();
-        public override Task FlushAsync(CancellationToken ct) => _write.FlushAsync(ct);
-        public override int Read(byte[] buffer, int offset, int count) => _read.Read(buffer, offset, count);
+
+        public override void Flush()
+        {
+            _write.Flush();
+        }
+
+        public override Task FlushAsync(CancellationToken ct)
+        {
+            return _write.FlushAsync(ct);
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            return _read.Read(buffer, offset, count);
+        }
+
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct)
-            => _read.ReadAsync(buffer, offset, count, ct);
+        {
+            return _read.ReadAsync(buffer, offset, count, ct);
+        }
+
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
-            => _read.ReadAsync(buffer, ct);
-        public override void Write(byte[] buffer, int offset, int count) => _write.Write(buffer, offset, count);
+        {
+            return _read.ReadAsync(buffer, ct);
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            _write.Write(buffer, offset, count);
+        }
+
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken ct)
-            => _write.WriteAsync(buffer, offset, count, ct);
+        {
+            return _write.WriteAsync(buffer, offset, count, ct);
+        }
+
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ct = default)
-            => _write.WriteAsync(buffer, ct);
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-        public override void SetLength(long value) => throw new NotSupportedException();
+        {
+            return _write.WriteAsync(buffer, ct);
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException();
+        }
+
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException();
+        }
+
         protected override void Dispose(bool disposing)
         {
-            if (disposing) { _read.Dispose(); _write.Dispose(); }
+            if (disposing)
+            {
+                _read.Dispose();
+                _write.Dispose();
+            }
+
             base.Dispose(disposing);
         }
     }

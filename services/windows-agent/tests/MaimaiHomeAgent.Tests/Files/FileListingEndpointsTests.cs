@@ -1,27 +1,24 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MaimaiHomeAgent.Files;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace MaimaiHomeAgent.Tests.Files;
 
 /// <summary>
-/// Integration tests for <c>GET /api/file-roots</c> and <c>GET /api/files</c>.
-/// Boots the real Program via <see cref="WebApplicationFactory{TEntryPoint}"/>
-/// so the routing, DI, and JSON serializer pipeline match production exactly.
+///     Integration tests for <c>GET /api/file-roots</c> and <c>GET /api/files</c>.
+///     Boots the real Program via <see cref="WebApplicationFactory{TEntryPoint}" />
+///     so the routing, DI, and JSON serializer pipeline match production exactly.
 /// </summary>
 [Collection("WafProgramTests")]
 public sealed class FileListingEndpointsTests : IDisposable
 {
-    private readonly string _rootPath;
-    private readonly TestAgentFactory _factory;
     private readonly HttpClient _client;
+    private readonly TestAgentFactory _factory;
+    private readonly string _rootPath;
 
     public FileListingEndpointsTests()
     {
@@ -42,10 +39,7 @@ public sealed class FileListingEndpointsTests : IDisposable
         _factory.Dispose();
         try
         {
-            if (Directory.Exists(_rootPath))
-            {
-                Directory.Delete(_rootPath, recursive: true);
-            }
+            if (Directory.Exists(_rootPath)) Directory.Delete(_rootPath, true);
         }
         catch
         {
@@ -169,11 +163,9 @@ public sealed class FileListingEndpointsTests : IDisposable
         // Seed 600 files. Filesystem ops on TEMP are fast enough that this
         // stays well under the xunit per-test timeout.
         for (var i = 0; i < 600; i++)
-        {
             await File.WriteAllTextAsync(
                 Path.Combine(_rootPath, $"file-{i:D4}.bin"),
                 string.Empty);
-        }
 
         var response = await _client.GetAsync("/api/files?rootId=test&path=&limit=500");
 
@@ -242,11 +234,9 @@ public sealed class FileListingEndpointsTests : IDisposable
     public async Task GetFiles_OffsetPagination_ReturnsCorrectPage()
     {
         for (var i = 0; i < 50; i++)
-        {
             await File.WriteAllTextAsync(
                 Path.Combine(_rootPath, $"f-{i:D2}.txt"),
                 string.Empty);
-        }
 
         var response = await _client.GetAsync("/api/files?rootId=test&path=&offset=10&limit=5");
 
@@ -264,9 +254,9 @@ public sealed class FileListingEndpointsTests : IDisposable
     }
 
     /// <summary>
-    /// Test host that injects a single FileRoot pointing at a per-test temp
-    /// directory. WebApplicationFactory wires its own TestServer for
-    /// minimal-API hosts; we just layer overrides via <c>ConfigureWebHost</c>.
+    ///     Test host that injects a single FileRoot pointing at a per-test temp
+    ///     directory. WebApplicationFactory wires its own TestServer for
+    ///     minimal-API hosts; we just layer overrides via <c>ConfigureWebHost</c>.
     /// </summary>
     private sealed class TestAgentFactory(string rootPath) : WebApplicationFactory<Program>
     {
@@ -281,7 +271,7 @@ public sealed class FileListingEndpointsTests : IDisposable
                     ["FileRoots:0:Id"] = "test",
                     ["FileRoots:0:Name"] = "Test Root",
                     ["FileRoots:0:Path"] = rootPath,
-                    ["FileRoots:0:ReadOnly"] = "false",
+                    ["FileRoots:0:ReadOnly"] = "false"
                 });
             });
 
@@ -293,10 +283,7 @@ public sealed class FileListingEndpointsTests : IDisposable
                 var hosted = services
                     .Where(d => d.ServiceType == typeof(IHostedService))
                     .ToList();
-                foreach (var d in hosted)
-                {
-                    services.Remove(d);
-                }
+                foreach (var d in hosted) services.Remove(d);
             });
         }
     }
@@ -311,7 +298,7 @@ public sealed class FileListingEndpointsTests : IDisposable
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["FileRoots:0"] = rootPath,
+                    ["FileRoots:0"] = rootPath
                 });
             });
 
@@ -320,10 +307,7 @@ public sealed class FileListingEndpointsTests : IDisposable
                 var hosted = services
                     .Where(d => d.ServiceType == typeof(IHostedService))
                     .ToList();
-                foreach (var d in hosted)
-                {
-                    services.Remove(d);
-                }
+                foreach (var d in hosted) services.Remove(d);
             });
         }
     }
@@ -338,7 +322,7 @@ public sealed class FileListingEndpointsTests : IDisposable
             {
                 config.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["FileRoots:0"] = "*",
+                    ["FileRoots:0"] = "*"
                 });
             });
 
@@ -347,10 +331,7 @@ public sealed class FileListingEndpointsTests : IDisposable
                 var hosted = services
                     .Where(d => d.ServiceType == typeof(IHostedService))
                     .ToList();
-                foreach (var d in hosted)
-                {
-                    services.Remove(d);
-                }
+                foreach (var d in hosted) services.Remove(d);
             });
         }
     }

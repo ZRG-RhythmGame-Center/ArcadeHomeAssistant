@@ -5,7 +5,6 @@ using System.Text.Json;
 using MaimaiHomeAgent.Admin;
 using MaimaiHomeAgent.Launcher;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -73,7 +72,8 @@ public sealed class LauncherEndpointsTests : IAsyncLifetime
     public async Task Stop_WhenRejected_Returns409()
     {
         Authorize();
-        _launcher.StopResult = LauncherActionResult.Rejected(_launcher.GetStatus(), "launcher_item_not_active", "当前没有正在运行的启动项");
+        _launcher.StopResult =
+            LauncherActionResult.Rejected(_launcher.GetStatus(), "launcher_item_not_active", "当前没有正在运行的启动项");
 
         var response = await _client.PostAsync("/api/launcher/stop", null);
 
@@ -93,11 +93,20 @@ public sealed class LauncherEndpointsTests : IAsyncLifetime
 
         public LauncherActionResult? StopResult { get; set; }
 
-        public LauncherStatusDto GetStatus() => _status;
+        public LauncherStatusDto GetStatus()
+        {
+            return _status;
+        }
 
-        public Task<LauncherActionResult> ShowAsync(CancellationToken ct = default) => Task.FromResult(LauncherActionResult.Ok(_status));
+        public Task<LauncherActionResult> ShowAsync(CancellationToken ct = default)
+        {
+            return Task.FromResult(LauncherActionResult.Ok(_status));
+        }
 
-        public Task<LauncherActionResult> HideAsync(CancellationToken ct = default) => Task.FromResult(LauncherActionResult.Ok(_status));
+        public Task<LauncherActionResult> HideAsync(CancellationToken ct = default)
+        {
+            return Task.FromResult(LauncherActionResult.Ok(_status));
+        }
 
         public Task<LauncherActionResult> StartItemAsync(string itemId, CancellationToken ct = default)
         {
@@ -105,7 +114,9 @@ public sealed class LauncherEndpointsTests : IAsyncLifetime
             return Task.FromResult(LauncherActionResult.Ok(_status));
         }
 
-        public Task<LauncherActionResult> StopActiveItemAsync(CancellationToken ct = default) =>
-            Task.FromResult(StopResult ?? LauncherActionResult.Ok(_status));
+        public Task<LauncherActionResult> StopActiveItemAsync(CancellationToken ct = default)
+        {
+            return Task.FromResult(StopResult ?? LauncherActionResult.Ok(_status));
+        }
     }
 }

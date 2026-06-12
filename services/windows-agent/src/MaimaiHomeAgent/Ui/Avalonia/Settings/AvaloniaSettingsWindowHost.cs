@@ -1,15 +1,12 @@
-using Avalonia.Controls;
-using Avalonia.Threading;
 using MaimaiHomeAgent.Settings;
-using Microsoft.Extensions.Logging;
 
 namespace MaimaiHomeAgent.Ui.Avalonia.Settings;
 
 internal sealed class AvaloniaSettingsWindowHost : ISettingsWindowHost
 {
+    private readonly ILogger<AvaloniaSettingsWindowHost> _logger;
     private readonly IAgentSettingsService _settings;
     private readonly IAvaloniaUiThread _uiThread;
-    private readonly ILogger<AvaloniaSettingsWindowHost> _logger;
     private SettingsWindow? _window;
 
     public AvaloniaSettingsWindowHost(
@@ -22,18 +19,21 @@ internal sealed class AvaloniaSettingsWindowHost : ISettingsWindowHost
         _logger = logger;
     }
 
-    public Task ShowAsync(CancellationToken ct = default) => _uiThread.InvokeAsync(async () =>
+    public Task ShowAsync(CancellationToken ct = default)
     {
-        if (_window is not null)
+        return _uiThread.InvokeAsync(async () =>
         {
-            _window.Activate();
-            return;
-        }
+            if (_window is not null)
+            {
+                _window.Activate();
+                return;
+            }
 
-        var vm = new SettingsWindowViewModel(_settings, _logger);
-        await vm.LoadAsync(ct).ConfigureAwait(true);
-        _window = new SettingsWindow { DataContext = vm };
-        _window.Closed += (_, _) => _window = null;
-        _window.Show();
-    }, ct);
+            var vm = new SettingsWindowViewModel(_settings, _logger);
+            await vm.LoadAsync(ct).ConfigureAwait(true);
+            _window = new SettingsWindow { DataContext = vm };
+            _window.Closed += (_, _) => _window = null;
+            _window.Show();
+        }, ct);
+    }
 }

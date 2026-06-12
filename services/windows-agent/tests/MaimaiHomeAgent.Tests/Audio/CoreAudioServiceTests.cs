@@ -1,24 +1,22 @@
 using MaimaiHomeAgent.Audio;
 using Microsoft.Extensions.Logging.Abstractions;
-using Xunit;
 
 namespace MaimaiHomeAgent.Tests.Audio;
 
 /// <summary>
-/// Windows-only smoke tests for <see cref="CoreAudioService"/>. These tests
-/// exercise the real Core Audio COM stack and require a Windows machine with
-/// at least one audio device present.
-///
-/// Excluded from default <c>dotnet test</c> runs via the Integration trait;
-/// run explicitly with:
-///   dotnet test --filter "Category=Integration"
+///     Windows-only smoke tests for <see cref="CoreAudioService" />. These tests
+///     exercise the real Core Audio COM stack and require a Windows machine with
+///     at least one audio device present.
+///     Excluded from default <c>dotnet test</c> runs via the Integration trait;
+///     run explicitly with:
+///     dotnet test --filter "Category=Integration"
 /// </summary>
 [Trait("Category", "Integration")]
 [Trait("Category", "Windows")]
 public class CoreAudioServiceTests : IAsyncLifetime
 {
-    private CoreAudioService _service = null!;
     private AudioStaDispatcher _dispatcher = null!;
+    private CoreAudioService _service = null!;
 
     public async Task InitializeAsync()
     {
@@ -62,10 +60,8 @@ public class CoreAudioServiceTests : IAsyncLifetime
         var devices = await _service.ListDevicesAsync();
 
         foreach (var device in devices)
-        {
             Assert.False(string.IsNullOrWhiteSpace(device.Name),
                 $"Device {device.Id} has a null or empty name.");
-        }
     }
 
     [Fact]
@@ -73,10 +69,7 @@ public class CoreAudioServiceTests : IAsyncLifetime
     {
         var devices = await _service.ListDevicesAsync();
 
-        foreach (var device in devices)
-        {
-            Assert.NotEqual(Guid.Empty, device.Id);
-        }
+        foreach (var device in devices) Assert.NotEqual(Guid.Empty, device.Id);
     }
 
     [Fact]
@@ -96,28 +89,22 @@ public class CoreAudioServiceTests : IAsyncLifetime
         var devices = await _service.ListDevicesAsync();
 
         if (state.DefaultDeviceId is null)
-        {
             // No default device — list should have no default either.
             Assert.DoesNotContain(devices, d => d.IsDefault);
-        }
         else
-        {
             // The default device id from state must appear in the device list.
             Assert.Contains(devices, d => d.Id == state.DefaultDeviceId.Value);
-        }
     }
 
     [Fact]
     public async Task SetVolumeAsync_OutOfRange_ThrowsArgumentOutOfRangeException()
     {
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => _service.SetVolumeAsync(1.5));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => _service.SetVolumeAsync(1.5));
     }
 
     [Fact]
     public async Task SetVolumeAsync_NaN_ThrowsArgumentOutOfRangeException()
     {
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
-            () => _service.SetVolumeAsync(double.NaN));
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => _service.SetVolumeAsync(double.NaN));
     }
 }

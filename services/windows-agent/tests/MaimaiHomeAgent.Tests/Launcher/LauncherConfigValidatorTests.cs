@@ -12,9 +12,13 @@ public sealed class LauncherConfigValidatorTests
             NavigateLeftKey = "Left",
             NavigateRightKey = "Right",
             ConfirmKey = "Enter",
-            Items = new()
+            Items = new List<LauncherItemOptions>
             {
-                new LauncherItemOptions { Id = "mai", Name = "maimai", Title = "maimai", CommandLine = "echo mai", StopCommandLine = "echo stop", Key = "A", Enabled = true }
+                new()
+                {
+                    Id = "mai", Name = "maimai", Title = "maimai", CommandLine = "echo mai",
+                    StopCommandLine = "echo stop", Key = "A", Enabled = true
+                }
             }
         };
 
@@ -31,10 +35,18 @@ public sealed class LauncherConfigValidatorTests
             NavigateLeftKey = "Left",
             NavigateRightKey = "Right",
             ConfirmKey = "Enter",
-            Items = new()
+            Items = new List<LauncherItemOptions>
             {
-                new LauncherItemOptions { Id = "a", Name = "A", Title = "A", CommandLine = "echo a", StopCommandLine = "echo stop a", Key = "A", Enabled = true },
-                new LauncherItemOptions { Id = "b", Name = "B", Title = "B", CommandLine = "echo b", StopCommandLine = "echo stop b", Key = "a", Enabled = true }
+                new()
+                {
+                    Id = "a", Name = "A", Title = "A", CommandLine = "echo a", StopCommandLine = "echo stop a",
+                    Key = "A", Enabled = true
+                },
+                new()
+                {
+                    Id = "b", Name = "B", Title = "B", CommandLine = "echo b", StopCommandLine = "echo stop b",
+                    Key = "a", Enabled = true
+                }
             }
         };
 
@@ -51,10 +63,18 @@ public sealed class LauncherConfigValidatorTests
             NavigateLeftKey = "Left",
             NavigateRightKey = "Right",
             ConfirmKey = "Enter",
-            Items = new()
+            Items = new List<LauncherItemOptions>
             {
-                new LauncherItemOptions { Id = "a", Name = "A", Title = "A", CommandLine = "echo a", StopCommandLine = "echo stop a", Key = "A", Enabled = true },
-                new LauncherItemOptions { Id = "b", Name = "B", Title = "B", CommandLine = "echo b", StopCommandLine = "echo stop b", Key = "A", Enabled = false }
+                new()
+                {
+                    Id = "a", Name = "A", Title = "A", CommandLine = "echo a", StopCommandLine = "echo stop a",
+                    Key = "A", Enabled = true
+                },
+                new()
+                {
+                    Id = "b", Name = "B", Title = "B", CommandLine = "echo b", StopCommandLine = "echo stop b",
+                    Key = "A", Enabled = false
+                }
             }
         };
 
@@ -68,9 +88,9 @@ public sealed class LauncherConfigValidatorTests
     {
         var options = new LauncherOptions
         {
-            Items = new()
+            Items = new List<LauncherItemOptions>
             {
-                new LauncherItemOptions()
+                new()
             }
         };
 
@@ -90,7 +110,7 @@ public sealed class LauncherConfigValidatorTests
             NavigateLeftKey = "",
             NavigateRightKey = "",
             ConfirmKey = "",
-            Items = new()
+            Items = new List<LauncherItemOptions>()
         };
 
         var errors = LauncherConfigValidator.Validate(options);

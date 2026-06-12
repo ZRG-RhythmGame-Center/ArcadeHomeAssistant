@@ -4,20 +4,20 @@ using H.NotifyIcon.Core;
 namespace MaimaiHomeAgent.Tray;
 
 /// <summary>
-/// Production <see cref="ITrayIconHost"/> backed by H.NotifyIcon.Core.
-/// Must be created and used on the STA UI thread.
+///     Production <see cref="ITrayIconHost" /> backed by H.NotifyIcon.Core.
+///     Must be created and used on the STA UI thread.
 /// </summary>
 internal sealed class Win32TrayIconHost : ITrayIconHost
 {
     private readonly Func<bool> _getAutoStartEnabled;
+    private readonly Action _onExit;
     private readonly Func<Task> _onOpenLauncher;
     private readonly Func<Task> _onOpenSettings;
     private readonly Func<Task> _onToggleAutoStart;
-    private readonly Action _onExit;
-
-    private TrayIconWithContextMenu? _tray;
     private PopupMenuItem? _autoStartItem;
     private IntPtr _hIcon;
+
+    private TrayIconWithContextMenu? _tray;
 
     public Win32TrayIconHost(
         Func<bool> getAutoStartEnabled,
@@ -39,12 +39,12 @@ internal sealed class Win32TrayIconHost : ITrayIconHost
 
         var statusItem = new PopupMenuItem("状态: 运行中", (_, _) => { })
         {
-            Enabled = false,
+            Enabled = false
         };
 
         _autoStartItem = new PopupMenuItem("开机自启", async (_, _) => await _onToggleAutoStart())
         {
-            Checked = _getAutoStartEnabled(),
+            Checked = _getAutoStartEnabled()
         };
 
         var launcherItem = new PopupMenuItem("打开应用启动器", async (_, _) => await _onOpenLauncher());
@@ -62,27 +62,40 @@ internal sealed class Win32TrayIconHost : ITrayIconHost
         {
             Icon = _hIcon,
             ToolTip = "Maimai Home Agent",
-            ContextMenu = menu,
+            ContextMenu = menu
         };
         _tray.Create();
     }
 
     public void UpdateAutoStartChecked(bool enabled)
     {
-        if (_autoStartItem is not null)
-        {
-            _autoStartItem.Checked = enabled;
-        }
+        if (_autoStartItem is not null) _autoStartItem.Checked = enabled;
     }
 
     public void Dispose()
     {
-        try { _tray?.Dispose(); } catch { /* best-effort */ }
+        try
+        {
+            _tray?.Dispose();
+        }
+        catch
+        {
+            /* best-effort */
+        }
+
         _tray = null;
 
         if (_hIcon != IntPtr.Zero)
         {
-            try { DestroyIcon(_hIcon); } catch { /* best-effort */ }
+            try
+            {
+                DestroyIcon(_hIcon);
+            }
+            catch
+            {
+                /* best-effort */
+            }
+
             _hIcon = IntPtr.Zero;
         }
     }
@@ -100,11 +113,13 @@ internal sealed class Win32TrayIconHost : ITrayIconHost
                 LR_LOADFROMFILE | LR_DEFAULTSIZE);
             if (handle != IntPtr.Zero) return handle;
         }
+
         return LoadIconW(IntPtr.Zero, new IntPtr(32512 /* IDI_APPLICATION */));
     }
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern IntPtr LoadImageW(IntPtr hInst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
+    private static extern IntPtr LoadImageW(IntPtr hInst, string lpszName, uint uType, int cxDesired, int cyDesired,
+        uint fuLoad);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr LoadIconW(IntPtr hInstance, IntPtr lpIconName);
@@ -114,14 +129,15 @@ internal sealed class Win32TrayIconHost : ITrayIconHost
 }
 
 /// <summary>
-/// Production <see cref="IUiThreadPump"/> that runs a native Win32 message
-/// loop on a dedicated STA background thread. No WinForms dependency.
+///     Production <see cref="IUiThreadPump" /> that runs a native Win32 message
+///     loop on a dedicated STA background thread. No WinForms dependency.
 /// </summary>
 internal sealed class Win32MessagePump : IUiThreadPump
 {
-    private Thread? _uiThread;
+    private const uint WM_QUIT = 0x0012;
     private volatile bool _running;
     private uint _threadId;
+    private Thread? _uiThread;
 
     public void Start(Action onReady)
     {
@@ -143,7 +159,7 @@ internal sealed class Win32MessagePump : IUiThreadPump
         })
         {
             IsBackground = true,
-            Name = "MaimaiTrayUI",
+            Name = "MaimaiTrayUI"
         };
         _uiThread.SetApartmentState(ApartmentState.STA);
         _uiThread.Start();
@@ -160,10 +176,7 @@ internal sealed class Win32MessagePump : IUiThreadPump
     public void Stop()
     {
         _running = false;
-        if (_threadId != 0)
-        {
-            PostThreadMessageW(_threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
-        }
+        if (_threadId != 0) PostThreadMessageW(_threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
 
         if (_uiThread is not null)
         {
@@ -177,17 +190,27 @@ internal sealed class Win32MessagePump : IUiThreadPump
         while (_running)
         {
             var result = GetMessageW(out var msg, IntPtr.Zero, 0, 0);
-            if (result == 0 || result == -1)
-            {
-                break;
-            }
+            if (result == 0 || result == -1) break;
 
             TranslateMessage(ref msg);
             DispatchMessageW(ref msg);
         }
     }
 
-    private const uint WM_QUIT = 0x0012;
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetMessageW(out MSG lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
+
+    [DllImport("user32.dll")]
+    private static extern bool TranslateMessage(ref MSG lpMsg);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr DispatchMessageW(ref MSG lpMsg);
+
+    [DllImport("user32.dll")]
+    private static extern bool PostThreadMessageW(uint idThread, uint Msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
 
     [StructLayout(LayoutKind.Sequential)]
     private struct MSG
@@ -206,19 +229,4 @@ internal sealed class Win32MessagePump : IUiThreadPump
         public int x;
         public int y;
     }
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    private static extern int GetMessageW(out MSG lpMsg, IntPtr hWnd, uint wMsgFilterMin, uint wMsgFilterMax);
-
-    [DllImport("user32.dll")]
-    private static extern bool TranslateMessage(ref MSG lpMsg);
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    private static extern IntPtr DispatchMessageW(ref MSG lpMsg);
-
-    [DllImport("user32.dll")]
-    private static extern bool PostThreadMessageW(uint idThread, uint Msg, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("kernel32.dll")]
-    private static extern uint GetCurrentThreadId();
 }
