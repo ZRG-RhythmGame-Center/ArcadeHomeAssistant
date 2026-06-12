@@ -98,7 +98,7 @@ public sealed class SettingsEndpointsTests : IAsyncLifetime
         private readonly AgentSettingsSnapshot _settings = new(
             true,
             false,
-            new LauncherSettingsDto(false, 1080, 1920, Array.Empty<LauncherItemSettingsDto>()),
+            new LauncherSettingsDto(false, 1080, 1920, "Left", "Right", "Enter", Array.Empty<LauncherItemSettingsDto>()),
             Array.Empty<FileRootSettingsDto>(),
             new RemoteShutdownSettingsDto(false, null));
 

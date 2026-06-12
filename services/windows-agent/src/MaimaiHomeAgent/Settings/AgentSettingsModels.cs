@@ -22,6 +22,9 @@ public sealed record LauncherSettingsDto(
     bool ShowOnAgentStart,
     int CanvasWidth,
     int CanvasHeight,
+    string NavigateLeftKey,
+    string NavigateRightKey,
+    string ConfirmKey,
     IReadOnlyList<LauncherItemSettingsDto> Items)
 {
     public LauncherOptions ToOptions() => new()
@@ -29,10 +32,16 @@ public sealed record LauncherSettingsDto(
         ShowOnAgentStart = ShowOnAgentStart,
         CanvasWidth = CanvasWidth,
         CanvasHeight = CanvasHeight,
+        NavigateLeftKey = NavigateLeftKey,
+        NavigateRightKey = NavigateRightKey,
+        ConfirmKey = ConfirmKey,
         Items = Items.Select(item => new LauncherItemOptions
         {
             Id = item.Id,
             Name = item.Name,
+            Title = item.Title,
+            Note = item.Note,
+            IconPath = item.IconPath,
             CommandLine = item.CommandLine,
             WorkingDirectory = item.WorkingDirectory,
             StopCommandLine = item.StopCommandLine,
@@ -47,11 +56,17 @@ public sealed record LauncherSettingsDto(
         options.ShowOnAgentStart,
         options.CanvasWidth,
         options.CanvasHeight,
+        options.NavigateLeftKey ?? string.Empty,
+        options.NavigateRightKey ?? string.Empty,
+        options.ConfirmKey ?? string.Empty,
         options.Items
             .OrderBy(item => item.Order)
             .Select(item => new LauncherItemSettingsDto(
                 item.Id ?? string.Empty,
                 item.Name ?? string.Empty,
+                item.Title ?? string.Empty,
+                item.Note,
+                item.IconPath,
                 item.CommandLine ?? string.Empty,
                 item.WorkingDirectory,
                 item.StopCommandLine ?? string.Empty,
@@ -65,6 +80,9 @@ public sealed record LauncherSettingsDto(
 public sealed record LauncherItemSettingsDto(
     string Id,
     string Name,
+    string Title,
+    string? Note,
+    string? IconPath,
     string CommandLine,
     string? WorkingDirectory,
     string StopCommandLine,

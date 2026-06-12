@@ -164,12 +164,18 @@ public sealed class LauncherServiceTests
         public bool MinimizeCalled { get; private set; }
         public bool HideCalled { get; private set; }
         public IReadOnlyList<LauncherItemRuntime> LastItems { get; private set; } = Array.Empty<LauncherItemRuntime>();
+        public LauncherNavigationOptions? LastNavigation { get; private set; }
 
-        public Task ShowAsync(IReadOnlyList<LauncherItemRuntime> items, Func<string, CancellationToken, Task> onKeySelected, CancellationToken ct = default)
+        public Task ShowAsync(
+            IReadOnlyList<LauncherItemRuntime> items,
+            LauncherNavigationOptions navigation,
+            Func<string, CancellationToken, Task> onKeySelected,
+            CancellationToken ct = default)
         {
             ShowCalled = true;
             IsVisible = true;
             LastItems = items;
+            LastNavigation = navigation;
             return Task.CompletedTask;
         }
 

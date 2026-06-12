@@ -20,6 +20,9 @@ public sealed record LauncherActionResult(bool Accepted, LauncherStatusDto Statu
 public sealed record LauncherItemRuntime(
     string Id,
     string Name,
+    string Title,
+    string? Note,
+    string? IconPath,
     string CommandLine,
     string? WorkingDirectory,
     string StopCommandLine,

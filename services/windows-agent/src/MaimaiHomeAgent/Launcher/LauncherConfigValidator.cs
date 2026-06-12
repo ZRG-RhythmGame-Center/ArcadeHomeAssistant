@@ -17,6 +17,35 @@ public static class LauncherConfigValidator
             errors.Add(new LauncherConfigError("launcher_canvas_height_invalid", "启动选择器高度必须大于 0"));
         }
 
+        if (string.IsNullOrWhiteSpace(options.NavigateLeftKey))
+        {
+            errors.Add(new LauncherConfigError("launcher_navigate_left_key_required", "启动选择器左移按键不能为空"));
+        }
+
+        if (string.IsNullOrWhiteSpace(options.NavigateRightKey))
+        {
+            errors.Add(new LauncherConfigError("launcher_navigate_right_key_required", "启动选择器右移按键不能为空"));
+        }
+
+        if (string.IsNullOrWhiteSpace(options.ConfirmKey))
+        {
+            errors.Add(new LauncherConfigError("launcher_confirm_key_required", "启动选择器确认按键不能为空"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.NavigateLeftKey) &&
+            !string.IsNullOrWhiteSpace(options.NavigateRightKey) &&
+            string.Equals(options.NavigateLeftKey.Trim(), options.NavigateRightKey.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add(new LauncherConfigError("launcher_navigation_keys_conflict", "启动选择器左右移动按键不能相同"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.ConfirmKey) &&
+            (( !string.IsNullOrWhiteSpace(options.NavigateLeftKey) && string.Equals(options.ConfirmKey.Trim(), options.NavigateLeftKey.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+             ( !string.IsNullOrWhiteSpace(options.NavigateRightKey) && string.Equals(options.ConfirmKey.Trim(), options.NavigateRightKey.Trim(), StringComparison.OrdinalIgnoreCase))))
+        {
+            errors.Add(new LauncherConfigError("launcher_confirm_key_conflict", "启动选择器确认按键不能与移动按键相同"));
+        }
+
         var enabledKeys = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var item in options.Items)
         {
@@ -29,6 +58,11 @@ public static class LauncherConfigValidator
             if (string.IsNullOrWhiteSpace(item.Name))
             {
                 errors.Add(new LauncherConfigError("launcher_item_name_required", $"启动项 {label} 名称不能为空"));
+            }
+
+            if (string.IsNullOrWhiteSpace(item.Title))
+            {
+                errors.Add(new LauncherConfigError("launcher_item_title_required", $"启动项 {label} 标题不能为空"));
             }
 
             if (string.IsNullOrWhiteSpace(item.CommandLine))
@@ -61,6 +95,15 @@ public static class LauncherConfigValidator
                 if (!Directory.Exists(expanded))
                 {
                     errors.Add(new LauncherConfigError("launcher_item_stop_working_directory_missing", $"启动项 {label} 关闭工作目录不存在"));
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(item.IconPath))
+            {
+                var expanded = Environment.ExpandEnvironmentVariables(item.IconPath);
+                if (!File.Exists(expanded))
+                {
+                    errors.Add(new LauncherConfigError("launcher_item_icon_missing", $"启动项 {label} 图标文件不存在"));
                 }
             }
 

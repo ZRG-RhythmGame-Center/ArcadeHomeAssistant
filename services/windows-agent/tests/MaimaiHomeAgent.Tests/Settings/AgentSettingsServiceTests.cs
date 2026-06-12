@@ -62,10 +62,13 @@ public sealed class AgentSettingsServiceTests : IDisposable
             false,
             1080,
             1920,
+            "Left",
+            "Right",
+            "Enter",
             new[]
             {
-                new LauncherItemSettingsDto("a", "A", "echo a", null, "echo stop a", null, "A", 1, true),
-                new LauncherItemSettingsDto("b", "B", "echo b", null, "echo stop b", null, "a", 2, true)
+                new LauncherItemSettingsDto("a", "A", "Title A", null, null, "echo a", null, "echo stop a", null, "A", 1, true),
+                new LauncherItemSettingsDto("b", "B", "Title B", null, null, "echo b", null, "echo stop b", null, "a", 2, true)
             });
 
         var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(null, null, launcher, null, null));
@@ -84,7 +87,10 @@ public sealed class AgentSettingsServiceTests : IDisposable
             true,
             1080,
             1920,
-            new[] { new LauncherItemSettingsDto("mai", "maimai", "echo mai", null, "echo stop", null, "M", 1, true) });
+            "Left",
+            "Right",
+            "Enter",
+            new[] { new LauncherItemSettingsDto("mai", "maimai", "maimai", null, null, "echo mai", null, "echo stop", null, "M", 1, true) });
 
         var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(null, null, launcher, null, null));
 

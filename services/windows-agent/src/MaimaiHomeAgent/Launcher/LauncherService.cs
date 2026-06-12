@@ -44,10 +44,17 @@ public sealed class LauncherService : ILauncherService, IHostedService
 
     public LauncherStatusDto GetStatus() => CreateStatus();
 
+    internal LauncherOptions GetCurrentOptions() => _options.CurrentValue;
+
     public async Task<LauncherActionResult> ShowAsync(CancellationToken ct = default)
     {
         var items = GetEnabledItems();
-        await _window.ShowAsync(items, StartItemAsync, ct).ConfigureAwait(false);
+        var options = _options.CurrentValue;
+        var navigation = new LauncherNavigationOptions(
+            options.NavigateLeftKey ?? LauncherNavigationOptions.Default.NavigateLeftKey,
+            options.NavigateRightKey ?? LauncherNavigationOptions.Default.NavigateRightKey,
+            options.ConfirmKey ?? LauncherNavigationOptions.Default.ConfirmKey);
+        await _window.ShowAsync(items, navigation, StartItemAsync, ct).ConfigureAwait(false);
         _events.PublishLauncherEvent(EventTypes.LauncherShown, new { shownAt = DateTimeOffset.UtcNow });
         return LauncherActionResult.Ok(CreateStatus());
     }
@@ -166,6 +173,9 @@ public sealed class LauncherService : ILauncherService, IHostedService
         .Select(item => new LauncherItemRuntime(
             item.Id ?? string.Empty,
             item.Name ?? string.Empty,
+            item.Title ?? string.Empty,
+            item.Note,
+            item.IconPath,
             item.CommandLine ?? string.Empty,
             item.WorkingDirectory,
             item.StopCommandLine ?? string.Empty,

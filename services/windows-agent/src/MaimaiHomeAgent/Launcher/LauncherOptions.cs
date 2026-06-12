@@ -8,6 +8,12 @@ public sealed class LauncherOptions
 
     public int CanvasHeight { get; set; } = 1920;
 
+    public string? NavigateLeftKey { get; set; } = "Left";
+
+    public string? NavigateRightKey { get; set; } = "Right";
+
+    public string? ConfirmKey { get; set; } = "Enter";
+
     public List<LauncherItemOptions> Items { get; set; } = new();
 }
 
@@ -16,6 +22,12 @@ public sealed class LauncherItemOptions
     public string? Id { get; set; }
 
     public string? Name { get; set; }
+
+    public string? Title { get; set; }
+
+    public string? Note { get; set; }
+
+    public string? IconPath { get; set; }
 
     public string? CommandLine { get; set; }
 
