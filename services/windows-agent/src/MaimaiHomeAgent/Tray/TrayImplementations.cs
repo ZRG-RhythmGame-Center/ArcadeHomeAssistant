@@ -135,9 +135,11 @@ internal sealed class Win32TrayIconHost : ITrayIconHost
 internal sealed class Win32MessagePump : IUiThreadPump
 {
     private const int MOD_NOREPEAT = 0x4000;
+    private const uint WM_APP_REGISTER_STOP_HOTKEY = 0x8001;
     private const uint WM_QUIT = 0x0012;
     private const uint WM_HOTKEY = 0x0312;
     private const int StopHotKeyId = 0x4D48;
+    private int? _stopShortcutVirtualKey;
     private volatile bool _running;
     private Action? _onStopShortcut;
     private uint _threadId;
@@ -182,9 +184,10 @@ internal sealed class Win32MessagePump : IUiThreadPump
         _onStopShortcut = onStopShortcut;
         var virtualKey = ResolveVirtualKey(key);
         if (virtualKey is null) return;
+        _stopShortcutVirtualKey = virtualKey.Value;
         if (_threadId == 0) return;
 
-        RunOnUiThread(() => RegisterHotKey(IntPtr.Zero, StopHotKeyId, MOD_NOREPEAT, virtualKey.Value));
+        PostThreadMessageW(_threadId, WM_APP_REGISTER_STOP_HOTKEY, IntPtr.Zero, IntPtr.Zero);
     }
 
     public void Stop()
@@ -210,6 +213,13 @@ internal sealed class Win32MessagePump : IUiThreadPump
             if (msg.message == WM_HOTKEY && msg.wParam.ToInt32() == StopHotKeyId)
             {
                 ThreadPool.QueueUserWorkItem(_ => _onStopShortcut?.Invoke());
+                continue;
+            }
+
+            if (msg.message == WM_APP_REGISTER_STOP_HOTKEY && _stopShortcutVirtualKey is { } virtualKey)
+            {
+                UnregisterHotKey(IntPtr.Zero, StopHotKeyId);
+                RegisterHotKey(IntPtr.Zero, StopHotKeyId, MOD_NOREPEAT, virtualKey);
                 continue;
             }
 
