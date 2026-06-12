@@ -22,6 +22,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     private string? _remoteShutdownToken;
     private int _selectedCategoryIndex;
     private string? _statusMessage;
+    private string _stopKey = "F12";
 
     public SettingsWindowViewModel(IAgentSettingsService settings, ILogger logger)
     {
@@ -77,6 +78,12 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
         set => SetField(ref _confirmKey, value);
     }
 
+    public string StopKey
+    {
+        get => _stopKey;
+        set => SetField(ref _stopKey, value);
+    }
+
     public bool RemoteShutdownEnabled
     {
         get => _remoteShutdownEnabled;
@@ -118,6 +125,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
             NavigateLeftKey = snapshot.Launcher.NavigateLeftKey;
             NavigateRightKey = snapshot.Launcher.NavigateRightKey;
             ConfirmKey = snapshot.Launcher.ConfirmKey;
+            StopKey = snapshot.Launcher.StopKey;
             RemoteShutdownEnabled = snapshot.RemoteShutdown.Enabled;
             RemoteShutdownToken = snapshot.RemoteShutdown.ControlToken;
 
@@ -197,6 +205,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
             NavigateLeftKey,
             NavigateRightKey,
             ConfirmKey,
+            StopKey,
             LauncherItems.Select((item, index) => item.ToDto(index)).ToList());
 
         var fileRoots = FileRoots.Select(r => r.ToDto()).ToList();

@@ -25,6 +25,7 @@ public sealed record LauncherSettingsDto(
     string NavigateLeftKey,
     string NavigateRightKey,
     string ConfirmKey,
+    string StopKey,
     IReadOnlyList<LauncherItemSettingsDto> Items)
 {
     public LauncherOptions ToOptions()
@@ -37,6 +38,7 @@ public sealed record LauncherSettingsDto(
             NavigateLeftKey = NavigateLeftKey,
             NavigateRightKey = NavigateRightKey,
             ConfirmKey = ConfirmKey,
+            StopKey = StopKey,
             Items = Items.Select(item => new LauncherItemOptions
             {
                 Id = item.Id,
@@ -64,6 +66,7 @@ public sealed record LauncherSettingsDto(
             options.NavigateLeftKey ?? string.Empty,
             options.NavigateRightKey ?? string.Empty,
             options.ConfirmKey ?? string.Empty,
+            options.StopKey ?? string.Empty,
             options.Items
                 .OrderBy(item => item.Order)
                 .Select(item => new LauncherItemSettingsDto(

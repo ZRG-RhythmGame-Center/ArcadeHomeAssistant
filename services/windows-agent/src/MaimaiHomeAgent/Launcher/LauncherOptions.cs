@@ -14,6 +14,8 @@ public sealed class LauncherOptions
 
     public string? ConfirmKey { get; set; } = "Enter";
 
+    public string? StopKey { get; set; } = "F12";
+
     public List<LauncherItemOptions> Items { get; set; } = new();
 }
 

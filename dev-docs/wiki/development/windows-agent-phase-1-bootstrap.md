@@ -1,7 +1,7 @@
 # Windows Agent 阶段 1 启动骨架说明
 
 > 创建日期: 2026-05-28 15:27
-> 最后更新: 2026-06-12 19:21
+> 最后更新: 2026-06-12 22:28
 > 作者: Adsicmes
 > 状态: 草稿
 
@@ -137,11 +137,13 @@ Authorization: Bearer <Admin.Password>
 - `fileRoots`：文件根目录列表
 - `remoteShutdown`：远程关机配置
 
-`LauncherSettingsDto` 字段：`showOnAgentStart`、`canvasWidth`、`canvasHeight`、`navigateLeftKey`、`navigateRightKey`、`confirmKey`、`items`。
+`LauncherSettingsDto` 字段：`showOnAgentStart`、`canvasWidth`、`canvasHeight`、`navigateLeftKey`、`navigateRightKey`、`confirmKey`、`stopKey`、`items`。
 
 `LauncherItemSettingsDto` 字段：`id`、`name`、`title`、`note`、`iconPath`、`commandLine`、`workingDirectory`、`stopCommandLine`、`stopWorkingDirectory`、`key`、`order`、`enabled`。
 
-注意：`key` 是历史兼容字段，当前本机 Avalonia 设置窗口不再提供启动项独立按键编辑项，服务端也不再要求启动项按键必填或唯一。启动器交互以全局 `navigateLeftKey`、`navigateRightKey`、`confirmKey` 为准。
+注意：`key` 是历史兼容字段，当前本机 Avalonia 设置窗口不再提供启动项独立按键编辑项，服务端也不再要求启动项按键必填或唯一。启动器交互以全局 `navigateLeftKey`、`navigateRightKey`、`confirmKey`、`stopKey` 为准。
+
+`stopKey` 默认为 `F12`，是全局关闭快捷键，由托盘 Win32 消息泵注册。按下后调用当前启动项的关闭命令；关闭完成后启动器重新显示。启动器窗口中的左移、右移和确认键只在启动器窗口激活时生效。
 
 注意：`title` 是历史兼容字段，当前本机 Avalonia 设置窗口不再提供启动项标题编辑项，服务端也不再要求标题必填。启动器卡片展示 `name`。
 
@@ -385,6 +387,7 @@ dotnet tool install -g csharp-ls
 
 | 时间 | 作者 | 变更说明 |
 |------|------|----------|
+| 2026-06-12 22:28 | Maimai Dev | 记录全局关闭快捷键 `stopKey`，默认 `F12`，触发后关闭当前启动项并重新显示启动器。 |
 | 2026-06-12 19:21 | Maimai Dev | 记录启动项标题配置项已从 Avalonia 设置窗口移除，`title` 字段仅作为历史兼容字段保留，启动器卡片展示 `name`。 |
 | 2026-06-12 19:15 | Maimai Dev | 记录启动项独立按键配置项已从 Avalonia 设置窗口移除，`key` 字段仅作为历史兼容字段保留。 |
 | 2026-06-12 19:09 | Maimai Dev | 补充 Windows Agent 本机桌面 UI 迁移状态：设置窗口和启动器已迁移到 Avalonia，托盘消息循环改为原生 Win32，项目不再启用 WinForms；同步记录 Avalonia 依赖和验证结果。 |

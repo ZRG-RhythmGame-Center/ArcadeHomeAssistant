@@ -4,6 +4,7 @@ using MaimaiHomeAgent.Startup;
 using MaimaiHomeAgent.Tray;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace MaimaiHomeAgent.Tests.Tray;
@@ -49,6 +50,8 @@ public class TrayAppTests
         _pumpMock
             .Setup(p => p.RunOnUiThread(It.IsAny<Action>()))
             .Callback<Action>(action => action());
+        _pumpMock
+            .Setup(p => p.RegisterStopShortcut(It.IsAny<string>(), It.IsAny<Action>()));
 
         _hostMock.Setup(h => h.Create());
         _hostMock.Setup(h => h.UpdateAutoStartChecked(It.IsAny<bool>()));
@@ -59,6 +62,9 @@ public class TrayAppTests
         _launcherMock
             .Setup(l => l.ShowAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(LauncherActionResult.Ok(new LauncherStatusDto(false, false, null, null, "idle", null)));
+        _launcherMock
+            .Setup(l => l.StopActiveItemAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(LauncherActionResult.Ok(new LauncherStatusDto(true, false, null, null, "idle", null)));
 
         // IsEnabledAsync: return false (task not registered).
         _runnerMock
@@ -69,6 +75,7 @@ public class TrayAppTests
             _autoStart,
             _launcherMock.Object,
             _settingsWindowMock.Object,
+            new StaticOptionsMonitor<LauncherOptions>(new LauncherOptions()),
             _lifetimeMock.Object,
             NullLogger<TrayApp>.Instance,
             _hostMock.Object,
@@ -177,6 +184,14 @@ public class TrayAppTests
     }
 
     [Fact]
+    public async Task StartAsync_RegistersStopShortcut()
+    {
+        await _trayApp.StartAsync(CancellationToken.None);
+
+        _pumpMock.Verify(p => p.RegisterStopShortcut("F12", It.IsAny<Action>()), Times.Once);
+    }
+
+    [Fact]
     public async Task DisposeAsync_IsIdempotent()
     {
         await _trayApp.StartAsync(CancellationToken.None);
@@ -200,5 +215,25 @@ public class TrayAppTests
                   </Actions>
                 </Task>
                 """;
+    }
+
+    private sealed class StaticOptionsMonitor<T> : IOptionsMonitor<T>
+    {
+        public StaticOptionsMonitor(T value)
+        {
+            CurrentValue = value;
+        }
+
+        public T CurrentValue { get; }
+
+        public T Get(string? name)
+        {
+            return CurrentValue;
+        }
+
+        public IDisposable? OnChange(Action<T, string?> listener)
+        {
+            return null;
+        }
     }
 }

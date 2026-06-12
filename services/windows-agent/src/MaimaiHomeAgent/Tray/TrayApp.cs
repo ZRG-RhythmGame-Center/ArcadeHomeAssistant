@@ -1,6 +1,7 @@
 using MaimaiHomeAgent.Launcher;
 using MaimaiHomeAgent.Settings;
 using MaimaiHomeAgent.Startup;
+using Microsoft.Extensions.Options;
 
 namespace MaimaiHomeAgent.Tray;
 
@@ -18,6 +19,7 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
     private readonly ILauncherService _launcher;
     private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<TrayApp> _logger;
+    private readonly IOptionsMonitor<LauncherOptions> _launcherOptions;
     private readonly IUiThreadPump _pump;
     private readonly ISettingsWindowHost _settingsWindow;
 
@@ -28,12 +30,14 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
         AutoStartManager autoStart,
         ILauncherService launcher,
         ISettingsWindowHost settingsWindow,
+        IOptionsMonitor<LauncherOptions> launcherOptions,
         IHostApplicationLifetime lifetime,
         ILogger<TrayApp> logger)
     {
         _autoStart = autoStart;
         _launcher = launcher;
         _settingsWindow = settingsWindow;
+        _launcherOptions = launcherOptions;
         _lifetime = lifetime;
         _logger = logger;
         _pump = new Win32MessagePump();
@@ -52,6 +56,7 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
         AutoStartManager autoStart,
         ILauncherService launcher,
         ISettingsWindowHost settingsWindow,
+        IOptionsMonitor<LauncherOptions> launcherOptions,
         IHostApplicationLifetime lifetime,
         ILogger<TrayApp> logger,
         ITrayIconHost host,
@@ -60,6 +65,7 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
         _autoStart = autoStart;
         _launcher = launcher;
         _settingsWindow = settingsWindow;
+        _launcherOptions = launcherOptions;
         _lifetime = lifetime;
         _logger = logger;
         _host = host;
@@ -74,6 +80,8 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
     public Task StartAsync(CancellationToken cancellationToken)
     {
         _pump.Start(() => { _host.Create(); });
+        _pump.RegisterStopShortcut(_launcherOptions.CurrentValue.StopKey ?? LauncherNavigationOptions.Default.StopKey,
+            OnStopLauncherItemShortcut);
 
         return Task.CompletedTask;
     }
@@ -173,6 +181,25 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
         {
             _logger.LogError(ex, "Tray: opening launcher failed.");
         }
+    }
+
+    private void OnStopLauncherItemShortcut()
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var result = await _launcher.StopActiveItemAsync().ConfigureAwait(false);
+                if (!result.Accepted && result.Error == "launcher_item_not_active")
+                {
+                    await _launcher.ShowAsync().ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Tray: launcher stop shortcut failed.");
+            }
+        });
     }
 
     private void OnExit()

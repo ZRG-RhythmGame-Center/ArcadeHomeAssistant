@@ -63,6 +63,7 @@ public sealed class AgentSettingsServiceTests : IDisposable
             "Left",
             "Right",
             "Enter",
+            "F12",
             new[]
             {
                 new LauncherItemSettingsDto("a", "A", "Title A", null, null, "echo a", null, "echo stop a", null, "A",
@@ -89,6 +90,7 @@ public sealed class AgentSettingsServiceTests : IDisposable
             "Left",
             "Right",
             "Enter",
+            "F12",
             new[]
             {
                 new LauncherItemSettingsDto("mai", "maimai", "maimai", null, null, "echo mai", null, "echo stop", null,

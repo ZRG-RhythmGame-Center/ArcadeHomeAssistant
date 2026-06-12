@@ -22,6 +22,9 @@ public static class LauncherConfigValidator
         if (string.IsNullOrWhiteSpace(options.ConfirmKey))
             errors.Add(new LauncherConfigError("launcher_confirm_key_required", "启动选择器确认按键不能为空"));
 
+        if (string.IsNullOrWhiteSpace(options.StopKey))
+            errors.Add(new LauncherConfigError("launcher_stop_key_required", "启动选择器关闭快捷键不能为空"));
+
         if (!string.IsNullOrWhiteSpace(options.NavigateLeftKey) &&
             !string.IsNullOrWhiteSpace(options.NavigateRightKey) &&
             string.Equals(options.NavigateLeftKey.Trim(), options.NavigateRightKey.Trim(),
@@ -31,9 +34,18 @@ public static class LauncherConfigValidator
         if (!string.IsNullOrWhiteSpace(options.ConfirmKey) &&
             ((!string.IsNullOrWhiteSpace(options.NavigateLeftKey) && string.Equals(options.ConfirmKey.Trim(),
                  options.NavigateLeftKey.Trim(), StringComparison.OrdinalIgnoreCase)) ||
-             (!string.IsNullOrWhiteSpace(options.NavigateRightKey) && string.Equals(options.ConfirmKey.Trim(),
-                 options.NavigateRightKey.Trim(), StringComparison.OrdinalIgnoreCase))))
+              (!string.IsNullOrWhiteSpace(options.NavigateRightKey) && string.Equals(options.ConfirmKey.Trim(),
+                  options.NavigateRightKey.Trim(), StringComparison.OrdinalIgnoreCase))))
             errors.Add(new LauncherConfigError("launcher_confirm_key_conflict", "启动选择器确认按键不能与移动按键相同"));
+
+        if (!string.IsNullOrWhiteSpace(options.StopKey) &&
+            ((!string.IsNullOrWhiteSpace(options.NavigateLeftKey) && string.Equals(options.StopKey.Trim(),
+                 options.NavigateLeftKey.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+             (!string.IsNullOrWhiteSpace(options.NavigateRightKey) && string.Equals(options.StopKey.Trim(),
+                 options.NavigateRightKey.Trim(), StringComparison.OrdinalIgnoreCase)) ||
+             (!string.IsNullOrWhiteSpace(options.ConfirmKey) && string.Equals(options.StopKey.Trim(),
+                 options.ConfirmKey.Trim(), StringComparison.OrdinalIgnoreCase))))
+            errors.Add(new LauncherConfigError("launcher_stop_key_conflict", "启动选择器关闭快捷键不能与移动或确认按键相同"));
 
         foreach (var item in options.Items)
         {

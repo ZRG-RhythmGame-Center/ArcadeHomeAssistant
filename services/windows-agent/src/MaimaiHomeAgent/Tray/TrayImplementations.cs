@@ -134,8 +134,12 @@ internal sealed class Win32TrayIconHost : ITrayIconHost
 /// </summary>
 internal sealed class Win32MessagePump : IUiThreadPump
 {
+    private const int MOD_NOREPEAT = 0x4000;
     private const uint WM_QUIT = 0x0012;
+    private const uint WM_HOTKEY = 0x0312;
+    private const int StopHotKeyId = 0x4D48;
     private volatile bool _running;
+    private Action? _onStopShortcut;
     private uint _threadId;
     private Thread? _uiThread;
 
@@ -173,9 +177,20 @@ internal sealed class Win32MessagePump : IUiThreadPump
         ThreadPool.QueueUserWorkItem(_ => action());
     }
 
+    public void RegisterStopShortcut(string key, Action onStopShortcut)
+    {
+        _onStopShortcut = onStopShortcut;
+        var virtualKey = ResolveVirtualKey(key);
+        if (virtualKey is null) return;
+        if (_threadId == 0) return;
+
+        RunOnUiThread(() => RegisterHotKey(IntPtr.Zero, StopHotKeyId, MOD_NOREPEAT, virtualKey.Value));
+    }
+
     public void Stop()
     {
         _running = false;
+        if (_threadId != 0) UnregisterHotKey(IntPtr.Zero, StopHotKeyId);
         if (_threadId != 0) PostThreadMessageW(_threadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
 
         if (_uiThread is not null)
@@ -192,9 +207,38 @@ internal sealed class Win32MessagePump : IUiThreadPump
             var result = GetMessageW(out var msg, IntPtr.Zero, 0, 0);
             if (result == 0 || result == -1) break;
 
+            if (msg.message == WM_HOTKEY && msg.wParam.ToInt32() == StopHotKeyId)
+            {
+                ThreadPool.QueueUserWorkItem(_ => _onStopShortcut?.Invoke());
+                continue;
+            }
+
             TranslateMessage(ref msg);
             DispatchMessageW(ref msg);
         }
+    }
+
+    private static int? ResolveVirtualKey(string key)
+    {
+        return key.Trim().ToUpperInvariant() switch
+        {
+            "F1" => 0x70,
+            "F2" => 0x71,
+            "F3" => 0x72,
+            "F4" => 0x73,
+            "F5" => 0x74,
+            "F6" => 0x75,
+            "F7" => 0x76,
+            "F8" => 0x77,
+            "F9" => 0x78,
+            "F10" => 0x79,
+            "F11" => 0x7A,
+            "F12" => 0x7B,
+            "BACKSPACE" => 0x08,
+            "DELETE" => 0x2E,
+            "ESCAPE" => 0x1B,
+            _ => null
+        };
     }
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
@@ -211,6 +255,12 @@ internal sealed class Win32MessagePump : IUiThreadPump
 
     [DllImport("kernel32.dll")]
     private static extern uint GetCurrentThreadId();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool RegisterHotKey(IntPtr hWnd, int id, int fsModifiers, int vk);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct MSG

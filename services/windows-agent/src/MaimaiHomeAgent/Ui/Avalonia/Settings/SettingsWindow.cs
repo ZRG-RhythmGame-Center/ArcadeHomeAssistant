@@ -105,6 +105,7 @@ internal sealed class SettingsWindow : Window
         panel.Children.Add(LabeledTextBox("左移按键", vm.NavigateLeftKey, v => vm.NavigateLeftKey = v));
         panel.Children.Add(LabeledTextBox("右移按键", vm.NavigateRightKey, v => vm.NavigateRightKey = v));
         panel.Children.Add(LabeledTextBox("确认按键", vm.ConfirmKey, v => vm.ConfirmKey = v));
+        panel.Children.Add(LabeledTextBox("关闭快捷键", vm.StopKey, v => vm.StopKey = v));
         return panel;
     }
 

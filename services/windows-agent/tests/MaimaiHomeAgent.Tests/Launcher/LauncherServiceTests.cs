@@ -172,7 +172,7 @@ public sealed class LauncherServiceTests
         public Task ShowAsync(
             IReadOnlyList<LauncherItemRuntime> items,
             LauncherNavigationOptions navigation,
-            Func<string, CancellationToken, Task> onKeySelected,
+            Func<string, CancellationToken, Task<LauncherActionResult>> onKeySelected,
             CancellationToken ct = default)
         {
             ShowCalled = true;

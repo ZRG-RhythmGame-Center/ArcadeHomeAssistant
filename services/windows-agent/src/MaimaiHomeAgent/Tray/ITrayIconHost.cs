@@ -28,6 +28,9 @@ public interface IUiThreadPump
     /// <summary>Posts an action to run on the UI thread.</summary>
     void RunOnUiThread(Action action);
 
+    /// <summary>Registers the global shortcut used to stop the active launcher item.</summary>
+    void RegisterStopShortcut(string key, Action onStopShortcut);
+
     /// <summary>Stops the pump and joins the UI thread.</summary>
     void Stop();
 }

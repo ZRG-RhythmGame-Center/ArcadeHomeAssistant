@@ -110,6 +110,7 @@ public sealed class LauncherConfigValidatorTests
             NavigateLeftKey = "",
             NavigateRightKey = "",
             ConfirmKey = "",
+            StopKey = "",
             Items = new List<LauncherItemOptions>()
         };
 
@@ -118,5 +119,23 @@ public sealed class LauncherConfigValidatorTests
         Assert.Contains(errors, error => error.Error == "launcher_navigate_left_key_required");
         Assert.Contains(errors, error => error.Error == "launcher_navigate_right_key_required");
         Assert.Contains(errors, error => error.Error == "launcher_confirm_key_required");
+        Assert.Contains(errors, error => error.Error == "launcher_stop_key_required");
+    }
+
+    [Fact]
+    public void Validate_WithStopKeyConflict_ReturnsError()
+    {
+        var options = new LauncherOptions
+        {
+            NavigateLeftKey = "Left",
+            NavigateRightKey = "Right",
+            ConfirmKey = "Enter",
+            StopKey = "Enter",
+            Items = new List<LauncherItemOptions>()
+        };
+
+        var errors = LauncherConfigValidator.Validate(options);
+
+        Assert.Contains(errors, error => error.Error == "launcher_stop_key_conflict");
     }
 }

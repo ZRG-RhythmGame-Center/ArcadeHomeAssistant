@@ -28,7 +28,7 @@ internal sealed class AvaloniaLauncherWindowHost : ILauncherWindowHost
     public Task ShowAsync(
         IReadOnlyList<LauncherItemRuntime> items,
         LauncherNavigationOptions navigation,
-        Func<string, CancellationToken, Task> onKeySelected,
+        Func<string, CancellationToken, Task<LauncherActionResult>> onKeySelected,
         CancellationToken ct = default)
     {
         return _uiThread.InvokeAsync(() =>
@@ -50,7 +50,7 @@ internal sealed class AvaloniaLauncherWindowHost : ILauncherWindowHost
 
             _window.Show();
             _window.Activate();
-            _window.WindowState = WindowState.Maximized;
+            _window.WindowState = WindowState.FullScreen;
             _viewModel!.IsVisible = true;
             return Task.CompletedTask;
         }, ct);
@@ -81,12 +81,12 @@ internal sealed class AvaloniaLauncherWindowHost : ILauncherWindowHost
 internal sealed class LauncherWindowViewModel
 {
     private readonly ILogger _logger;
-    private Func<string, CancellationToken, Task> _onKeySelected;
+    private Func<string, CancellationToken, Task<LauncherActionResult>> _onKeySelected;
 
     public LauncherWindowViewModel(
         IReadOnlyList<LauncherItemRuntime> items,
         LauncherNavigationOptions navigation,
-        Func<string, CancellationToken, Task> onKeySelected,
+        Func<string, CancellationToken, Task<LauncherActionResult>> onKeySelected,
         ILogger logger)
     {
         Items = items;
@@ -98,11 +98,12 @@ internal sealed class LauncherWindowViewModel
     public bool IsVisible { get; set; }
     public int SelectedIndex { get; set; }
     public IReadOnlyList<LauncherItemRuntime> Items { get; private set; }
+    public string? StatusMessage { get; private set; }
 
     public LauncherNavigationOptions Navigation { get; private set; }
 
     public void Update(IReadOnlyList<LauncherItemRuntime> items, LauncherNavigationOptions navigation,
-        Func<string, CancellationToken, Task> onKeySelected)
+        Func<string, CancellationToken, Task<LauncherActionResult>> onKeySelected)
     {
         Items = items;
         Navigation = navigation;
@@ -113,12 +114,14 @@ internal sealed class LauncherWindowViewModel
     public void MoveLeft()
     {
         if (Items.Count == 0) return;
+        StatusMessage = null;
         SelectedIndex = (SelectedIndex - 1 + Items.Count) % Items.Count;
     }
 
     public void MoveRight()
     {
         if (Items.Count == 0) return;
+        StatusMessage = null;
         SelectedIndex = (SelectedIndex + 1) % Items.Count;
     }
 
@@ -128,11 +131,15 @@ internal sealed class LauncherWindowViewModel
         var item = Items[SelectedIndex];
         try
         {
-            await _onKeySelected(item.Id, CancellationToken.None).ConfigureAwait(false);
+            var result = await _onKeySelected(item.Id, CancellationToken.None).ConfigureAwait(false);
+            StatusMessage = result.Accepted
+                ? null
+                : result.Message ?? "无法启动当前启动项。";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Launcher confirm failed for {ItemId}.", item.Id);
+            StatusMessage = "启动失败，请查看日志。";
         }
     }
 
@@ -158,14 +165,14 @@ internal sealed class LauncherWindow : Window
     {
         _vm = vm;
         Title = "Maimai Launcher";
-        WindowState = WindowState.Maximized;
+        WindowState = WindowState.FullScreen;
         SystemDecorations = SystemDecorations.None;
         Background = Brushes.Black;
         Topmost = true;
         Content = BuildContent();
     }
 
-    protected override void OnKeyDown(KeyEventArgs e)
+    protected override async void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
 
@@ -195,7 +202,8 @@ internal sealed class LauncherWindow : Window
 
         if (_vm.MatchesKey(e.Key, _vm.Navigation.ConfirmKey))
         {
-            _ = _vm.ConfirmAsync();
+            await _vm.ConfirmAsync().ConfigureAwait(true);
+            RenderCards();
             e.Handled = true;
         }
     }
@@ -274,6 +282,17 @@ internal sealed class LauncherWindow : Window
         var cardHeight = 300 * designScale;
         var cardGap = 24 * designScale;
 
+        if (!string.IsNullOrWhiteSpace(_vm.StatusMessage))
+        {
+            var promptWidth = cardWidth * 1.2;
+            var promptHeight = cardHeight * 1.2;
+            var prompt = BuildPromptCard(_vm.StatusMessage, _vm.Navigation.StopKey, promptWidth, promptHeight);
+            Canvas.SetLeft(prompt, centerX - promptWidth / 2);
+            Canvas.SetTop(prompt, centerY - promptHeight / 2);
+            _cardsHost.Children.Add(prompt);
+            return;
+        }
+
         for (var i = 0; i < _vm.Items.Count; i++)
         {
             var relative = i - _vm.SelectedIndex;
@@ -339,6 +358,52 @@ internal sealed class LauncherWindow : Window
             }
         };
         return border;
+    }
+
+    private static Control BuildPromptCard(string message, string stopKey, double w, double h)
+    {
+        return new Border
+        {
+            Width = w,
+            Height = h,
+            Background = new SolidColorBrush(Color.FromRgb(255, 248, 220)),
+            BorderBrush = new SolidColorBrush(Color.FromRgb(255, 174, 0)),
+            BorderThickness = new Thickness(3),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(16),
+            Child = new StackPanel
+            {
+                VerticalAlignment = VerticalAlignment.Center,
+                Spacing = 12,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = "无法启动",
+                        FontWeight = FontWeight.Bold,
+                        FontSize = 18,
+                        Foreground = Brushes.Black,
+                        TextAlignment = TextAlignment.Center
+                    },
+                    new TextBlock
+                    {
+                        Text = message,
+                        FontSize = 13,
+                        Foreground = Brushes.Black,
+                        TextWrapping = TextWrapping.Wrap,
+                        TextAlignment = TextAlignment.Center
+                    },
+                    new TextBlock
+                    {
+                        Text = $"请先按 {stopKey} 关闭当前启动项",
+                        FontSize = 12,
+                        Foreground = Brushes.DimGray,
+                        TextWrapping = TextWrapping.Wrap,
+                        TextAlignment = TextAlignment.Center
+                    }
+                }
+            }
+        };
     }
 
     private static Control? LoadItemIcon(string? iconPath)

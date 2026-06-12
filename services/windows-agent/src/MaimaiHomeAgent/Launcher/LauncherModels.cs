@@ -43,7 +43,8 @@ public sealed record LauncherItemRuntime(
 public sealed record LauncherNavigationOptions(
     string NavigateLeftKey,
     string NavigateRightKey,
-    string ConfirmKey)
+    string ConfirmKey,
+    string StopKey)
 {
-    public static LauncherNavigationOptions Default { get; } = new("Left", "Right", "Enter");
+    public static LauncherNavigationOptions Default { get; } = new("Left", "Right", "Enter", "F12");
 }
