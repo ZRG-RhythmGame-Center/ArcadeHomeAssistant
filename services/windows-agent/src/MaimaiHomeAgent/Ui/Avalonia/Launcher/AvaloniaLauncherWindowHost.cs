@@ -240,15 +240,15 @@ internal sealed class LauncherWindow : Window
         };
         _contentArea = contentArea;
 
-        // Load background reference image at 20% opacity
-        var bgImage = LoadReferenceImage();
+        // Load background: user wallpaper at full opacity, fallback to built-in reference at 20%
+        var (bgImage, bgOpacity) = LoadBackgroundImage(_vm.Navigation.BackgroundImagePath);
         if (bgImage is not null)
         {
             var bg = new Image
             {
                 Source = bgImage,
                 Stretch = Stretch.Uniform,
-                Opacity = 0.2
+                Opacity = bgOpacity
             };
             contentArea.Children.Add(bg);
         }
@@ -441,17 +441,35 @@ internal sealed class LauncherWindow : Window
         }
     }
 
-    private static Bitmap? LoadReferenceImage()
+    private static (Bitmap? Image, double Opacity) LoadBackgroundImage(string? userPath)
     {
+        // Try user-configured wallpaper first (full opacity)
+        if (!string.IsNullOrWhiteSpace(userPath))
+        {
+            var expanded = Environment.ExpandEnvironmentVariables(userPath);
+            if (File.Exists(expanded))
+            {
+                try
+                {
+                    return (new Bitmap(expanded), 1.0);
+                }
+                catch
+                {
+                    /* fall through to built-in */
+                }
+            }
+        }
+
+        // Fallback to built-in reference image at 20% opacity
         var path = Path.Combine(AppContext.BaseDirectory, "Resources", "GameScreenshot.jpg");
-        if (!File.Exists(path)) return null;
+        if (!File.Exists(path)) return (null, 0);
         try
         {
-            return new Bitmap(path);
+            return (new Bitmap(path), 0.2);
         }
         catch
         {
-            return null;
+            return (null, 0);
         }
     }
 }

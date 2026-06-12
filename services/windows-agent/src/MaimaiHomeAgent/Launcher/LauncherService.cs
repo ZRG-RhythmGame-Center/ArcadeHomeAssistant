@@ -54,7 +54,8 @@ public sealed class LauncherService : ILauncherService, IHostedService
             options.NavigateLeftKey ?? LauncherNavigationOptions.Default.NavigateLeftKey,
             options.NavigateRightKey ?? LauncherNavigationOptions.Default.NavigateRightKey,
             options.ConfirmKey ?? LauncherNavigationOptions.Default.ConfirmKey,
-            options.StopKey ?? LauncherNavigationOptions.Default.StopKey);
+            options.StopKey ?? LauncherNavigationOptions.Default.StopKey,
+            options.BackgroundImagePath);
         await _window.ShowAsync(items, navigation, StartItemAsync, ct).ConfigureAwait(false);
         _events.PublishLauncherEvent(EventTypes.LauncherShown, new { shownAt = DateTimeOffset.UtcNow });
         return LauncherActionResult.Ok(CreateStatus());

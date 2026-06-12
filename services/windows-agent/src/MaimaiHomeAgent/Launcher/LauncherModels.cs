@@ -44,7 +44,8 @@ public sealed record LauncherNavigationOptions(
     string NavigateLeftKey,
     string NavigateRightKey,
     string ConfirmKey,
-    string StopKey)
+    string StopKey,
+    string? BackgroundImagePath)
 {
-    public static LauncherNavigationOptions Default { get; } = new("Left", "Right", "Enter", "F11");
+    public static LauncherNavigationOptions Default { get; } = new("Left", "Right", "Enter", "F11", null);
 }

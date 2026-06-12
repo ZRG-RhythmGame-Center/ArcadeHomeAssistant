@@ -8,6 +8,8 @@ public sealed class LauncherOptions
 
     public int CanvasHeight { get; set; } = 1920;
 
+    public string? BackgroundImagePath { get; set; }
+
     public string? NavigateLeftKey { get; set; } = "Left";
 
     public string? NavigateRightKey { get; set; } = "Right";

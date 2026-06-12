@@ -13,6 +13,13 @@ public static class LauncherConfigValidator
         if (options.CanvasHeight <= 0)
             errors.Add(new LauncherConfigError("launcher_canvas_height_invalid", "启动选择器高度必须大于 0"));
 
+        if (!string.IsNullOrWhiteSpace(options.BackgroundImagePath))
+        {
+            var expanded = Environment.ExpandEnvironmentVariables(options.BackgroundImagePath);
+            if (!File.Exists(expanded))
+                errors.Add(new LauncherConfigError("launcher_background_image_missing", "启动器壁纸文件不存在"));
+        }
+
         if (string.IsNullOrWhiteSpace(options.NavigateLeftKey))
             errors.Add(new LauncherConfigError("launcher_navigate_left_key_required", "启动选择器左移按键不能为空"));
 

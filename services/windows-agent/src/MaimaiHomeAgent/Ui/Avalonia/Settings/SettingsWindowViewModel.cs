@@ -12,6 +12,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
 
     private string? _adminPassword;
     private bool _autoStartEnabled;
+    private string? _backgroundImagePath;
     private int _canvasHeight = 1920;
     private int _canvasWidth = 1080;
     private string _confirmKey = "Enter";
@@ -46,6 +47,12 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     {
         get => _launcherShowOnStart;
         set => SetField(ref _launcherShowOnStart, value);
+    }
+
+    public string? BackgroundImagePath
+    {
+        get => _backgroundImagePath;
+        set => SetField(ref _backgroundImagePath, value);
     }
 
     public int CanvasWidth
@@ -122,6 +129,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
             LauncherShowOnStart = snapshot.Launcher.ShowOnAgentStart;
             CanvasWidth = snapshot.Launcher.CanvasWidth;
             CanvasHeight = snapshot.Launcher.CanvasHeight;
+            BackgroundImagePath = snapshot.Launcher.BackgroundImagePath;
             NavigateLeftKey = snapshot.Launcher.NavigateLeftKey;
             NavigateRightKey = snapshot.Launcher.NavigateRightKey;
             ConfirmKey = snapshot.Launcher.ConfirmKey;
@@ -202,6 +210,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
             LauncherShowOnStart,
             CanvasWidth,
             CanvasHeight,
+            BackgroundImagePath,
             NavigateLeftKey,
             NavigateRightKey,
             ConfirmKey,

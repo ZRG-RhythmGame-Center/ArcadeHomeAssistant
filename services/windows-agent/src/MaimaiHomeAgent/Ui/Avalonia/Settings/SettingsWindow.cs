@@ -102,6 +102,7 @@ internal sealed class SettingsWindow : Window
             v => vm.LauncherShowOnStart = v));
         panel.Children.Add(LabeledNumberBox("画布宽度", vm.CanvasWidth, v => vm.CanvasWidth = v));
         panel.Children.Add(LabeledNumberBox("画布高度", vm.CanvasHeight, v => vm.CanvasHeight = v));
+        panel.Children.Add(LabeledTextBox("启动器壁纸路径", vm.BackgroundImagePath ?? "", v => vm.BackgroundImagePath = v));
         panel.Children.Add(LabeledTextBox("左移按键", vm.NavigateLeftKey, v => vm.NavigateLeftKey = v));
         panel.Children.Add(LabeledTextBox("右移按键", vm.NavigateRightKey, v => vm.NavigateRightKey = v));
         panel.Children.Add(LabeledTextBox("确认按键", vm.ConfirmKey, v => vm.ConfirmKey = v));
