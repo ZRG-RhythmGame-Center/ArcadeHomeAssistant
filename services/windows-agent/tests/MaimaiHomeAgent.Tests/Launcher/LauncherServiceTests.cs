@@ -22,6 +22,20 @@ public sealed class LauncherServiceTests
     }
 
     [Fact]
+    public async Task HideAsync_HidesWindow()
+    {
+        var window = new FakeLauncherWindowHost();
+        var service = CreateService(window: window);
+        await service.ShowAsync();
+
+        var result = await service.HideAsync();
+
+        Assert.True(result.Accepted);
+        Assert.True(window.HideCalled);
+        Assert.False(result.Status.IsVisible);
+    }
+
+    [Fact]
     public async Task StartItemAsync_WithKnownItem_RunsStartCommandAndMinimizesWindow()
     {
         var runner = new FakeProcessRunner();
@@ -148,6 +162,7 @@ public sealed class LauncherServiceTests
         public bool IsVisible { get; private set; }
         public bool ShowCalled { get; private set; }
         public bool MinimizeCalled { get; private set; }
+        public bool HideCalled { get; private set; }
         public IReadOnlyList<LauncherItemRuntime> LastItems { get; private set; } = Array.Empty<LauncherItemRuntime>();
 
         public Task ShowAsync(IReadOnlyList<LauncherItemRuntime> items, Func<string, CancellationToken, Task> onKeySelected, CancellationToken ct = default)
@@ -161,6 +176,13 @@ public sealed class LauncherServiceTests
         public Task MinimizeAsync(CancellationToken ct = default)
         {
             MinimizeCalled = true;
+            IsVisible = false;
+            return Task.CompletedTask;
+        }
+
+        public Task HideAsync(CancellationToken ct = default)
+        {
+            HideCalled = true;
             IsVisible = false;
             return Task.CompletedTask;
         }

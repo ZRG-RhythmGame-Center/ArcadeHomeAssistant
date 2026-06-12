@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.Windows.Forms;
 using MaimaiHomeAgent.Ui;
 using Microsoft.Extensions.Logging;
@@ -7,12 +8,15 @@ namespace MaimaiHomeAgent.Launcher;
 
 internal sealed class WinFormsLauncherWindowHost : ILauncherWindowHost
 {
+    private const float PortraitAspectRatio = 9f / 16f;
     private readonly ILogger<WinFormsLauncherWindowHost> _logger;
     private readonly IWinFormsUiThread _uiThread;
     private Form? _form;
+    private PictureBox? _backgroundPicture;
     private IReadOnlyList<LauncherItemRuntime> _items = Array.Empty<LauncherItemRuntime>();
     private Func<string, CancellationToken, Task>? _onKeySelected;
     private bool _isVisible;
+    private Panel? _contentPanel;
 
     public WinFormsLauncherWindowHost(
         IWinFormsUiThread uiThread,
@@ -54,6 +58,17 @@ internal sealed class WinFormsLauncherWindowHost : ILauncherWindowHost
         return Task.CompletedTask;
     }, ct);
 
+    public Task HideAsync(CancellationToken ct = default) => _uiThread.InvokeAsync(() =>
+    {
+        if (_form is { IsDisposed: false })
+        {
+            _form.Hide();
+        }
+
+        _isVisible = false;
+        return Task.CompletedTask;
+    }, ct);
+
     private Form CreateForm()
     {
         var form = new Form
@@ -69,52 +84,78 @@ internal sealed class WinFormsLauncherWindowHost : ILauncherWindowHost
         };
         form.Bounds = Screen.PrimaryScreen?.Bounds ?? new Rectangle(0, 0, 1080, 1920);
         form.FormClosed += (_, _) => _isVisible = false;
-        form.KeyDown += async (_, e) => await HandleKeyAsync(e.KeyCode.ToString());
+        form.Resize += (_, _) => UpdateContentBounds();
+        form.KeyDown += async (_, e) =>
+        {
+            if (e.KeyCode == Keys.Escape)
+            {
+                e.Handled = true;
+                await HideAsync().ConfigureAwait(true);
+                return;
+            }
+
+            await HandleKeyAsync(e.KeyCode.ToString());
+        };
+
+        _contentPanel = new Panel
+        {
+            BackColor = Color.FromArgb(24, 24, 24)
+        };
+
+        _backgroundPicture = new PictureBox
+        {
+            Dock = DockStyle.Fill,
+            BackColor = Color.Black,
+            SizeMode = PictureBoxSizeMode.Zoom,
+            Image = LoadReferenceImage()
+        };
+        _contentPanel.Controls.Add(_backgroundPicture);
+        form.Controls.Add(_contentPanel);
+        UpdateContentBounds();
         return form;
     }
 
     private void RenderItems()
     {
-        if (_form is null)
+        if (_form is null || _contentPanel is null)
         {
             return;
         }
 
-        _form.Controls.Clear();
-        var panel = new FlowLayoutPanel
+        _contentPanel.Controls.Clear();
+        if (_backgroundPicture is not null)
         {
-            Dock = DockStyle.Bottom,
-            Height = Math.Max(320, _form.Height / 2),
-            FlowDirection = FlowDirection.TopDown,
-            WrapContents = false,
-            Padding = new Padding(48),
-            BackColor = Color.FromArgb(24, 24, 24),
-            AutoScroll = true
-        };
-
-        if (_items.Count == 0)
-        {
-            panel.Controls.Add(CreateLabel("暂无启动项", 32));
+            _contentPanel.Controls.Add(_backgroundPicture);
+            _backgroundPicture.SendToBack();
         }
-        else
-        {
-            foreach (var item in _items)
-            {
-                panel.Controls.Add(CreateLabel($"[{item.Key}] {item.Name}", 30));
-            }
-        }
-
-        _form.Controls.Add(panel);
     }
 
-    private static Label CreateLabel(string text, int size) => new()
+    private void UpdateContentBounds()
     {
-        AutoSize = true,
-        ForeColor = Color.White,
-        Font = new Font("Microsoft YaHei UI", size, FontStyle.Bold),
-        Margin = new Padding(0, 12, 0, 12),
-        Text = text
-    };
+        if (_form is null || _contentPanel is null)
+        {
+            return;
+        }
+
+        var screenWidth = _form.ClientSize.Width;
+        var screenHeight = _form.ClientSize.Height;
+        if (screenWidth <= 0 || screenHeight <= 0)
+        {
+            return;
+        }
+
+        var maxHeight = screenHeight;
+        var contentWidth = (int)MathF.Round(maxHeight * PortraitAspectRatio);
+        if (contentWidth > screenWidth)
+        {
+            contentWidth = screenWidth;
+            maxHeight = (int)MathF.Floor(contentWidth / PortraitAspectRatio);
+        }
+
+        var x = (screenWidth - contentWidth) / 2;
+        var y = (screenHeight - maxHeight) / 2;
+        _contentPanel.Bounds = new Rectangle(x, y, contentWidth, maxHeight);
+    }
 
     private async Task HandleKeyAsync(string key)
     {
@@ -132,5 +173,34 @@ internal sealed class WinFormsLauncherWindowHost : ILauncherWindowHost
         {
             _logger.LogError(ex, "Launcher key handler failed for {ItemId}.", item.Id);
         }
+    }
+
+    private static Image? LoadReferenceImage()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Resources", "GameScreenshot.jpg");
+        if (!File.Exists(path))
+        {
+            return null;
+        }
+
+        using var source = Image.FromFile(path);
+        var bitmap = new Bitmap(source.Width, source.Height);
+        using var graphics = Graphics.FromImage(bitmap);
+        using var attributes = new ImageAttributes();
+        var matrix = new ColorMatrix
+        {
+            Matrix33 = 0.2f
+        };
+        attributes.SetColorMatrix(matrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+        graphics.DrawImage(
+            source,
+            new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+            0,
+            0,
+            source.Width,
+            source.Height,
+            GraphicsUnit.Pixel,
+            attributes);
+        return bitmap;
     }
 }

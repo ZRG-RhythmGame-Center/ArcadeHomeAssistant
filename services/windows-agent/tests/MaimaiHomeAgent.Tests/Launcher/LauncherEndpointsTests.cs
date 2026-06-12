@@ -97,6 +97,8 @@ public sealed class LauncherEndpointsTests : IAsyncLifetime
 
         public Task<LauncherActionResult> ShowAsync(CancellationToken ct = default) => Task.FromResult(LauncherActionResult.Ok(_status));
 
+        public Task<LauncherActionResult> HideAsync(CancellationToken ct = default) => Task.FromResult(LauncherActionResult.Ok(_status));
+
         public Task<LauncherActionResult> StartItemAsync(string itemId, CancellationToken ct = default)
         {
             StartedItemId = itemId;

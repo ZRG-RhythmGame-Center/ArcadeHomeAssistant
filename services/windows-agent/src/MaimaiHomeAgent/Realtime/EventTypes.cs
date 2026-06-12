@@ -18,6 +18,7 @@ public static class EventTypes
     public const string PowerShutdownFailed = "power.shutdown.failed";
     public const string SettingsUpdated = "settings.updated";
     public const string LauncherShown = "launcher.shown";
+    public const string LauncherHidden = "launcher.hidden";
     public const string LauncherMinimized = "launcher.minimized";
     public const string LauncherItemStarted = "launcher.item.started";
     public const string LauncherItemFailed = "launcher.item.failed";

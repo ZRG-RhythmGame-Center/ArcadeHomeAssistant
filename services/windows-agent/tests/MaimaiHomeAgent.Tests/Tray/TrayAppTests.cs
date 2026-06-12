@@ -1,4 +1,5 @@
 using MaimaiHomeAgent.Startup;
+using MaimaiHomeAgent.Launcher;
 using MaimaiHomeAgent.Settings;
 using MaimaiHomeAgent.Tray;
 using Microsoft.Extensions.Hosting;
@@ -20,6 +21,7 @@ public class TrayAppTests
     private readonly Mock<ITrayIconHost> _hostMock;
     private readonly Mock<IUiThreadPump> _pumpMock;
     private readonly Mock<IProcessRunner> _runnerMock;
+    private readonly Mock<ILauncherService> _launcherMock;
     private readonly Mock<ISettingsWindowHost> _settingsWindowMock;
     private readonly Mock<IHostApplicationLifetime> _lifetimeMock;
     private readonly AutoStartManager _autoStart;
@@ -30,6 +32,7 @@ public class TrayAppTests
         _hostMock = new Mock<ITrayIconHost>(MockBehavior.Strict);
         _pumpMock = new Mock<IUiThreadPump>(MockBehavior.Strict);
         _runnerMock = new Mock<IProcessRunner>(MockBehavior.Loose);
+        _launcherMock = new Mock<ILauncherService>(MockBehavior.Strict);
         _settingsWindowMock = new Mock<ISettingsWindowHost>(MockBehavior.Strict);
         _lifetimeMock = new Mock<IHostApplicationLifetime>(MockBehavior.Loose);
 
@@ -55,6 +58,9 @@ public class TrayAppTests
         _settingsWindowMock
             .Setup(w => w.ShowAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
+        _launcherMock
+            .Setup(l => l.ShowAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(LauncherActionResult.Ok(new LauncherStatusDto(false, false, null, null, "idle", null)));
 
         // IsEnabledAsync: return false (task not registered).
         _runnerMock
@@ -63,6 +69,7 @@ public class TrayAppTests
 
         _trayApp = new TrayApp(
             _autoStart,
+            _launcherMock.Object,
             _settingsWindowMock.Object,
             _lifetimeMock.Object,
             NullLogger<TrayApp>.Instance,
@@ -158,6 +165,16 @@ public class TrayAppTests
         await _trayApp.SimulateOpenSettingsAsync();
 
         _settingsWindowMock.Verify(w => w.ShowAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnOpenLauncher_ShowsLauncher()
+    {
+        await _trayApp.StartAsync(CancellationToken.None);
+
+        await _trayApp.SimulateOpenLauncherAsync();
+
+        _launcherMock.Verify(l => l.ShowAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

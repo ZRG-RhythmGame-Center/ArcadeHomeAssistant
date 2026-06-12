@@ -27,6 +27,9 @@
     <None Update="Resources\tray.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Resources\GameScreenshot.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <Target Name="WarnIfPcWebMissing" BeforeTargets="BeforeBuild">

@@ -7,4 +7,6 @@ public interface ILauncherWindowHost
     Task ShowAsync(IReadOnlyList<LauncherItemRuntime> items, Func<string, CancellationToken, Task> onKeySelected, CancellationToken ct = default);
 
     Task MinimizeAsync(CancellationToken ct = default);
+
+    Task HideAsync(CancellationToken ct = default);
 }

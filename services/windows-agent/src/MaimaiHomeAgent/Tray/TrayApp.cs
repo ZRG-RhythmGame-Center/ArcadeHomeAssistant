@@ -1,4 +1,5 @@
 using MaimaiHomeAgent.Startup;
+using MaimaiHomeAgent.Launcher;
 using MaimaiHomeAgent.Settings;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,7 @@ namespace MaimaiHomeAgent.Tray;
 public sealed class TrayApp : IHostedService, IAsyncDisposable
 {
     private readonly AutoStartManager _autoStart;
+    private readonly ILauncherService _launcher;
     private readonly ISettingsWindowHost _settingsWindow;
     private readonly IHostApplicationLifetime _lifetime;
     private readonly ILogger<TrayApp> _logger;
@@ -27,17 +29,20 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
     /// </summary>
     public TrayApp(
         AutoStartManager autoStart,
+        ILauncherService launcher,
         ISettingsWindowHost settingsWindow,
         IHostApplicationLifetime lifetime,
         ILogger<TrayApp> logger)
     {
         _autoStart = autoStart;
+        _launcher = launcher;
         _settingsWindow = settingsWindow;
         _lifetime = lifetime;
         _logger = logger;
         _pump = new WindowsFormsPump();
         _host = new Win32TrayIconHost(
             getAutoStartEnabled: SafeIsAutoStartEnabled,
+            onOpenLauncher: OnOpenLauncherAsync,
             onOpenSettings: OnOpenSettingsAsync,
             onToggleAutoStart: OnToggleAutoStartAsync,
             onExit: OnExit);
@@ -48,6 +53,7 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
     /// </summary>
     internal TrayApp(
         AutoStartManager autoStart,
+        ILauncherService launcher,
         ISettingsWindowHost settingsWindow,
         IHostApplicationLifetime lifetime,
         ILogger<TrayApp> logger,
@@ -55,6 +61,7 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
         IUiThreadPump pump)
     {
         _autoStart = autoStart;
+        _launcher = launcher;
         _settingsWindow = settingsWindow;
         _lifetime = lifetime;
         _logger = logger;
@@ -100,6 +107,9 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
     /// <summary>Test seam: directly invoke the settings handler.</summary>
     internal Task SimulateOpenSettingsAsync() => OnOpenSettingsAsync();
 
+    /// <summary>Test seam: directly invoke the launcher handler.</summary>
+    internal Task SimulateOpenLauncherAsync() => OnOpenLauncherAsync();
+
     // ------------------------------------------------------------------ //
     //  Private handlers                                                   //
     // ------------------------------------------------------------------ //
@@ -144,6 +154,18 @@ public sealed class TrayApp : IHostedService, IAsyncDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Tray: opening settings window failed.");
+        }
+    }
+
+    private async Task OnOpenLauncherAsync()
+    {
+        try
+        {
+            await _launcher.ShowAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Tray: opening launcher failed.");
         }
     }
 

@@ -52,6 +52,13 @@ public sealed class LauncherService : ILauncherService, IHostedService
         return LauncherActionResult.Ok(CreateStatus());
     }
 
+    public async Task<LauncherActionResult> HideAsync(CancellationToken ct = default)
+    {
+        await _window.HideAsync(ct).ConfigureAwait(false);
+        _events.PublishLauncherEvent(EventTypes.LauncherHidden, new { hiddenAt = DateTimeOffset.UtcNow });
+        return LauncherActionResult.Ok(CreateStatus());
+    }
+
     public async Task<LauncherActionResult> StartItemAsync(string itemId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(itemId))
