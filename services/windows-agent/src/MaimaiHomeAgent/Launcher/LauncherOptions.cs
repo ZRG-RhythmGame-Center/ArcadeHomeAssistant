@@ -4,6 +4,13 @@ public sealed class LauncherOptions
 {
     public bool ShowOnAgentStart { get; set; }
 
+    /// <summary>
+    ///     Delay in seconds before showing the launcher on agent start.
+    ///     Helps avoid focus being stolen by other applications during Windows boot.
+    ///     Default is 0 (no delay). Recommended: 3-5 seconds for auto-start scenarios.
+    /// </summary>
+    public int ShowDelaySeconds { get; set; }
+
     public int CanvasWidth { get; set; } = 1080;
 
     public int CanvasHeight { get; set; } = 1920;

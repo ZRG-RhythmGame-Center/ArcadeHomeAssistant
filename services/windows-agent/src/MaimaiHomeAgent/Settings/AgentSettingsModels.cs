@@ -20,6 +20,7 @@ public sealed record AgentSettingsUpdateRequest(
 
 public sealed record LauncherSettingsDto(
     bool ShowOnAgentStart,
+    int ShowDelaySeconds,
     int CanvasWidth,
     int CanvasHeight,
     string? BackgroundImagePath,
@@ -34,6 +35,7 @@ public sealed record LauncherSettingsDto(
         return new LauncherOptions
         {
             ShowOnAgentStart = ShowOnAgentStart,
+            ShowDelaySeconds = ShowDelaySeconds,
             CanvasWidth = CanvasWidth,
             CanvasHeight = CanvasHeight,
             BackgroundImagePath = BackgroundImagePath,
@@ -63,6 +65,7 @@ public sealed record LauncherSettingsDto(
     {
         return new LauncherSettingsDto(
             options.ShowOnAgentStart,
+            options.ShowDelaySeconds,
             options.CanvasWidth,
             options.CanvasHeight,
             options.BackgroundImagePath,

@@ -100,6 +100,8 @@ internal sealed class SettingsWindow : Window
         panel.Children.Add(LabeledCheckBox("Windows 开机自启", vm.AutoStartEnabled, v => vm.AutoStartEnabled = v));
         panel.Children.Add(LabeledCheckBox("Agent 启动后自动显示启动器", vm.LauncherShowOnStart,
             v => vm.LauncherShowOnStart = v));
+        panel.Children.Add(LabeledNumberBox("显示延迟（秒，开机防抢焦点）", vm.LauncherShowDelaySeconds,
+            v => vm.LauncherShowDelaySeconds = v));
         panel.Children.Add(LabeledNumberBox("画布宽度", vm.CanvasWidth, v => vm.CanvasWidth = v));
         panel.Children.Add(LabeledNumberBox("画布高度", vm.CanvasHeight, v => vm.CanvasHeight = v));
         panel.Children.Add(LabeledTextBox("启动器壁纸路径", vm.BackgroundImagePath ?? "", v => vm.BackgroundImagePath = v));

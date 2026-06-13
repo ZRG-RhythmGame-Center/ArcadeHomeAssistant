@@ -58,6 +58,7 @@ public sealed class AgentSettingsServiceTests : IDisposable
         var service = CreateService(configPath: configPath);
         var launcher = new LauncherSettingsDto(
             false,
+            0,
             1080,
             1920,
             null,
@@ -86,6 +87,7 @@ public sealed class AgentSettingsServiceTests : IDisposable
         var service = CreateService(configPath: configPath);
         var launcher = new LauncherSettingsDto(
             true,
+            0,
             1080,
             1920,
             null,

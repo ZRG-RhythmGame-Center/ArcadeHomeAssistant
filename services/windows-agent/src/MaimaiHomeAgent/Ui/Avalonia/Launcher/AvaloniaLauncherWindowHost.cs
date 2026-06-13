@@ -62,6 +62,7 @@ internal sealed class AvaloniaLauncherWindowHost : ILauncherWindowHost
     {
         return _uiThread.InvokeAsync(() =>
         {
+            _window?.StopFocusGuard();
             _window?.Hide();
 
             if (_viewModel is not null) _viewModel.IsVisible = false;
@@ -73,6 +74,7 @@ internal sealed class AvaloniaLauncherWindowHost : ILauncherWindowHost
     {
         return _uiThread.InvokeAsync(() =>
         {
+            _window?.StopFocusGuard();
             _window?.Hide();
             if (_viewModel is not null) _viewModel.IsVisible = false;
             return Task.CompletedTask;
@@ -159,9 +161,25 @@ internal sealed class LauncherWindow : Window
     // Design canvas is 1080x1920. The visible game art is the lower 1080x1080 square,
     // i.e. y in [840, 1920]. Its center is y = 1380.
     private const double VisibleSquareCenterYRatio = 1380d / 1920d;
+
+    /// <summary>
+    ///     After showing, retry Activate/Focus at these intervals to survive other
+    ///     windows stealing focus during boot. Retries stop once the guard period ends.
+    /// </summary>
+    private static readonly TimeSpan[] FocusRetryDelays =
+        [TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(500), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4)];
+
+    /// <summary>
+    ///     Duration after Show during which the window aggressively reclaims focus
+    ///     when deactivated by another window.
+    /// </summary>
+    private static readonly TimeSpan FocusGuardDuration = TimeSpan.FromSeconds(8);
+
     private readonly LauncherWindowViewModel _vm;
     private Canvas? _cardsHost;
     private Panel? _contentArea;
+    private CancellationTokenSource? _focusGuardCts;
+    private DateTime _focusGuardUntil = DateTime.MinValue;
 
     public LauncherWindow(LauncherWindowViewModel vm)
     {
@@ -173,6 +191,9 @@ internal sealed class LauncherWindow : Window
         Focusable = true;
         Topmost = true;
         Content = BuildContent();
+
+        // Subscribe to Deactivated to reclaim focus when stolen during boot.
+        Deactivated += OnWindowDeactivated;
     }
 
     public void FocusForKeyboardInput()
@@ -180,15 +201,69 @@ internal sealed class LauncherWindow : Window
         Activate();
         Focus();
 
-        // Some Windows focus changes settle after Show/FullScreen completes. Queue a second
-        // focus request so launcher navigation keys work immediately after the window appears.
+        // Start the focus guard period: reclaim focus if stolen within the guard window.
+        _focusGuardUntil = DateTime.UtcNow + FocusGuardDuration;
+        _focusGuardCts?.Cancel();
+        _focusGuardCts = new CancellationTokenSource();
+        var ct = _focusGuardCts.Token;
+
+        // Queue a Topmost toggle + second focus attempt (existing behavior).
         Dispatcher.UIThread.Post(() =>
         {
+            if (ct.IsCancellationRequested) return;
             Topmost = false;
             Topmost = true;
             Activate();
             Focus();
         }, DispatcherPriority.Background);
+
+        // Launch additional retries at increasing intervals to survive boot focus storms.
+        _ = RetryFocusAsync(ct);
+    }
+
+    private void OnWindowDeactivated(object? sender, EventArgs e)
+    {
+        // If the window is still supposed to be visible and within the focus guard period,
+        // reclaim focus after a brief delay (gives the OS time to finish the other activation).
+        if (!_vm.IsVisible) return;
+        if (DateTime.UtcNow > _focusGuardUntil) return;
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!_vm.IsVisible) return;
+            Topmost = false;
+            Topmost = true;
+            Activate();
+            Focus();
+        }, DispatcherPriority.Background);
+    }
+
+    /// <summary>Stop reclaiming focus (called when the window is intentionally hidden).</summary>
+    public void StopFocusGuard()
+    {
+        _focusGuardCts?.Cancel();
+        _focusGuardUntil = DateTime.MinValue;
+    }
+
+    private async Task RetryFocusAsync(CancellationToken ct)
+    {
+        foreach (var delay in FocusRetryDelays)
+        {
+            try
+            {
+                await Task.Delay(delay, ct).ConfigureAwait(true);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            if (ct.IsCancellationRequested || !_vm.IsVisible) return;
+            Topmost = false;
+            Topmost = true;
+            Activate();
+            Focus();
+        }
     }
 
     protected override async void OnKeyDown(KeyEventArgs e)
@@ -198,6 +273,7 @@ internal sealed class LauncherWindow : Window
         if (e.Key == Key.Escape)
         {
             e.Handled = true;
+            StopFocusGuard();
             Hide();
             _vm.IsVisible = false;
             return;

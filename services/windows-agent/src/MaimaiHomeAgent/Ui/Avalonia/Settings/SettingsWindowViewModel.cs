@@ -17,6 +17,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     private int _canvasWidth = 1080;
     private string _confirmKey = "Enter";
     private bool _launcherShowOnStart;
+    private int _launcherShowDelaySeconds;
     private string _navigateLeftKey = "Left";
     private string _navigateRightKey = "Right";
     private bool _remoteShutdownEnabled;
@@ -47,6 +48,12 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     {
         get => _launcherShowOnStart;
         set => SetField(ref _launcherShowOnStart, value);
+    }
+
+    public int LauncherShowDelaySeconds
+    {
+        get => _launcherShowDelaySeconds;
+        set => SetField(ref _launcherShowDelaySeconds, value);
     }
 
     public string? BackgroundImagePath
@@ -127,6 +134,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
             var snapshot = await _settings.GetAsync(ct).ConfigureAwait(true);
             AutoStartEnabled = snapshot.AutoStartEnabled;
             LauncherShowOnStart = snapshot.Launcher.ShowOnAgentStart;
+            LauncherShowDelaySeconds = snapshot.Launcher.ShowDelaySeconds;
             CanvasWidth = snapshot.Launcher.CanvasWidth;
             CanvasHeight = snapshot.Launcher.CanvasHeight;
             BackgroundImagePath = snapshot.Launcher.BackgroundImagePath;
@@ -208,6 +216,7 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     {
         var launcher = new LauncherSettingsDto(
             LauncherShowOnStart,
+            LauncherShowDelaySeconds,
             CanvasWidth,
             CanvasHeight,
             BackgroundImagePath,

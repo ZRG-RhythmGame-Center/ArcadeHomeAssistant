@@ -33,7 +33,16 @@ public sealed class LauncherService : ILauncherService, IHostedService
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        if (_options.CurrentValue.ShowOnAgentStart) await ShowAsync(cancellationToken).ConfigureAwait(false);
+        if (!_options.CurrentValue.ShowOnAgentStart) return;
+
+        var delay = _options.CurrentValue.ShowDelaySeconds;
+        if (delay > 0)
+        {
+            _logger.LogInformation("Launcher will show after {Delay}s delay to avoid boot focus contention", delay);
+            await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken).ConfigureAwait(false);
+        }
+
+        await ShowAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
