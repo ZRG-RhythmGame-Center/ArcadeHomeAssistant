@@ -214,6 +214,68 @@ class EventStreamMockServerTest {
     }
 
     @Test
+    fun serverPing_receivesPongReply_andDoesNotEmitEvent() {
+        val server = MockWebServer()
+        val serverConnected = CountDownLatch(1)
+        val serverSocket = arrayOfNulls<WebSocket>(1)
+        // Any client frame (including the pong we send) lands here.
+        val receivedClientFrames = java.util.Collections.synchronizedList(mutableListOf<String>())
+        server.enqueue(
+            MockResponse().withWebSocketUpgrade(object : WebSocketListener() {
+                override fun onOpen(webSocket: WebSocket, response: okhttp3.Response) {
+                    serverSocket[0] = webSocket
+                    serverConnected.countDown()
+                }
+
+                override fun onMessage(webSocket: WebSocket, text: String) {
+                    receivedClientFrames.add(text)
+                }
+            }),
+        )
+        server.start()
+        try {
+            val okHttp = OkHttpClient.Builder()
+                .readTimeout(5, TimeUnit.SECONDS)
+                .build()
+            val stream = EventStream(
+                okHttpClient = okHttp,
+                json = Json { ignoreUnknownKeys = true; explicitNulls = false },
+                address = server.url("/").toString().trimEnd('/'),
+                onReconnect = {},
+            )
+            try {
+                stream.connect()
+                assertTrue(serverConnected.await(2, TimeUnit.SECONDS))
+
+                // Push the Agent's heartbeat ping frame.
+                serverSocket[0]!!.send("""{"type":"ping"}""")
+
+                // The client should reply with a pong frame within 2s.
+                val end = System.currentTimeMillis() + 2_000
+                while (System.currentTimeMillis() < end && receivedClientFrames.isEmpty()) {
+                    Thread.sleep(20)
+                }
+                assertTrue(
+                    "EventStream must reply to a ping frame with a pong frame",
+                    receivedClientFrames.isNotEmpty(),
+                )
+                assertThat(receivedClientFrames.first()).contains("\"pong\"")
+
+                // A ping frame must NOT be decoded as an EventEnvelope and emitted.
+                val received = runBlocking {
+                    kotlinx.coroutines.withTimeoutOrNull(500) { stream.events.firstOrNull() }
+                }
+                assertThat(received).isNull()
+            } finally {
+                stream.disconnect()
+                serverSocket[0]?.close(1000, "test done")
+            }
+        } finally {
+            server.shutdown()
+        }
+    }
+
+    @Test
     @Suppress("UNUSED_PARAMETER")
     fun socketUpgradeFailure_transitionsToReconnecting() {
         // Server replies with a non-101 response - the upgrade fails and

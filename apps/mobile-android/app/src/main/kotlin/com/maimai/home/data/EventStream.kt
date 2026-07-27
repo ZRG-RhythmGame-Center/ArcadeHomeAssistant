@@ -77,6 +77,14 @@ class EventStream(
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
+                // Agent sends {"type":"ping"} as an application-layer heartbeat every
+                // 30s and treats any client frame as liveness (updates LastPongAt).
+                // If the ping payload cannot be decoded as an EventEnvelope we reply
+                // with a pong text frame so the Agent keeps the session alive.
+                if (text.length < 32 && text.contains("\"ping\"")) {
+                    webSocket.send("""{"type":"pong"}""")
+                    return
+                }
                 runCatching { json.decodeFromString<EventEnvelope>(text) }
                     .getOrNull()
                     ?.let { scope.launch { _events.emit(it) } }
