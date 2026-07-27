@@ -509,7 +509,8 @@ class AgentClientMockWebServerTest {
         val tempFile = File.createTempFile("upload-", ".bin").apply { writeBytes(payload) }
 
         try {
-            client.uploadFile(address(), "root", "/uploads/dest.bin", tempFile)
+            // Second arg is now the *directory* path; the client appends the file name.
+            client.uploadFile(address(), "root", "/uploads", tempFile)
         } finally {
             tempFile.delete()
         }
@@ -525,9 +526,29 @@ class AgentClientMockWebServerTest {
         assertThat(body).contains("filename=\"${tempFile.name}\"")
         // form-data values are followed by CRLF + value + CRLF in multipart bodies.
         assertThat(body).contains("\r\nroot\r\n")
-        assertThat(body).contains("\r\n/uploads/dest.bin\r\n")
+        assertThat(body).contains("\r\n/uploads/${tempFile.name}\r\n")
         assertThat(body).contains("\r\nfalse\r\n")
         assertThat(body).contains("hello-payload-bytes")
+    }
+
+    @Test
+    fun uploadFile_withBlankDirectory_postsJustFileName() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(200).setBody(""))
+        val payload = "root-upload".toByteArray()
+        val tempFile = File.createTempFile("upload-", ".bin").apply { writeBytes(payload) }
+
+        try {
+            client.uploadFile(address(), "root", "", tempFile)
+        } finally {
+            tempFile.delete()
+        }
+
+        val recorded = server.takeRequest()
+        val body = recorded.body.readUtf8()
+        // Uploading into the root directory: path must be just the file name,
+        // not an empty string (which the Agent rejects as path_required).
+        assertThat(body).contains("\r\n${tempFile.name}\r\n")
+        assertThat(body).doesNotContain("\r\n/\r\n")
     }
 
     @Test

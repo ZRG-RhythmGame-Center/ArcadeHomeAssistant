@@ -31,10 +31,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- ComponentActivity host used by Robolectric Compose UI tests. -->
-        <activity
-            android:name="androidx.activity.ComponentActivity"
-            android:exported="false" />
     </application>
 
 </manifest>

@@ -90,33 +90,36 @@ class AgentClient(
         return request(url, "GET", null, FileListingResult.serializer())
     }
 
-    suspend fun uploadFile(address: String, rootId: String, path: String, file: File): Unit {
+    suspend fun uploadFile(address: String, rootId: String, directoryPath: String, file: File): Unit {
+        // Agent expects `path` to be the full target relative path including the file name.
+        val targetPath = joinRelativePath(directoryPath, file.name)
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("rootId", rootId)
-            .addFormDataPart("path", path)
+            .addFormDataPart("path", targetPath)
             .addFormDataPart("overwrite", "false")
             .addFormDataPart("file", file.name, file.asRequestBody("application/octet-stream".toMediaType()))
             .build()
         requestUnit("${normalizedBaseUrl(address)}/api/files/upload", "POST", body)
     }
 
-    suspend fun uploadFile(address: String, rootId: String, path: String, contentResolver: ContentResolver, uri: Uri): Unit {
+    suspend fun uploadFile(address: String, rootId: String, directoryPath: String, contentResolver: ContentResolver, uri: Uri): Unit {
         // Tempfile copy + multipart upload must NOT run on the main thread.
-        withContext(kotlinx.coroutines.Dispatchers.IO) { uploadFileBlocking(address, rootId, path, contentResolver, uri) }
+        withContext(kotlinx.coroutines.Dispatchers.IO) { uploadFileBlocking(address, rootId, directoryPath, contentResolver, uri) }
     }
 
-    private suspend fun uploadFileBlocking(address: String, rootId: String, path: String, contentResolver: ContentResolver, uri: Uri) {
+    private suspend fun uploadFileBlocking(address: String, rootId: String, directoryPath: String, contentResolver: ContentResolver, uri: Uri) {
         val temp = File.createTempFile("upload-", ".bin")
         contentResolver.openInputStream(uri)?.use { input ->
             FileOutputStream(temp).use { output -> input.copyTo(output) }
         } ?: throw AgentRequestException(ApiError(ApiError.Kind.Unknown, "读取文件失败"))
 
         val fileName = queryDisplayName(contentResolver, uri) ?: temp.name
+        val targetPath = joinRelativePath(directoryPath, fileName)
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("rootId", rootId)
-            .addFormDataPart("path", path)
+            .addFormDataPart("path", targetPath)
             .addFormDataPart("overwrite", "false")
             .addFormDataPart("file", fileName, temp.asRequestBody("application/octet-stream".toMediaType()))
             .build()
@@ -303,6 +306,16 @@ class AgentClient(
             if (!cursor.moveToFirst()) return@use null
             cursor.getString(0)
         }
+    }
+
+    /**
+     * Joins a directory path and a file name into a single relative path using '/'.
+     * Handles empty/blank directory (returns just the name) and trims redundant slashes.
+     */
+    private fun joinRelativePath(directoryPath: String, fileName: String): String {
+        val dir = directoryPath.trim().trimEnd('/')
+        val name = fileName.trim().trimStart('/')
+        return if (dir.isEmpty()) name else "$dir/$name"
     }
 }
 

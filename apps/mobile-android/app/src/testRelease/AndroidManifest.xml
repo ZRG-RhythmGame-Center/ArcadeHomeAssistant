@@ -2,11 +2,17 @@
 <!--
   Robolectric manifest for release unit tests. Registers ComponentActivity so
   createComposeRule() can resolve the activity in the release variant.
+
+  `tools:replace="android:exported"` resolves the merger collision with
+  androidx.compose.ui:ui-test-manifest, which declares the same activity with
+  exported="true" (Android 31+ requires explicit exported on all activities).
 -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application>
         <activity
             android:name="androidx.activity.ComponentActivity"
-            android:exported="false" />
+            android:exported="false"
+            tools:replace="android:exported" />
     </application>
 </manifest>
