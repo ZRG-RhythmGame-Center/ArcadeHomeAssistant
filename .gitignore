@@ -36,3 +36,8 @@ apps/design/
 .omo/ralph-loop.local.md
 .omo/run-continuation/
 .omo/notepads/
+
+# Agent tooling local state
+.graphmem/
+.serena/
+AGENTS.md

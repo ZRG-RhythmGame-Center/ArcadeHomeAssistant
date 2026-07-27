@@ -43,7 +43,4 @@ maimai-home-assistant/
 
 ## 文档
 
-- [文档索引](dev-docs/README.md)
-- [初始需求](dev-docs/features/2026-05-11-maimai-home-assistant/需求.md)
-- [技术方案](dev-docs/features/2026-05-11-maimai-home-assistant/设计-初始技术方案.md)
-- [实现规划](dev-docs/features/2026-05-11-maimai-home-assistant/实现.md)
+- [文档索引](dev-docs/0-索引.md)
