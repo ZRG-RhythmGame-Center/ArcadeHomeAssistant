@@ -10,6 +10,8 @@ import com.maimai.home.data.models.AudioDevice
 import com.maimai.home.data.models.AudioState
 import com.maimai.home.data.models.FileEntry
 import com.maimai.home.data.models.FileRoot
+import com.maimai.home.data.models.AgentSettingsSnapshot
+import com.maimai.home.data.models.AgentSettingsUpdateRequest
 import com.maimai.home.data.models.LauncherStatus
 import com.maimai.home.data.models.RemoteShutdownStatus
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -112,6 +114,19 @@ class AgentClient(
         body = Unit,
         bodySerializer = kotlinx.serialization.serializer(),
         responseSerializer = LauncherStatus.serializer(),
+    )
+
+    // ── Settings ───────────────────────────────────────────────────────────
+
+    suspend fun fetchSettings(address: String): AgentSettingsSnapshot =
+        get(address, "/api/settings", AgentSettingsSnapshot.serializer())
+
+    suspend fun updateSettings(address: String, request: AgentSettingsUpdateRequest): AgentSettingsSnapshot = postJson(
+        address,
+        "/api/settings",
+        request,
+        AgentSettingsUpdateRequest.serializer(),
+        AgentSettingsSnapshot.serializer(),
     )
 
 
