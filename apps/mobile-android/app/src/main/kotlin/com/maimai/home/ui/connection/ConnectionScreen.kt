@@ -420,15 +420,17 @@ private fun ConnectedStatusCard(
             CapabilityChip("音量", status.capabilities.audioVolume)
             CapabilityChip("静音", status.capabilities.audioMute)
             CapabilityChip("切设备", status.capabilities.audioDeviceSwitch)
+            CapabilityChip("文件", status.capabilities.fileManagement)
         }
         Spacer(Modifier.height(8.dp))
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            CapabilityChip("文件", status.capabilities.fileManagement)
             CapabilityChip("发现", status.capabilities.discoveryBroadcast)
             CapabilityChip("关机", status.capabilities.remoteShutdown)
+            CapabilityChip("启动器", status.capabilities.launcher)
+            CapabilityChip("设置", status.capabilities.settingsManagement)
         }
         Spacer(Modifier.height(16.dp))
         Button(
