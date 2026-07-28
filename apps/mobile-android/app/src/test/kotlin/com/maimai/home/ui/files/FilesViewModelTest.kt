@@ -317,7 +317,7 @@ class FilesViewModelTest {
 
         assertThat(errorMessage).isEqualTo("该根目录为只读，不允许修改")
         assertThat(doneCalled).isFalse()
-        coVerify(exactly = 0) { agentClient.uploadFile(any(), any(), any(), any<android.content.ContentResolver>(), any<android.net.Uri>()) }
+        coVerify(exactly = 0) { agentClient.uploadFile(any(), any(), any(), any<android.content.ContentResolver>(), any<android.net.Uri>(), any()) }
     }
 
     @Test
@@ -334,7 +334,7 @@ class FilesViewModelTest {
         advanceUntilIdle()
 
         assertThat(errorMessage).isEqualTo("未选择根目录")
-        coVerify(exactly = 0) { agentClient.uploadFile(any(), any(), any(), any<android.content.ContentResolver>(), any<android.net.Uri>()) }
+        coVerify(exactly = 0) { agentClient.uploadFile(any(), any(), any(), any<android.content.ContentResolver>(), any<android.net.Uri>(), any()) }
     }
 
     // ── download ──────────────────────────────────────────────────────────────
@@ -411,27 +411,29 @@ class FilesViewModelTest {
         var doneMsg: String? = null
         val entry = FileEntry(name = "old.txt", kind = "file", size = 100L, modified = "2026-01-01T00:00:00Z")
 
-        vm.rename(entry, "new.txt", { doneMsg = it }, {})
+        vm.rename(entry, "new.txt", onDone = { doneMsg = it }, onError = {})
         advanceUntilIdle()
 
         assertThat(doneMsg).contains("new.txt")
-        coVerify { agentClient.renameFile(address, writableRoot.id, "old.txt", "new.txt") }
+        coVerify { agentClient.renameFile(address, writableRoot.id, "old.txt", "new.txt", false) }
     }
 
     @Test
-    fun rename_failure_callsOnError() = runTest {
+    fun rename_conflict_callsOnConflict() = runTest {
         advanceUntilIdle()
 
-        coEvery { agentClient.renameFile(any(), any(), any(), any()) } throws
+        coEvery { agentClient.renameFile(any(), any(), any(), any(), any()) } throws
             AgentRequestException(ApiError(ApiError.Kind.Conflict, "文件已存在"))
 
+        var conflictCalled = false
         var errorMsg: String? = null
         val entry = FileEntry(name = "old.txt", kind = "file", size = 100L, modified = "2026-01-01T00:00:00Z")
 
-        vm.rename(entry, "existing.txt", {}, { errorMsg = it })
+        vm.rename(entry, "existing.txt", onDone = {}, onError = { errorMsg = it }, onConflict = { conflictCalled = true })
         advanceUntilIdle()
 
-        assertThat(errorMsg).isEqualTo("文件已存在")
+        assertThat(conflictCalled).isTrue()
+        assertThat(errorMsg).isNull()
     }
 
     // ── move ──────────────────────────────────────────────────────────────────
@@ -443,11 +445,11 @@ class FilesViewModelTest {
         var doneMsg: String? = null
         val entry = FileEntry(name = "file.txt", kind = "file", size = 100L, modified = "2026-01-01T00:00:00Z")
 
-        vm.move(entry, "archive/file.txt", { doneMsg = it }, {})
+        vm.move(entry, "archive/file.txt", onDone = { doneMsg = it }, onError = {})
         advanceUntilIdle()
 
         assertThat(doneMsg).isNotNull()
-        coVerify { agentClient.moveFile(address, writableRoot.id, "file.txt", "archive/file.txt") }
+        coVerify { agentClient.moveFile(address, writableRoot.id, "file.txt", "archive/file.txt", false) }
     }
 
     // ── server truncation limit ───────────────────────────────────────────────

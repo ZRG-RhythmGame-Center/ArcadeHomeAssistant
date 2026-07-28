@@ -105,6 +105,8 @@ object FilesScreenTags {
     const val MOVE_DIALOG = "files.move.dialog"
     const val DELETE_DIALOG = "files.delete.dialog"
     const val DELETE_CONFIRM_BUTTON = "files.delete.confirm"
+    const val CONFIRM_OVERWRITE_DIALOG = "files.overwrite.dialog"
+    const val CONFIRM_OVERWRITE_BUTTON = "files.overwrite.confirm"
     const val UPLOAD_FAB = "files.upload.fab"
     const val LOAD_MORE_BUTTON = "files.load.more"
     const val BREADCRUMB_ROW = "files.breadcrumb.row"
@@ -136,11 +138,18 @@ fun FilesScreen(
         onDispose { viewModel.stop() }
     }
 
+    var pendingConflict by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val showConflict: (() -> Unit) -> Unit = { retry ->
+        pendingConflict = { pendingConflict = null; retry() }
+    }
+
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) viewModel.upload(
             uri,
-            { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
-            { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
+            overwrite = false,
+            onDone = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
+            onError = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
+            onConflict = { showConflict { viewModel.upload(uri, overwrite = true, onDone = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } }, onError = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } }) } },
         )
     }
 
@@ -173,22 +182,29 @@ fun FilesScreen(
             viewModel.rename(
                 entry,
                 newName,
-                { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
-                { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
+                overwrite = false,
+                onDone = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
+                onError = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
+                onConflict = { showConflict { viewModel.rename(entry, newName, overwrite = true, onDone = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } }, onError = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } }) } },
             )
         },
         onMove = { entry, newPath ->
             viewModel.move(
                 entry,
                 newPath,
-                { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
-                { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
+                overwrite = false,
+                onDone = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
+                onError = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
+                onConflict = { showConflict { viewModel.move(entry, newPath, overwrite = true, onDone = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } }, onError = { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } }) } },
             )
         },
         machineName = machineName,
         address = address,
         onSwitchDevice = onSwitchDevice,
         showCurrentDeviceCard = true,
+        pendingConflict = pendingConflict,
+        onConfirmConflict = { pendingConflict?.invoke() },
+        onDismissConflict = { pendingConflict = null },
     )
 }
 
@@ -216,6 +232,9 @@ internal fun FilesScreenContent(
     address: String = state.address,
     onSwitchDevice: () -> Unit = {},
     showCurrentDeviceCard: Boolean = false,
+    pendingConflict: (() -> Unit)? = null,
+    onConfirmConflict: () -> Unit = {},
+    onDismissConflict: () -> Unit = {},
 ) {
     var selectedEntry by remember { mutableStateOf<FileEntry?>(null) }
     var renameEntry by remember { mutableStateOf<FileEntry?>(null) }
@@ -648,6 +667,30 @@ internal fun FilesScreenContent(
             },
             dismissButton = {
                 TextButton(onClick = { deleteEntry = null }) {
+                    Text(stringResource(R.string.files_action_cancel))
+                }
+            },
+        )
+    }
+
+    if (pendingConflict != null) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = onDismissConflict,
+            modifier = Modifier.testTag(FilesScreenTags.CONFIRM_OVERWRITE_DIALOG),
+            title = { Text(stringResource(R.string.files_dialog_overwrite_title)) },
+            text = { Text(stringResource(R.string.files_dialog_overwrite_text)) },
+            confirmButton = {
+                Button(
+                    onClick = onConfirmConflict,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                    modifier = Modifier.testTag(FilesScreenTags.CONFIRM_OVERWRITE_BUTTON),
+                ) { Text(stringResource(R.string.files_action_overwrite)) }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissConflict) {
                     Text(stringResource(R.string.files_action_cancel))
                 }
             },

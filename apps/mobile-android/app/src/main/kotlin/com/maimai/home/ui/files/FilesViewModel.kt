@@ -11,6 +11,7 @@ import com.maimai.home.data.AgentClient
 import com.maimai.home.data.EventStream
 import com.maimai.home.data.FileListingResult
 import com.maimai.home.data.models.AgentRequestException
+import com.maimai.home.data.models.ApiError
 import com.maimai.home.data.models.EventEnvelope
 import com.maimai.home.data.models.FileEntry
 import com.maimai.home.data.models.FileRoot
@@ -270,15 +271,22 @@ class FilesViewModel(
         }
     }
 
-    fun upload(uri: Uri, onDone: (String) -> Unit, onError: (String) -> Unit) {
+    fun upload(uri: Uri, overwrite: Boolean = false, onDone: (String) -> Unit, onError: (String) -> Unit, onConflict: () -> Unit = {}) {
         val root = mutableRoot(onError) ?: return
         viewModelScope.launch {
             runCatching {
-                agentClient.uploadFile(address, root.id, _uiState.value.path, getApplication<Application>().contentResolver, uri)
+                agentClient.uploadFile(address, root.id, _uiState.value.path, getApplication<Application>().contentResolver, uri, overwrite)
             }.onSuccess {
                 refresh()
                 onDone("上传成功")
-            }.onFailure { error -> onError((error as? AgentRequestException)?.apiError?.message ?: "网络错误") }
+            }.onFailure { error ->
+                val ex = error as? AgentRequestException
+                if (ex?.apiError?.kind == ApiError.Kind.Conflict) {
+                    onConflict()
+                } else {
+                    onError(ex?.apiError?.message ?: "网络错误")
+                }
+            }
         }
     }
 
@@ -291,12 +299,19 @@ class FilesViewModel(
         }
     }
 
-    fun rename(entry: FileEntry, newName: String, onDone: (String) -> Unit, onError: (String) -> Unit) {
+    fun rename(entry: FileEntry, newName: String, overwrite: Boolean = false, onDone: (String) -> Unit, onError: (String) -> Unit, onConflict: () -> Unit = {}) {
         val root = mutableRoot(onError) ?: return
         viewModelScope.launch {
-            runCatching { agentClient.renameFile(address, root.id, currentEntryPath(entry), newName) }
+            runCatching { agentClient.renameFile(address, root.id, currentEntryPath(entry), newName, overwrite) }
                 .onSuccess { refresh(); onDone("已重命名为 $newName") }
-                .onFailure { error -> onError((error as? AgentRequestException)?.apiError?.message ?: "网络错误") }
+                .onFailure { error ->
+                    val ex = error as? AgentRequestException
+                    if (ex?.apiError?.kind == ApiError.Kind.Conflict) {
+                        onConflict()
+                    } else {
+                        onError(ex?.apiError?.message ?: "网络错误")
+                    }
+                }
         }
     }
 
@@ -306,18 +321,13 @@ class FilesViewModel(
      * view is the source; if the target differs, we additionally pre-warm it
      * by triggering a fetch so a subsequent navigateToPath shows fresh data.
      */
-    fun move(entry: FileEntry, newPath: String, onDone: (String) -> Unit, onError: (String) -> Unit) {
+    fun move(entry: FileEntry, newPath: String, overwrite: Boolean = false, onDone: (String) -> Unit, onError: (String) -> Unit, onConflict: () -> Unit = {}) {
         val root = mutableRoot(onError) ?: return
         val sourcePath = _uiState.value.path
         viewModelScope.launch {
-            runCatching { agentClient.moveFile(address, root.id, currentEntryPath(entry), newPath) }
+            runCatching { agentClient.moveFile(address, root.id, currentEntryPath(entry), newPath, overwrite) }
                 .onSuccess {
-                    // Refresh the current (source) directory listing.
                     refresh()
-                    // Pre-warm the target directory cache by fetching it.
-                    // The result is discarded because the user has not
-                    // navigated yet; the next navigateToPath will trigger a
-                    // fresh fetch so this is best-effort warming.
                     val targetDir = parentDirOf(newPath)
                     if (targetDir != sourcePath) {
                         runCatching {
@@ -326,7 +336,14 @@ class FilesViewModel(
                     }
                     onDone("已移动到 $newPath")
                 }
-                .onFailure { error -> onError((error as? AgentRequestException)?.apiError?.message ?: "网络错误") }
+                .onFailure { error ->
+                    val ex = error as? AgentRequestException
+                    if (ex?.apiError?.kind == ApiError.Kind.Conflict) {
+                        onConflict()
+                    } else {
+                        onError(ex?.apiError?.message ?: "网络错误")
+                    }
+                }
         }
     }
 

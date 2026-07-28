@@ -82,6 +82,9 @@
     <string name="files_action_move">移动</string>
     <string name="files_action_delete">删除</string>
     <string name="files_action_cancel">取消</string>
+    <string name="files_action_overwrite">覆盖</string>
+    <string name="files_dialog_overwrite_title">同名文件已存在</string>
+    <string name="files_dialog_overwrite_text">目标已存在同名文件，是否覆盖？此操作不可撤销。</string>
     <string name="files_action_confirm">确定</string>
     <string name="files_action_open">打开</string>
     <string name="files_action_menu_cd">更多操作</string>

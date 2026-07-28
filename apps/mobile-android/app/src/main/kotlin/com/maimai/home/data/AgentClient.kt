@@ -89,25 +89,25 @@ class AgentClient(
         return request(url, "GET", null, FileListingResult.serializer())
     }
 
-    suspend fun uploadFile(address: String, rootId: String, directoryPath: String, file: File): Unit {
+    suspend fun uploadFile(address: String, rootId: String, directoryPath: String, file: File, overwrite: Boolean = false): Unit {
         // Agent expects `path` to be the full target relative path including the file name.
         val targetPath = joinRelativePath(directoryPath, file.name)
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
             .addFormDataPart("rootId", rootId)
             .addFormDataPart("path", targetPath)
-            .addFormDataPart("overwrite", "false")
+            .addFormDataPart("overwrite", overwrite.toString())
             .addFormDataPart("file", file.name, file.asRequestBody("application/octet-stream".toMediaType()))
             .build()
         requestUnit("${normalizedBaseUrl(address)}/api/files/upload", "POST", body)
     }
 
-    suspend fun uploadFile(address: String, rootId: String, directoryPath: String, contentResolver: ContentResolver, uri: Uri): Unit {
+    suspend fun uploadFile(address: String, rootId: String, directoryPath: String, contentResolver: ContentResolver, uri: Uri, overwrite: Boolean = false): Unit {
         // Tempfile copy + multipart upload must NOT run on the main thread.
-        withContext(kotlinx.coroutines.Dispatchers.IO) { uploadFileBlocking(address, rootId, directoryPath, contentResolver, uri) }
+        withContext(kotlinx.coroutines.Dispatchers.IO) { uploadFileBlocking(address, rootId, directoryPath, contentResolver, uri, overwrite) }
     }
 
-    private suspend fun uploadFileBlocking(address: String, rootId: String, directoryPath: String, contentResolver: ContentResolver, uri: Uri) {
+    private suspend fun uploadFileBlocking(address: String, rootId: String, directoryPath: String, contentResolver: ContentResolver, uri: Uri, overwrite: Boolean) {
         val temp = File.createTempFile("upload-", ".bin")
         contentResolver.openInputStream(uri)?.use { input ->
             FileOutputStream(temp).use { output -> input.copyTo(output) }
@@ -119,7 +119,7 @@ class AgentClient(
             .setType(MultipartBody.FORM)
             .addFormDataPart("rootId", rootId)
             .addFormDataPart("path", targetPath)
-            .addFormDataPart("overwrite", "false")
+            .addFormDataPart("overwrite", overwrite.toString())
             .addFormDataPart("file", fileName, temp.asRequestBody("application/octet-stream".toMediaType()))
             .build()
         try {
@@ -155,12 +155,12 @@ class AgentClient(
         )
     }
 
-    suspend fun renameFile(address: String, rootId: String, path: String, newName: String) {
-        postJsonUnit(address, "/api/files/rename", RenameRequest(rootId, path, newName, true, false), RenameRequest.serializer())
+    suspend fun renameFile(address: String, rootId: String, path: String, newName: String, overwrite: Boolean = false) {
+        postJsonUnit(address, "/api/files/rename", RenameRequest(rootId, path, newName, true, overwrite), RenameRequest.serializer())
     }
 
-    suspend fun moveFile(address: String, rootId: String, fromPath: String, toPath: String) {
-        postJsonUnit(address, "/api/files/move", MoveRequest(rootId, fromPath, toPath, true, false), MoveRequest.serializer())
+    suspend fun moveFile(address: String, rootId: String, fromPath: String, toPath: String, overwrite: Boolean = false) {
+        postJsonUnit(address, "/api/files/move", MoveRequest(rootId, fromPath, toPath, true, overwrite), MoveRequest.serializer())
     }
 
     private suspend fun <T> get(address: String, path: String, serializer: kotlinx.serialization.KSerializer<T>): T {
