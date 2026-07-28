@@ -41,7 +41,14 @@ data class FilesUiState(
     val path: String = "",
     val listing: FileListingResult? = null,
     val isRefreshing: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val errorMessage: String? = null,
+    /**
+     * Number of entries already fetched (sum across all pages loaded so far
+     * for the current root+path). Resets on [FilesViewModel.refresh] and on
+     * a new directory load. Used to compute the offset for [loadMore].
+     */
+    val loadedOffset: Int = 0,
 ) {
     /**
      * True iff a root is selected and it is not read-only.
@@ -229,7 +236,23 @@ class FilesViewModel(
 
     fun refresh() {
         val root = _uiState.value.selectedRoot ?: return
-        loadListing(root, _uiState.value.path)
+        // refresh always resets paging — we want a fresh first page
+        _uiState.update { it.copy(loadedOffset = 0) }
+        loadListing(root, _uiState.value.path, reset = true)
+    }
+
+    /**
+     * Load the next page (if any) of the current listing. No-op if the
+     * current listing is not truncated or a load is already in flight.
+     */
+    fun loadMore() {
+        val current = _uiState.value
+        val root = current.selectedRoot ?: return
+        val listing = current.listing ?: return
+        if (!listing.truncated) return
+        if (current.isRefreshing) return
+        val nextOffset = current.loadedOffset + listing.entries.size
+        loadListing(root, current.path, reset = false, offset = nextOffset)
     }
 
     fun download(entry: FileEntry, onDone: (String) -> Unit, onError: (String) -> Unit) {
@@ -331,12 +354,39 @@ class FilesViewModel(
         return root
     }
 
-    private fun loadListing(root: FileRoot, path: String) {
+    private fun loadListing(root: FileRoot, path: String, reset: Boolean = true, offset: Int = 0) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true, errorMessage = null) }
-            runCatching { agentClient.fetchFiles(address, root.id, path) }
-                .onSuccess { listing -> _uiState.update { it.copy(listing = listing, isRefreshing = false) } }
-                .onFailure { error -> _uiState.update { it.copy(isRefreshing = false, errorMessage = (error as? AgentRequestException)?.apiError?.message ?: "网络错误") } }
+            if (reset) {
+                _uiState.update { it.copy(isRefreshing = true, errorMessage = null, loadedOffset = 0) }
+            } else {
+                _uiState.update { it.copy(isLoadingMore = true, errorMessage = null) }
+            }
+            val limit = 200
+            runCatching { agentClient.fetchFiles(address, root.id, path, offset, limit) }
+                .onSuccess { result ->
+                    _uiState.update { current ->
+                        val merged = if (reset) {
+                            result.entries
+                        } else {
+                            // Append, dedup by name+kind to avoid a
+                            // race duplicate at the page boundary.
+                            val existing = current.listing?.entries ?: emptyList()
+                            val seen = existing.mapTo(mutableSetOf()) { it.name to it.kind }
+                            existing + result.entries.filterNot { (it.name to it.kind) in seen }
+                        }
+                        val mergedListing = result.copy(entries = merged)
+                        val newOffset = if (reset) merged.size else current.loadedOffset + merged.size - (current.listing?.entries?.size ?: 0)
+                        current.copy(
+                            listing = mergedListing,
+                            isRefreshing = false,
+                            isLoadingMore = false,
+                            loadedOffset = newOffset,
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isRefreshing = false, isLoadingMore = false, errorMessage = (error as? AgentRequestException)?.apiError?.message ?: "网络错误") }
+                }
         }
     }
 

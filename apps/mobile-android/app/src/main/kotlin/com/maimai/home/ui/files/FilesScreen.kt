@@ -44,6 +44,8 @@ import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -104,6 +106,7 @@ object FilesScreenTags {
     const val DELETE_DIALOG = "files.delete.dialog"
     const val DELETE_CONFIRM_BUTTON = "files.delete.confirm"
     const val UPLOAD_FAB = "files.upload.fab"
+    const val LOAD_MORE_BUTTON = "files.load.more"
     const val BREADCRUMB_ROW = "files.breadcrumb.row"
     const val SNACKBAR_HOST = "files.snackbar"
     const val EMPTY_DIRECTORY = "files.empty.directory"
@@ -150,6 +153,7 @@ fun FilesScreen(
         onSelectRoot = viewModel::selectRoot,
         onOpenFolder = viewModel::openFolder,
         onNavigateToPath = viewModel::navigateToPath,
+        onLoadMore = viewModel::loadMore,
         onDownload = { entry ->
             viewModel.download(
                 entry,
@@ -202,6 +206,7 @@ internal fun FilesScreenContent(
     onSelectRoot: (FileRoot) -> Unit,
     onOpenFolder: (FileEntry) -> Unit,
     onNavigateToPath: (String) -> Unit,
+    onLoadMore: () -> Unit,
     onDownload: (FileEntry) -> Unit,
     onUpload: () -> Unit,
     onDelete: (FileEntry) -> Unit,
@@ -319,12 +324,34 @@ internal fun FilesScreenContent(
 
                 state.listing?.takeIf { it.truncated }?.let { listing ->
                     item(key = "truncated-banner") {
-                        Text(
-                            text = stringResource(R.string.files_truncated_format, listing.limit, listing.total),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 4.dp),
-                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.files_truncated_format, state.loadedOffset, listing.total),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            FilledTonalButton(
+                                onClick = onLoadMore,
+                                enabled = !state.isLoadingMore,
+                                modifier = Modifier.testTag(FilesScreenTags.LOAD_MORE_BUTTON),
+                            ) {
+                                if (state.isLoadingMore) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                }
+                                Text(stringResource(R.string.files_load_more))
+                            }
+                        }
                     }
                 }
 

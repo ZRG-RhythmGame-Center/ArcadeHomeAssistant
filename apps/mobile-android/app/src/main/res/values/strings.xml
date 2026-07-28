@@ -2,8 +2,9 @@
 <resources>
     <string name="app_name">maimai Home</string>
 
-    <!-- File listing truncation banner. %1$d is the visible limit; %2$d is the total. -->
-    <string name="files_truncated_format">目录结果已截断：共 %2$d 项，仅显示前 %1$d 项。请进入子目录或缩小范围。</string>
+    <!-- File listing truncation banner. %1$d is the loaded count; %2$d is the total. -->
+    <string name="files_truncated_format">已加载 %1$d / %2$d 项</string>
+    <string name="files_load_more">加载更多</string>
 
     <!-- ===== Connection screen ============================================ -->
     <string name="connection_title">连接 Windows Agent</string>

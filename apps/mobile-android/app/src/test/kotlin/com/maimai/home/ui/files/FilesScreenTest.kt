@@ -89,6 +89,7 @@ class FilesScreenTest {
                     onSelectRoot = {},
                     onOpenFolder = {},
                     onNavigateToPath = {},
+                    onLoadMore = {},
                     onDownload = {},
                     onUpload = {},
                     onDelete = {},
@@ -131,6 +132,7 @@ class FilesScreenTest {
                     onSelectRoot = {},
                     onOpenFolder = {},
                     onNavigateToPath = {},
+                    onLoadMore = {},
                     onDownload = {},
                     onUpload = {},
                     onDelete = {},
@@ -170,6 +172,7 @@ class FilesScreenTest {
                     onSelectRoot = {},
                     onOpenFolder = {},
                     onNavigateToPath = {},
+                    onLoadMore = {},
                     onDownload = { downloadCalled = true },
                     onUpload = {},
                     onDelete = {},
@@ -263,7 +266,7 @@ class FilesScreenTest {
     // Truncation banner.
 
     @Test
-    fun truncationBannerShowsCorrectLimit() {
+    fun truncationBannerShowsLoadedCountAndLoadMoreButton() {
         val truncatedState = defaultState.copy(
             listing = FileListingResult(
                 entries = listOf(fileEntry),
@@ -271,6 +274,7 @@ class FilesScreenTest {
                 truncated = true,
                 limit = 123,
             ),
+            loadedOffset = 1,
         )
         composeRule.setContent {
             MaterialTheme {
@@ -282,6 +286,7 @@ class FilesScreenTest {
                     onSelectRoot = {},
                     onOpenFolder = {},
                     onNavigateToPath = {},
+                    onLoadMore = {},
                     onDownload = {},
                     onUpload = {},
                     onDelete = {},
@@ -291,7 +296,8 @@ class FilesScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("仅显示前 123 项", substring = true).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("已加载 1 / 500 项", substring = true).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag(FilesScreenTags.LOAD_MORE_BUTTON).assertIsDisplayed()
     }
 
     // Root selector.
@@ -308,6 +314,7 @@ class FilesScreenTest {
                     onSelectRoot = {},
                     onOpenFolder = {},
                     onNavigateToPath = {},
+                    onLoadMore = {},
                     onDownload = {},
                     onUpload = {},
                     onDelete = {},
@@ -334,6 +341,7 @@ class FilesScreenTest {
                     onSelectRoot = {},
                     onOpenFolder = {},
                     onNavigateToPath = {},
+                    onLoadMore = {},
                     onDownload = {},
                     onUpload = {},
                     onDelete = {},
@@ -363,6 +371,7 @@ class FilesScreenTest {
                     onSelectRoot = {},
                     onOpenFolder = {},
                     onNavigateToPath = {},
+                    onLoadMore = {},
                     onDownload = {},
                     onUpload = {},
                     onDelete = {},
@@ -390,6 +399,7 @@ class FilesScreenTest {
                     onSelectRoot = {},
                     onOpenFolder = {},
                     onNavigateToPath = {},
+                    onLoadMore = {},
                     onDownload = {},
                     onUpload = {},
                     onDelete = {},
@@ -415,6 +425,7 @@ class FilesScreenTest {
                     onSelectRoot = {},
                     onOpenFolder = {},
                     onNavigateToPath = {},
+                    onLoadMore = {},
                     onDownload = {},
                     onUpload = {},
                     onDelete = {},
@@ -443,6 +454,7 @@ class FilesScreenTest {
                     onSelectRoot = {},
                     onOpenFolder = {},
                     onNavigateToPath = {},
+                    onLoadMore = {},
                     onDownload = {},
                     onUpload = {},
                     onDelete = {},
@@ -470,6 +482,7 @@ class FilesScreenTest {
                     onSelectRoot = {},
                     onOpenFolder = {},
                     onNavigateToPath = { navigatedTo = it },
+                    onLoadMore = {},
                     onDownload = {},
                     onUpload = {},
                     onDelete = {},
