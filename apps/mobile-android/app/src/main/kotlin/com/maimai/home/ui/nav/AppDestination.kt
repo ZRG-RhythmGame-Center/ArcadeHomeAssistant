@@ -5,11 +5,13 @@ import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.PowerSettingsNew
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -46,6 +48,12 @@ internal enum class AppDestination(
         label = "电源",
         outlinedIcon = Icons.Outlined.PowerSettingsNew,
         filledIcon = Icons.Filled.PowerSettingsNew,
+    ),
+    Admin(
+        route = "admin",
+        label = "管理",
+        outlinedIcon = Icons.Outlined.Settings,
+        filledIcon = Icons.Filled.Settings,
     ),
     Device(
         route = "connection",

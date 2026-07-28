@@ -18,6 +18,8 @@ import androidx.navigation.compose.rememberNavController
 import com.maimai.home.ServiceLocator
 import com.maimai.home.ui.audio.AudioScreen
 import com.maimai.home.ui.audio.AudioTabUnconnected
+import com.maimai.home.ui.admin.AdminScreen
+import com.maimai.home.ui.admin.AdminTabUnconnected
 import com.maimai.home.ui.connection.ConnectionScreen
 import com.maimai.home.ui.files.FilesScreen
 import com.maimai.home.ui.files.FilesTabUnconnected
@@ -181,6 +183,31 @@ fun MaimaiNavHost() {
                         address = handle.address,
                         machineName = handle.machineName,
                         onOpenDevice = {
+                            navController.navigate(AppDestination.Device.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
+                }
+            }
+            composable(AppDestination.Admin.route) {
+                val handle = connectionHandle
+                if (handle == null) {
+                    AdminTabUnconnected(onGoToConnection = {
+                        navController.navigate(AppDestination.Device.route) {
+                            popUpTo(AppDestination.Device.route) { saveState = true }
+                            launchSingleTop = true
+                        }
+                    })
+                } else {
+                    AdminScreen(
+                        address = handle.address,
+                        machineName = handle.machineName,
+                        onSwitchDevice = {
                             navController.navigate(AppDestination.Device.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
