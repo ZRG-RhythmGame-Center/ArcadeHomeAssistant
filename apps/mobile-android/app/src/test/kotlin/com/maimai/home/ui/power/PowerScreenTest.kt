@@ -2,13 +2,11 @@ package com.maimai.home.ui.power
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTextInput
 import com.google.common.truth.Truth.assertThat
 import com.maimai.home.data.models.AgentStatus
 import com.maimai.home.data.models.Capabilities
@@ -50,7 +48,6 @@ class PowerScreenTest {
                     ),
                     onOpenDevice = {},
                     onRefresh = {},
-                    onTokenChange = {},
                     onShowConfirm = {},
                     onHideConfirm = {},
                     onExecute = {},
@@ -62,17 +59,16 @@ class PowerScreenTest {
     }
 
     @Test
-    fun confirmDialogRequiresTokenAndExecutesImmediately() {
+    fun confirmDialogExecutesImmediatelyWithoutToken() {
         var showConfirmCalled = false
         var executed = false
 
         composeRule.setContent {
             MaterialTheme {
                 PowerScreenContent(
-                    state = availableState.copy(controlToken = "secret", confirmVisible = true),
+                    state = availableState.copy(confirmVisible = true),
                     onOpenDevice = {},
                     onRefresh = {},
-                    onTokenChange = {},
                     onShowConfirm = { showConfirmCalled = true },
                     onHideConfirm = {},
                     onExecute = { executed = true },
@@ -82,23 +78,20 @@ class PowerScreenTest {
 
         composeRule.onNodeWithText("确认远程关机").assertIsDisplayed()
         composeRule.onNodeWithText("确认后将立即关机", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithTag(PowerScreenTags.CONFIRM_BUTTON).assertIsEnabled()
+        composeRule.onNodeWithTag(PowerScreenTags.CONFIRM_BUTTON).assertIsDisplayed()
         composeRule.onNodeWithTag(PowerScreenTags.CONFIRM_BUTTON).performClick()
         assertThat(executed).isTrue()
         assertThat(showConfirmCalled).isFalse()
     }
 
     @Test
-    fun tokenFieldForwardsInput() {
-        var token = ""
-
+    fun shutdownButtonEnabledWhenAvailableWithoutTokenEntry() {
         composeRule.setContent {
             MaterialTheme {
                 PowerScreenContent(
                     state = availableState,
                     onOpenDevice = {},
                     onRefresh = {},
-                    onTokenChange = { token = it },
                     onShowConfirm = {},
                     onHideConfirm = {},
                     onExecute = {},
@@ -106,7 +99,8 @@ class PowerScreenTest {
             }
         }
 
-        composeRule.onNodeWithTag(PowerScreenTags.TOKEN_FIELD).performTextInput("abc")
-        assertThat(token).isEqualTo("abc")
+        // After LAN no-auth refactor, no token field exists; the shutdown
+        // button should be enabled whenever the capability is available.
+        composeRule.onNodeWithTag(PowerScreenTags.SHUTDOWN_BUTTON).assertIsDisplayed()
     }
 }

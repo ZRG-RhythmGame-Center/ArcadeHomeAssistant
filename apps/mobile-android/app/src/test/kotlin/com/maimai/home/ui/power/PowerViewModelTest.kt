@@ -68,26 +68,31 @@ class PowerViewModelTest {
     }
 
     @Test
-    fun executeShutdown_sendsTrimmedTokenAndUpdatesStatus() = runTest {
+    fun executeShutdown_updatesStatusAndClosesConfirm() = runTest {
         val executing = RemoteShutdownStatus(available = true, state = "executing")
-        coEvery { agentClient.executeRemoteShutdown(address, "secret-token") } returns executing
+        coEvery { agentClient.executeRemoteShutdown(address) } returns executing
 
-        vm.updateControlToken(" secret-token ")
         vm.showConfirm()
         vm.executeShutdown()
         advanceUntilIdle()
 
-        coVerify { agentClient.executeRemoteShutdown(address, "secret-token") }
+        coVerify { agentClient.executeRemoteShutdown(address) }
         assertThat(vm.uiState.value.shutdownStatus).isEqualTo(executing)
         assertThat(vm.uiState.value.confirmVisible).isFalse()
     }
 
     @Test
-    fun executeShutdown_withoutToken_setsError() = runTest {
+    fun executeShutdown_withoutConfirm_succeedsDirectly() = runTest {
+        // LAN no-auth: no token required. Executing without confirm-visible
+        // state still performs the request.
+        val executing = RemoteShutdownStatus(available = true, state = "executing")
+        coEvery { agentClient.executeRemoteShutdown(address) } returns executing
+
         vm.executeShutdown()
         advanceUntilIdle()
 
-        assertThat(vm.uiState.value.errorMessage).isEqualTo("请输入控制令牌")
+        coVerify { agentClient.executeRemoteShutdown(address) }
+        assertThat(vm.uiState.value.shutdownStatus).isEqualTo(executing)
     }
 
     @Test

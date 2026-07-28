@@ -1,8 +1,6 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MaimaiHomeAgent.Admin;
 using MaimaiHomeAgent.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
@@ -20,8 +18,6 @@ public sealed class SettingsEndpointsTests : IAsyncLifetime
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
-        builder.Services.Configure<AdminOptions>(options => options.Password = "seganmsl");
-        builder.Services.AddSingleton<AdminGuard>();
         _settings = new FakeSettingsService();
         builder.Services.AddSingleton<IAgentSettingsService>(_settings);
 
@@ -38,29 +34,20 @@ public sealed class SettingsEndpointsTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetSettings_WithoutAdminPassword_Returns401()
+    public async Task GetSettings_WithoutAuthorization_ReturnsSnapshot()
     {
-        var response = await _client.GetAsync("/api/settings");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task GetSettings_WithAdminPassword_ReturnsSnapshot()
-    {
-        Authorize();
-
+        // LAN-only deployment: no Bearer token required.
         var response = await _client.GetAsync("/api/settings");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.True(doc.RootElement.GetProperty("adminPasswordConfigured").GetBoolean());
+        Assert.True(doc.RootElement.TryGetProperty("autoStartEnabled", out _));
+        Assert.True(doc.RootElement.TryGetProperty("launcher", out _));
     }
 
     [Fact]
     public async Task PutSettings_WhenValidationFails_Returns400()
     {
-        Authorize();
         _settings.NextResult = SettingsUpdateResult.Failed(new[]
         {
             new SettingsValidationError("launcher_item_name_required", "名称不能为空")
@@ -76,7 +63,6 @@ public sealed class SettingsEndpointsTests : IAsyncLifetime
     [Fact]
     public async Task PutSettings_WhenDuplicateFails_Returns409()
     {
-        Authorize();
         _settings.NextResult = SettingsUpdateResult.Failed(new[]
         {
             new SettingsValidationError("file_root_id_duplicate", "重复")
@@ -87,20 +73,14 @@ public sealed class SettingsEndpointsTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
-    private void Authorize()
-    {
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "seganmsl");
-    }
-
     private sealed class FakeSettingsService : IAgentSettingsService
     {
         private readonly AgentSettingsSnapshot _settings = new(
-            true,
             false,
             new LauncherSettingsDto(false, 0, 1080, 1920, null, "Left", "Right", "Enter", "F11",
                 Array.Empty<LauncherItemSettingsDto>()),
             Array.Empty<FileRootSettingsDto>(),
-            new RemoteShutdownSettingsDto(false, null));
+            new RemoteShutdownSettingsDto(false));
 
         public SettingsUpdateResult? NextResult { get; set; }
 

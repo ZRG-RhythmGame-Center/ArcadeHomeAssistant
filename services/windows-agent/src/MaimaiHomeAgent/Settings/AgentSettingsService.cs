@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
-using MaimaiHomeAgent.Admin;
 using MaimaiHomeAgent.Files;
 using MaimaiHomeAgent.Launcher;
 using MaimaiHomeAgent.Power;
@@ -14,7 +13,6 @@ namespace MaimaiHomeAgent.Settings;
 public sealed class AgentSettingsService : IAgentSettingsService
 {
     private const string UserConfigFileName = "appsettings.user.json";
-    private readonly IOptionsMonitor<AdminOptions> _adminOptions;
     private readonly IAutoStartManager _autoStartManager;
     private readonly IConfiguration _configuration;
     private readonly EventPublisher? _events;
@@ -24,7 +22,6 @@ public sealed class AgentSettingsService : IAgentSettingsService
     private readonly string _userConfigPath;
 
     public AgentSettingsService(
-        IOptionsMonitor<AdminOptions> adminOptions,
         IOptionsMonitor<LauncherOptions> launcherOptions,
         IOptionsMonitor<RemoteShutdownOptions> remoteShutdownOptions,
         IFileRootService fileRootService,
@@ -32,7 +29,6 @@ public sealed class AgentSettingsService : IAgentSettingsService
         IConfiguration configuration,
         EventPublisher? events = null)
         : this(
-            adminOptions,
             launcherOptions,
             remoteShutdownOptions,
             fileRootService,
@@ -44,7 +40,6 @@ public sealed class AgentSettingsService : IAgentSettingsService
     }
 
     internal AgentSettingsService(
-        IOptionsMonitor<AdminOptions> adminOptions,
         IOptionsMonitor<LauncherOptions> launcherOptions,
         IOptionsMonitor<RemoteShutdownOptions> remoteShutdownOptions,
         IFileRootService fileRootService,
@@ -53,7 +48,6 @@ public sealed class AgentSettingsService : IAgentSettingsService
         string userConfigPath,
         EventPublisher? events = null)
     {
-        _adminOptions = adminOptions;
         _launcherOptions = launcherOptions;
         _remoteShutdownOptions = remoteShutdownOptions;
         _fileRootService = fileRootService;
@@ -67,7 +61,6 @@ public sealed class AgentSettingsService : IAgentSettingsService
     {
         var autoStartEnabled = await _autoStartManager.IsEnabledAsync(ct).ConfigureAwait(false);
         return new AgentSettingsSnapshot(
-            !string.IsNullOrWhiteSpace(_adminOptions.CurrentValue.Password),
             autoStartEnabled,
             LauncherSettingsDto.FromOptions(_launcherOptions.CurrentValue),
             _fileRootService.ListRoots().Select(FileRootSettingsDto.FromFileRoot).ToList(),
@@ -134,27 +127,17 @@ public sealed class AgentSettingsService : IAgentSettingsService
             }
         }
 
-        if (request.RemoteShutdown is { Enabled: true } &&
-            string.IsNullOrWhiteSpace(request.RemoteShutdown.ControlToken))
-            errors.Add(new SettingsValidationError("remote_shutdown_token_required", "启用远程关机时必须配置控制令牌"));
-
         return errors;
     }
 
     private async Task PersistAsync(AgentSettingsUpdateRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.AdminPassword) &&
-            request.Launcher is null &&
+        if (request.Launcher is null &&
             request.FileRoots is null &&
             request.RemoteShutdown is null)
             return;
 
         var root = await ReadUserConfigAsync(ct).ConfigureAwait(false);
-        if (!string.IsNullOrWhiteSpace(request.AdminPassword))
-        {
-            var admin = GetOrCreateObject(root, "Admin");
-            admin["Password"] = request.AdminPassword;
-        }
 
         if (request.Launcher is not null)
             root["Launcher"] = JsonSerializer.SerializeToNode(request.Launcher.ToOptions(), JsonOptions());
@@ -187,15 +170,6 @@ public sealed class AgentSettingsService : IAgentSettingsService
     private void ReloadConfiguration()
     {
         if (_configuration is IConfigurationRoot root) root.Reload();
-    }
-
-    private static JsonObject GetOrCreateObject(JsonObject root, string name)
-    {
-        if (root[name] is JsonObject existing) return existing;
-
-        var created = new JsonObject();
-        root[name] = created;
-        return created;
     }
 
     private static JsonSerializerOptions JsonOptions()

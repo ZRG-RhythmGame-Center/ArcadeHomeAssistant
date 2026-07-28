@@ -5,14 +5,12 @@ using MaimaiHomeAgent.Power;
 namespace MaimaiHomeAgent.Settings;
 
 public sealed record AgentSettingsSnapshot(
-    bool AdminPasswordConfigured,
     bool AutoStartEnabled,
     LauncherSettingsDto Launcher,
     IReadOnlyList<FileRootSettingsDto> FileRoots,
     RemoteShutdownSettingsDto RemoteShutdown);
 
 public sealed record AgentSettingsUpdateRequest(
-    string? AdminPassword,
     bool? AutoStartEnabled,
     LauncherSettingsDto? Launcher,
     IReadOnlyList<FileRootSettingsDto>? FileRoots,
@@ -119,21 +117,18 @@ public sealed record FileRootSettingsDto(string Id, string Name, string Path, bo
     }
 }
 
-public sealed record RemoteShutdownSettingsDto(bool Enabled, string? ControlToken)
+public sealed record RemoteShutdownSettingsDto(bool Enabled)
 {
     public RemoteShutdownOptions ToOptions()
     {
         return new RemoteShutdownOptions
         {
-            Enabled = Enabled,
-            ControlToken = ControlToken
+            Enabled = Enabled
         };
     }
 
     public static RemoteShutdownSettingsDto FromOptions(RemoteShutdownOptions options)
     {
-        return new RemoteShutdownSettingsDto(
-            options.Enabled,
-            options.ControlToken);
+        return new RemoteShutdownSettingsDto(options.Enabled);
     }
 }

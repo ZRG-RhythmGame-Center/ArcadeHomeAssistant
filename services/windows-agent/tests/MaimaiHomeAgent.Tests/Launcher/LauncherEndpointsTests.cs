@@ -1,8 +1,6 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MaimaiHomeAgent.Admin;
 using MaimaiHomeAgent.Launcher;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
@@ -20,8 +18,6 @@ public sealed class LauncherEndpointsTests : IAsyncLifetime
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
-        builder.Services.Configure<AdminOptions>(options => options.Password = "seganmsl");
-        builder.Services.AddSingleton<AdminGuard>();
         _launcher = new FakeLauncherService();
         builder.Services.AddSingleton<ILauncherService>(_launcher);
 
@@ -38,18 +34,9 @@ public sealed class LauncherEndpointsTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task GetStatus_WithoutAdminPassword_Returns401()
+    public async Task GetStatus_WithoutAuthorization_ReturnsStatus()
     {
-        var response = await _client.GetAsync("/api/launcher/status");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task GetStatus_WithAdminPassword_ReturnsStatus()
-    {
-        Authorize();
-
+        // LAN-only deployment: no Bearer token required.
         var response = await _client.GetAsync("/api/launcher/status");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -60,8 +47,6 @@ public sealed class LauncherEndpointsTests : IAsyncLifetime
     [Fact]
     public async Task Start_WithItemId_CallsLauncherService()
     {
-        Authorize();
-
         var response = await _client.PostAsJsonAsync("/api/launcher/start", new { itemId = "mai" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -71,18 +56,12 @@ public sealed class LauncherEndpointsTests : IAsyncLifetime
     [Fact]
     public async Task Stop_WhenRejected_Returns409()
     {
-        Authorize();
         _launcher.StopResult =
             LauncherActionResult.Rejected(_launcher.GetStatus(), "launcher_item_not_active", "当前没有正在运行的启动项");
 
         var response = await _client.PostAsync("/api/launcher/stop", null);
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-    }
-
-    private void Authorize()
-    {
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "seganmsl");
     }
 
     private sealed class FakeLauncherService : ILauncherService

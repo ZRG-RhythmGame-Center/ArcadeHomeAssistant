@@ -705,19 +705,20 @@ class AgentClientMockWebServerTest {
     }
 
     @Test
-    fun executeRemoteShutdown_postsConfirmAndBearerToken() = runBlocking {
+    fun executeRemoteShutdown_postsConfirm() = runBlocking {
         server.enqueue(
             MockResponse().setResponseCode(200)
                 .setBody("""{"available":true,"state":"executing","error":null}"""),
         )
 
-        val status = client.executeRemoteShutdown(address(), "secret-token")
+        val status = client.executeRemoteShutdown(address())
 
         assertThat(status.state).isEqualTo("executing")
         val recorded = server.takeRequest()
         assertThat(recorded.method).isEqualTo("POST")
         assertThat(recorded.path).isEqualTo("/api/power/shutdown")
-        assertThat(recorded.getHeader("Authorization")).isEqualTo("Bearer secret-token")
+        // LAN no-auth: no Authorization header is sent.
+        assertThat(recorded.getHeader("Authorization")).isNull()
         val bodyJson = Json.parseToJsonElement(recorded.body.readUtf8()).jsonObject
         assertThat(bodyJson["confirm"]?.jsonPrimitive?.boolean).isTrue()
     }
@@ -727,13 +728,13 @@ class AgentClientMockWebServerTest {
         server.enqueue(
             MockResponse()
                 .setResponseCode(401)
-                .setBody("""{"error":"unauthorized","message":"远程关机需要有效控制令牌"}"""),
+                .setBody("""{"error":"unauthorized","message":"未授权"}"""),
         )
 
-        val ex = assertAgentException { client.executeRemoteShutdown(address(), "bad-token") }
+        val ex = assertAgentException { client.executeRemoteShutdown(address()) }
 
         assertThat(ex.apiError.kind).isEqualTo(ApiError.Kind.Unauthorized)
-        assertThat(ex.apiError.message).isEqualTo("远程关机需要有效控制令牌")
+        assertThat(ex.apiError.message).isEqualTo("未授权")
     }
 
     // -------------------------- error code wiring -------------------------

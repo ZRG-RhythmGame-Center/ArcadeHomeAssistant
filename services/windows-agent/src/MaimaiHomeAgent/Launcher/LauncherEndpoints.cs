@@ -1,5 +1,3 @@
-using MaimaiHomeAgent.Admin;
-
 namespace MaimaiHomeAgent.Launcher;
 
 public static class LauncherEndpoints
@@ -8,30 +6,18 @@ public static class LauncherEndpoints
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        app.MapGet("/api/launcher/status", (HttpContext ctx, AdminGuard guard, ILauncherService launcher) =>
-        {
-            if (!guard.IsAuthorized(ctx)) return AdminEndpoints.UnauthorizedResult();
-
-            return Results.Ok(launcher.GetStatus());
-        });
+        app.MapGet("/api/launcher/status", (ILauncherService launcher) =>
+            Results.Ok(launcher.GetStatus()));
 
         app.MapPost("/api/launcher/show",
-            async (HttpContext ctx, AdminGuard guard, ILauncherService launcher, CancellationToken ct) =>
-            {
-                if (!guard.IsAuthorized(ctx)) return AdminEndpoints.UnauthorizedResult();
-
-                return ToResult(await launcher.ShowAsync(ct).ConfigureAwait(false));
-            });
+            async (ILauncherService launcher, CancellationToken ct) =>
+                ToResult(await launcher.ShowAsync(ct).ConfigureAwait(false)));
 
         app.MapPost("/api/launcher/start", async (
-            HttpContext ctx,
             StartLauncherItemRequest? request,
-            AdminGuard guard,
             ILauncherService launcher,
             CancellationToken ct) =>
         {
-            if (!guard.IsAuthorized(ctx)) return AdminEndpoints.UnauthorizedResult();
-
             if (request is null)
                 return Results.BadRequest(new { error = "launcher_start_request_required", message = "启动请求不能为空" });
 
@@ -39,12 +25,8 @@ public static class LauncherEndpoints
         });
 
         app.MapPost("/api/launcher/stop",
-            async (HttpContext ctx, AdminGuard guard, ILauncherService launcher, CancellationToken ct) =>
-            {
-                if (!guard.IsAuthorized(ctx)) return AdminEndpoints.UnauthorizedResult();
-
-                return ToResult(await launcher.StopActiveItemAsync(ct).ConfigureAwait(false));
-            });
+            async (ILauncherService launcher, CancellationToken ct) =>
+                ToResult(await launcher.StopActiveItemAsync(ct).ConfigureAwait(false)));
 
         return app;
     }

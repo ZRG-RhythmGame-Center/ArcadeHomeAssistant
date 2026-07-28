@@ -1,4 +1,3 @@
-using MaimaiHomeAgent.Admin;
 using MaimaiHomeAgent.Files;
 using MaimaiHomeAgent.Launcher;
 using MaimaiHomeAgent.Power;
@@ -25,23 +24,25 @@ public sealed class AgentSettingsServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetAsync_DoesNotExposeAdminPassword()
+    public async Task GetAsync_ReturnsSnapshotWithoutAdminPassword()
     {
-        var service = CreateService("seganmsl");
+        var service = CreateService();
 
         var settings = await service.GetAsync();
 
-        Assert.True(settings.AdminPasswordConfigured);
+        // After LAN no-auth refactor, the snapshot no longer carries
+        // an AdminPasswordConfigured field. Asserting on a property
+        // that's no longer there is the regression guard.
+        Assert.False(string.IsNullOrEmpty(settings.Launcher.ConfirmKey));
     }
 
     [Fact]
-    public async Task UpdateAsync_WithEmptyAdminPassword_DoesNotPersistPassword()
+    public async Task UpdateAsync_WithNoChanges_DoesNotPersistFile()
     {
         var configPath = Path.Combine(_tempDir, "appsettings.user.json");
         var service = CreateService(configPath: configPath);
 
         var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(
-            "",
             null,
             null,
             null,
@@ -74,7 +75,7 @@ public sealed class AgentSettingsServiceTests : IDisposable
                     2, true)
             });
 
-        var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(null, null, launcher, null, null));
+        var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(null, launcher, null, null));
 
         Assert.True(result.Success);
         Assert.True(File.Exists(configPath));
@@ -101,7 +102,7 @@ public sealed class AgentSettingsServiceTests : IDisposable
                     "M", 1, true)
             });
 
-        var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(null, null, launcher, null, null));
+        var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(null, launcher, null, null));
 
         Assert.True(result.Success);
         Assert.True(File.Exists(configPath));
@@ -116,14 +117,28 @@ public sealed class AgentSettingsServiceTests : IDisposable
         var autoStart = new FakeAutoStartManager();
         var service = CreateService(autoStart: autoStart);
 
-        var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(null, true, null, null, null));
+        var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(true, null, null, null));
 
         Assert.True(result.Success);
         Assert.True(autoStart.Enabled);
     }
 
+    [Fact]
+    public async Task UpdateAsync_WithRemoteShutdown_DoesNotRequireControlToken()
+    {
+        var configPath = Path.Combine(_tempDir, "appsettings.user.json");
+        var service = CreateService(configPath: configPath);
+        var remoteShutdown = new RemoteShutdownSettingsDto(true);
+
+        var result = await service.UpdateAsync(new AgentSettingsUpdateRequest(null, null, null, remoteShutdown));
+
+        Assert.True(result.Success);
+        var text = await File.ReadAllTextAsync(configPath);
+        Assert.Contains("\"Enabled\": true", text);
+        Assert.DoesNotContain("ControlToken", text);
+    }
+
     private AgentSettingsService CreateService(
-        string adminPassword = "seganmsl",
         string? configPath = null,
         FakeAutoStartManager? autoStart = null)
     {
@@ -135,7 +150,6 @@ public sealed class AgentSettingsServiceTests : IDisposable
             .Build();
         var fileRoots = new FileRootService(configuration, NullLogger<FileRootService>.Instance);
         return new AgentSettingsService(
-            new StaticOptionsMonitor<AdminOptions>(new AdminOptions { Password = adminPassword }),
             new StaticOptionsMonitor<LauncherOptions>(new LauncherOptions()),
             new StaticOptionsMonitor<RemoteShutdownOptions>(new RemoteShutdownOptions()),
             fileRoots,

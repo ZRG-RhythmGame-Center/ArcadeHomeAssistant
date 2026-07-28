@@ -76,13 +76,12 @@ class AgentClient(
     suspend fun fetchRemoteShutdownStatus(address: String): RemoteShutdownStatus =
         get(address, "/api/power/shutdown", RemoteShutdownStatus.serializer())
 
-    suspend fun executeRemoteShutdown(address: String, controlToken: String): RemoteShutdownStatus = postJson(
+    suspend fun executeRemoteShutdown(address: String): RemoteShutdownStatus = postJson(
         address,
         "/api/power/shutdown",
         RemoteShutdownRequest(confirm = true),
         RemoteShutdownRequest.serializer(),
         RemoteShutdownStatus.serializer(),
-        mapOf("Authorization" to "Bearer $controlToken"),
     )
 
     suspend fun fetchFiles(address: String, rootId: String, path: String, offset: Int = 0, limit: Int = 200): FileListingResult {
@@ -266,7 +265,7 @@ class AgentClient(
         val code = parseErrorCode(body)
         val serverMessage = parseErrorMessage(body)
         val error = when {
-            statusCode == 401 -> ApiError(ApiError.Kind.Unauthorized, serverMessage ?: "未授权，请检查控制令牌", statusCode, code)
+            statusCode == 401 -> ApiError(ApiError.Kind.Unauthorized, serverMessage ?: "未授权", statusCode, code)
             statusCode == 404 -> ApiError(ApiError.Kind.NotFound, serverMessage ?: "未找到 Agent（404）", statusCode, code)
             statusCode == 503 -> ApiError(ApiError.Kind.Busy, serverMessage ?: "服务忙，请稍后重试", statusCode, code)
             statusCode == 502 -> ApiError(ApiError.Kind.DeviceUnavailable, serverMessage ?: "设备不可用", statusCode, code)

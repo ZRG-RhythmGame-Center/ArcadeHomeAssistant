@@ -1,5 +1,3 @@
-using MaimaiHomeAgent.Admin;
-
 namespace MaimaiHomeAgent.Settings;
 
 public static class SettingsEndpoints
@@ -9,22 +7,14 @@ public static class SettingsEndpoints
         ArgumentNullException.ThrowIfNull(app);
 
         app.MapGet("/api/settings",
-            async (HttpContext ctx, AdminGuard guard, IAgentSettingsService settings, CancellationToken ct) =>
-            {
-                if (!guard.IsAuthorized(ctx)) return AdminEndpoints.UnauthorizedResult();
-
-                return Results.Ok(await settings.GetAsync(ct).ConfigureAwait(false));
-            });
+            async (IAgentSettingsService settings, CancellationToken ct) =>
+                Results.Ok(await settings.GetAsync(ct).ConfigureAwait(false)));
 
         app.MapPut("/api/settings", async (
-            HttpContext ctx,
             AgentSettingsUpdateRequest? request,
-            AdminGuard guard,
             IAgentSettingsService settings,
             CancellationToken ct) =>
         {
-            if (!guard.IsAuthorized(ctx)) return AdminEndpoints.UnauthorizedResult();
-
             if (request is null)
                 return Results.BadRequest(new { error = "settings_request_required", message = "设置请求不能为空" });
 

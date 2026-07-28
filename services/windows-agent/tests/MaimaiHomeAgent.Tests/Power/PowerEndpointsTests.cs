@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using MaimaiHomeAgent.Power;
@@ -23,11 +22,7 @@ public sealed class PowerEndpointsTests : IAsyncLifetime
         builder.WebHost.UseTestServer();
 
         _executor = new FakeRemoteShutdownExecutor();
-        builder.Services.Configure<RemoteShutdownOptions>(options =>
-        {
-            options.Enabled = true;
-            options.ControlToken = "secret-token";
-        });
+        builder.Services.Configure<RemoteShutdownOptions>(options => options.Enabled = true);
         builder.Services.AddSingleton<IRemoteShutdownExecutor>(_executor);
         builder.Services.AddSingleton<EventHub>(sp => new EventHub(NullLogger<EventHub>.Instance));
         builder.Services.AddSingleton<EventPublisher>();
@@ -59,21 +54,9 @@ public sealed class PowerEndpointsTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Execute_WithoutToken_Returns401AndDoesNotExecute()
+    public async Task Shutdown_ExecutesImmediatelyWithoutAuthorization()
     {
-        var response = await _client.PostAsJsonAsync("/api/power/shutdown", new { confirm = true });
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Equal("unauthorized", doc.RootElement.GetProperty("error").GetString());
-        Assert.Equal(0, _executor.ExecuteCalls);
-    }
-
-    [Fact]
-    public async Task Shutdown_WithToken_ExecutesImmediately()
-    {
-        Authorize();
-
+        // LAN-only deployment: no Bearer token required.
         var response = await _client.PostAsJsonAsync("/api/power/shutdown", new { confirm = true });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -86,8 +69,6 @@ public sealed class PowerEndpointsTests : IAsyncLifetime
     [Fact]
     public async Task Execute_WithoutConfirm_Returns400AndDoesNotExecute()
     {
-        Authorize();
-
         var response = await _client.PostAsJsonAsync("/api/power/shutdown", new { confirm = false });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -98,7 +79,6 @@ public sealed class PowerEndpointsTests : IAsyncLifetime
     public async Task Execute_WhenFeatureUnsupported_Returns503()
     {
         _executor.IsSupportedValue = false;
-        Authorize();
 
         var response = await _client.PostAsJsonAsync("/api/power/shutdown", new { confirm = true });
 
@@ -112,7 +92,6 @@ public sealed class PowerEndpointsTests : IAsyncLifetime
     public async Task Shutdown_WhenExecutorFails_Returns502AndExposesFailedStatus()
     {
         _executor.Failure = new RemoteShutdownExecutionException("blocked by policy");
-        Authorize();
 
         var response = await _client.PostAsJsonAsync("/api/power/shutdown", new { confirm = true });
 
@@ -123,11 +102,6 @@ public sealed class PowerEndpointsTests : IAsyncLifetime
         AssertCurrentStatusShape(status);
         Assert.Equal("failed", status.GetProperty("state").GetString());
         Assert.Equal("blocked by policy", status.GetProperty("error").GetString());
-    }
-
-    private void Authorize()
-    {
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "secret-token");
     }
 
     private static void AssertCurrentStatusShape(JsonElement status)

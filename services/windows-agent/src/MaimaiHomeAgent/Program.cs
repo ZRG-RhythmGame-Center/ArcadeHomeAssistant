@@ -1,5 +1,4 @@
 using System.Reflection;
-using MaimaiHomeAgent.Admin;
 using MaimaiHomeAgent.Audio;
 using MaimaiHomeAgent.Discovery;
 using MaimaiHomeAgent.Files;
@@ -57,11 +56,9 @@ try
     });
 
     builder.Services.AddOpenApi();
-    builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection("Admin"));
     builder.Services.Configure<DiscoveryOptions>(builder.Configuration.GetSection("Discovery"));
     builder.Services.Configure<LauncherOptions>(builder.Configuration.GetSection("Launcher"));
     builder.Services.Configure<RemoteShutdownOptions>(builder.Configuration.GetSection("RemoteShutdown"));
-    builder.Services.AddSingleton<AdminGuard>();
     builder.Services.AddHostedService<MdnsAdvertiser>();
 
     builder.Services.AddSingleton<AudioStaDispatcher>();
@@ -151,7 +148,6 @@ try
     app.MapFileRootsConfigEndpoints();
     app.MapFileListingEndpoints();
     app.MapFileMutationEndpoints();
-    app.MapAdminEndpoints();
     app.MapSettingsEndpoints();
     app.MapLauncherEndpoints();
     app.MapAudioEndpoints();

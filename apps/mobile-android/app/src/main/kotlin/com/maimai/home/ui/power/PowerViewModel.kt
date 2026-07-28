@@ -27,7 +27,6 @@ data class PowerUiState(
     val machineName: String,
     val agentStatus: AgentStatus? = null,
     val shutdownStatus: RemoteShutdownStatus? = null,
-    val controlToken: String = "",
     val confirmVisible: Boolean = false,
     val isRefreshing: Boolean = false,
     val isExecuting: Boolean = false,
@@ -121,7 +120,9 @@ class PowerViewModel(
     }
 
     fun updateControlToken(value: String) {
-        _uiState.update { it.copy(controlToken = value, errorMessage = null) }
+        // Deprecated: control tokens were removed in the LAN no-auth refactor.
+        // Kept as a no-op so callers can be cleaned up incrementally without
+        // breaking the UI wiring.
     }
 
     fun showConfirm() {
@@ -133,14 +134,9 @@ class PowerViewModel(
     }
 
     fun executeShutdown() {
-        val token = uiState.value.controlToken.trim()
-        if (token.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "请输入控制令牌") }
-            return
-        }
         viewModelScope.launch {
             _uiState.update { it.copy(isExecuting = true, errorMessage = null) }
-            runCatching { agentClient.executeRemoteShutdown(address, token) }
+            runCatching { agentClient.executeRemoteShutdown(address) }
                 .onSuccess { status ->
                     _uiState.update {
                         it.copy(

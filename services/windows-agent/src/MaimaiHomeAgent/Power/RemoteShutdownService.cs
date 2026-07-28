@@ -40,9 +40,7 @@ public sealed class RemoteShutdownService : IRemoteShutdownService
         get
         {
             var options = _options.CurrentValue;
-            return options.Enabled &&
-                   _executor.IsSupported &&
-                   !string.IsNullOrWhiteSpace(options.ControlToken);
+            return options.Enabled && _executor.IsSupported;
         }
     }
 

@@ -10,7 +10,6 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     private readonly ILogger _logger;
     private readonly IAgentSettingsService _settings;
 
-    private string? _adminPassword;
     private bool _autoStartEnabled;
     private string? _backgroundImagePath;
     private int _canvasHeight = 1920;
@@ -21,7 +20,6 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     private string _navigateLeftKey = "Left";
     private string _navigateRightKey = "Right";
     private bool _remoteShutdownEnabled;
-    private string? _remoteShutdownToken;
     private int _selectedCategoryIndex;
     private string? _statusMessage;
     private string _stopKey = "F11";
@@ -30,12 +28,6 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
     {
         _settings = settings;
         _logger = logger;
-    }
-
-    public string? AdminPassword
-    {
-        get => _adminPassword;
-        set => SetField(ref _adminPassword, value);
     }
 
     public bool AutoStartEnabled
@@ -104,12 +96,6 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
         set => SetField(ref _remoteShutdownEnabled, value);
     }
 
-    public string? RemoteShutdownToken
-    {
-        get => _remoteShutdownToken;
-        set => SetField(ref _remoteShutdownToken, value);
-    }
-
     public string? StatusMessage
     {
         get => _statusMessage;
@@ -143,7 +129,6 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
             ConfirmKey = snapshot.Launcher.ConfirmKey;
             StopKey = snapshot.Launcher.StopKey;
             RemoteShutdownEnabled = snapshot.RemoteShutdown.Enabled;
-            RemoteShutdownToken = snapshot.RemoteShutdown.ControlToken;
 
             LauncherItems.Clear();
             foreach (var item in snapshot.Launcher.Items) LauncherItems.Add(LauncherItemViewModel.FromDto(item));
@@ -151,7 +136,6 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
             FileRoots.Clear();
             foreach (var root in snapshot.FileRoots) FileRoots.Add(FileRootViewModel.FromDto(root));
 
-            AdminPassword = null;
             StatusMessage = null;
         }
         catch (Exception ex)
@@ -174,7 +158,6 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
             }
 
             StatusMessage = "设置已保存。";
-            AdminPassword = null;
         }
         catch (Exception ex)
         {
@@ -228,10 +211,9 @@ public sealed class SettingsWindowViewModel : INotifyPropertyChanged
 
         var fileRoots = FileRoots.Select(r => r.ToDto()).ToList();
 
-        var remoteShutdown = new RemoteShutdownSettingsDto(RemoteShutdownEnabled, RemoteShutdownToken);
+        var remoteShutdown = new RemoteShutdownSettingsDto(RemoteShutdownEnabled);
 
         return new AgentSettingsUpdateRequest(
-            string.IsNullOrWhiteSpace(AdminPassword) ? null : AdminPassword,
             AutoStartEnabled,
             launcher,
             fileRoots,

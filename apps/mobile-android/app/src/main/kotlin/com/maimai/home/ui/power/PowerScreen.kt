@@ -19,7 +19,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -32,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -42,7 +40,6 @@ import com.maimai.home.ui.common.CurrentDeviceCard
 import com.maimai.home.ui.common.MaimaiScreenScaffold
 
 object PowerScreenTags {
-    const val TOKEN_FIELD = "power.token"
     const val SHUTDOWN_BUTTON = "power.shutdown"
     const val CONFIRM_BUTTON = "power.confirm"
     const val REFRESH_BUTTON = "power.refresh"
@@ -76,7 +73,6 @@ fun PowerScreen(
         snackbarHostState = snackbarHostState,
         onOpenDevice = onOpenDevice,
         onRefresh = viewModel::refresh,
-        onTokenChange = viewModel::updateControlToken,
         onShowConfirm = viewModel::showConfirm,
         onHideConfirm = viewModel::hideConfirm,
         onExecute = viewModel::executeShutdown,
@@ -90,7 +86,6 @@ internal fun PowerScreenContent(
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     onOpenDevice: () -> Unit,
     onRefresh: () -> Unit,
-    onTokenChange: (String) -> Unit,
     onShowConfirm: () -> Unit,
     onHideConfirm: () -> Unit,
     onExecute: () -> Unit,
@@ -132,7 +127,6 @@ internal fun PowerScreenContent(
                 RemoteShutdownCard(
                     state = state,
                     busy = busy,
-                    onTokenChange = onTokenChange,
                     onShowConfirm = onShowConfirm,
                 )
             }
@@ -153,7 +147,7 @@ internal fun PowerScreenContent(
             confirmButton = {
                 Button(
                     onClick = onExecute,
-                    enabled = state.controlToken.isNotBlank() && !state.isExecuting,
+                    enabled = !state.isExecuting,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                     modifier = Modifier.testTag(PowerScreenTags.CONFIRM_BUTTON),
                 ) {
@@ -173,7 +167,6 @@ internal fun PowerScreenContent(
 private fun RemoteShutdownCard(
     state: PowerUiState,
     busy: Boolean,
-    onTokenChange: (String) -> Unit,
     onShowConfirm: () -> Unit,
 ) {
     BentoCard {
@@ -196,17 +189,6 @@ private fun RemoteShutdownCard(
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
         )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = state.controlToken,
-            onValueChange = onTokenChange,
-            label = { Text("控制令牌") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag(PowerScreenTags.TOKEN_FIELD),
-        )
         Spacer(Modifier.height(16.dp))
         Button(
             onClick = onShowConfirm,
@@ -225,7 +207,7 @@ private fun RemoteShutdownCard(
         if (!state.remoteShutdownAvailable) {
             Spacer(Modifier.height(8.dp))
             Text(
-                "Agent 未启用远程关机，或尚未配置有效控制令牌。",
+                "Agent 未启用远程关机。",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -239,7 +221,7 @@ private fun describePowerState(state: PowerUiState): String {
     return when {
         shutdown?.state == "failed" -> "上次关机失败：${shutdown.error ?: "未知错误"}"
         shutdown?.state == "executing" -> "已开始关机"
-        state.remoteShutdownAvailable -> "远程关机可用。输入控制令牌并确认后会立即关机。"
+        state.remoteShutdownAvailable -> "远程关机可用，确认后会立即关机。"
         else -> "远程关机不可用。"
     }
 }

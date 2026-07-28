@@ -27,7 +27,7 @@ internal sealed class SettingsWindow : Window
 
         var categories = new ListBox
         {
-            ItemsSource = new[] { "管理员", "启动器", "启动项", "文件根目录", "远程关机" },
+            ItemsSource = new[] { "启动器", "启动项", "文件根目录", "远程关机" },
             SelectedIndex = 0
         };
         categories.SelectionChanged += (_, _) =>
@@ -70,27 +70,12 @@ internal sealed class SettingsWindow : Window
     {
         return index switch
         {
-            0 => BuildAdminPage(vm),
-            1 => BuildLauncherPage(vm),
-            2 => BuildLauncherItemsPage(vm),
-            3 => BuildFileRootsPage(vm),
-            4 => BuildRemoteShutdownPage(vm),
+            0 => BuildLauncherPage(vm),
+            1 => BuildLauncherItemsPage(vm),
+            2 => BuildFileRootsPage(vm),
+            3 => BuildRemoteShutdownPage(vm),
             _ => new TextBlock { Text = "未知分类" }
         };
-    }
-
-    private static Control BuildAdminPage(SettingsWindowViewModel vm)
-    {
-        var panel = new StackPanel { Spacing = 12, Margin = new Thickness(16) };
-        panel.Children.Add(new TextBlock { Text = "管理员", FontSize = 18, FontWeight = FontWeight.Bold });
-        panel.Children.Add(LabeledTextBox("管理员密码", vm.AdminPassword ?? "", text => vm.AdminPassword = text, true));
-        panel.Children.Add(new TextBlock
-        {
-            Text = "留空表示不修改当前管理员密码。",
-            Foreground = Brushes.Gray,
-            FontSize = 12
-        });
-        return panel;
     }
 
     private static Control BuildLauncherPage(SettingsWindowViewModel vm)
@@ -236,7 +221,6 @@ internal sealed class SettingsWindow : Window
         var panel = new StackPanel { Spacing = 12, Margin = new Thickness(16) };
         panel.Children.Add(new TextBlock { Text = "远程关机", FontSize = 18, FontWeight = FontWeight.Bold });
         panel.Children.Add(LabeledCheckBox("启用远程关机", vm.RemoteShutdownEnabled, v => vm.RemoteShutdownEnabled = v));
-        panel.Children.Add(LabeledTextBox("控制令牌", vm.RemoteShutdownToken ?? "", v => vm.RemoteShutdownToken = v));
         return panel;
     }
 
