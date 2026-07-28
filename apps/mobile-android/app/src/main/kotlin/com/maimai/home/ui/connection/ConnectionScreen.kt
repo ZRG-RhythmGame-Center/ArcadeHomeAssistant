@@ -37,21 +37,26 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.maimai.home.ServiceLocator
 import com.maimai.home.data.DiscoveredService
+import com.maimai.home.data.KnownDevice
 import com.maimai.home.data.models.AgentStatus
 import com.maimai.home.ui.common.BentoCard
 import com.maimai.home.ui.common.BentoCardTitle
@@ -71,6 +76,7 @@ fun ConnectionScreen(
     viewModel: ConnectionViewModel = viewModel(factory = ConnectionViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val knownDevices by ServiceLocator.preferences.knownDevicesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     LaunchedEffect(viewModel) {
         viewModel.discoveryNavigation.collect { event ->
             onConnected(event.address, event.machineName)
@@ -79,10 +85,18 @@ fun ConnectionScreen(
     }
     ConnectionScreenContent(
         state = uiState,
+        knownDevices = knownDevices,
         onUpdateAddress = viewModel::updateAddress,
         onTestConnection = viewModel::testConnection,
         onScanLan = viewModel::scanLan,
         onUseDiscoveredService = viewModel::useDiscoveredService,
+        onUseKnownDevice = { address ->
+            viewModel.updateAddress(address)
+            viewModel.testConnection()
+        },
+        onRemoveKnownDevice = { address ->
+            viewModel.removeKnownDevice(address)
+        },
         onEnterDevice = { address, machineName ->
             onConnected(address, machineName)
             viewModel.clearConnectedStatus()
@@ -97,10 +111,13 @@ fun ConnectionScreen(
 @Composable
 internal fun ConnectionScreenContent(
     state: ConnectionUiState,
+    knownDevices: List<KnownDevice> = emptyList(),
     onUpdateAddress: (String) -> Unit,
     onTestConnection: () -> Unit,
     onScanLan: () -> Unit,
     onUseDiscoveredService: (DiscoveredService) -> Unit,
+    onUseKnownDevice: (String) -> Unit = {},
+    onRemoveKnownDevice: (String) -> Unit = {},
     onEnterDevice: (String, String) -> Unit,
 ) {
     MaimaiScreenScaffold { padding ->
@@ -132,6 +149,13 @@ internal fun ConnectionScreenContent(
                 onScanLan = onScanLan,
                 onUseDiscoveredService = onUseDiscoveredService,
             )
+            if (knownDevices.isNotEmpty()) {
+                KnownDevicesCard(
+                    devices = knownDevices,
+                    onUseDevice = onUseKnownDevice,
+                    onRemoveDevice = onRemoveKnownDevice,
+                )
+            }
             ManualConnectCard(
                 address = state.address,
                 isTesting = state.isTesting,
@@ -493,5 +517,51 @@ fun ErrorCard(
 ) {
     BentoCard(modifier = modifier) {
         Text(text, color = MaterialTheme.colorScheme.error)
+    }
+}
+
+@Composable
+private fun KnownDevicesCard(
+    devices: List<KnownDevice>,
+    onUseDevice: (String) -> Unit,
+    onRemoveDevice: (String) -> Unit,
+) {
+    BentoCard {
+        BentoCardTitle(text = "最近设备", leadingIcon = Icons.Filled.History)
+        Spacer(Modifier.height(12.dp))
+        devices.forEach { device ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 6.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = device.name.ifBlank { device.address },
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (device.name.isNotBlank() && device.name != device.address) {
+                        Text(
+                            text = device.address,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                TextButton(
+                    onClick = { onUseDevice(device.address) },
+                    modifier = Modifier.testTag("known-device-connect-" + device.address),
+                ) {
+                    Text("连接")
+                }
+                IconButton(
+                    onClick = { onRemoveDevice(device.address) },
+                    modifier = Modifier.testTag("known-device-remove-" + device.address),
+                ) {
+                    Icon(Icons.Filled.Close, contentDescription = "移除", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
     }
 }

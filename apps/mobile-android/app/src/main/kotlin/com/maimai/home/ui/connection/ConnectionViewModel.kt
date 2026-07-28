@@ -89,6 +89,12 @@ class ConnectionViewModel(
         _uiState.update { it.copy(address = address, errorMessage = null) }
     }
 
+    fun removeKnownDevice(address: String) {
+        viewModelScope.launch {
+            preferences.removeKnownDevice(address)
+        }
+    }
+
     fun testConnection() {
         viewModelScope.launch {
             val address = uiState.value.address.trim()
@@ -96,6 +102,7 @@ class ConnectionViewModel(
             runCatching { agentClient.fetchStatus(address) }
                 .onSuccess { status ->
                     preferences.saveAgentAddress(address)
+                    preferences.addKnownDevice(address, status.machineName)
                     _uiState.update { it.copy(isTesting = false, connectedStatus = status) }
                 }
                 .onFailure { error ->
@@ -128,6 +135,7 @@ class ConnectionViewModel(
             _uiState.update { it.copy(address = service.address, errorMessage = null, connectedStatus = null) }
             runCatching { agentClient.fetchStatus(service.address) }
                 .onSuccess { status ->
+                    preferences.addKnownDevice(service.address, status.machineName)
                     _uiState.update { it.copy(connectedStatus = status) }
                     // One-shot navigation signal — ConnectionScreen observes
                     // this Flow with collectAsStateWithLifecycle and forwards
