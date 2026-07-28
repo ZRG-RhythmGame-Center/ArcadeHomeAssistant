@@ -21,6 +21,8 @@ import com.maimai.home.ui.audio.AudioTabUnconnected
 import com.maimai.home.ui.connection.ConnectionScreen
 import com.maimai.home.ui.files.FilesScreen
 import com.maimai.home.ui.files.FilesTabUnconnected
+import com.maimai.home.ui.launcher.LauncherScreen
+import com.maimai.home.ui.launcher.LauncherTabUnconnected
 import com.maimai.home.ui.power.PowerScreen
 import com.maimai.home.ui.power.PowerTabUnconnected
 
@@ -126,6 +128,31 @@ fun MaimaiNavHost() {
                     })
                 } else {
                     FilesScreen(
+                        address = handle.address,
+                        machineName = handle.machineName,
+                        onSwitchDevice = {
+                            navController.navigate(AppDestination.Device.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
+                }
+            }
+            composable(AppDestination.Launcher.route) {
+                val handle = connectionHandle
+                if (handle == null) {
+                    LauncherTabUnconnected(onGoToConnection = {
+                        navController.navigate(AppDestination.Device.route) {
+                            popUpTo(AppDestination.Device.route) { saveState = true }
+                            launchSingleTop = true
+                        }
+                    })
+                } else {
+                    LauncherScreen(
                         address = handle.address,
                         machineName = handle.machineName,
                         onSwitchDevice = {

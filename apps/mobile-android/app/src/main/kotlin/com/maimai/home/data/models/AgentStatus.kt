@@ -23,4 +23,6 @@ data class Capabilities(
     val fileManagement: Boolean = false,
     val discoveryBroadcast: Boolean = false,
     val remoteShutdown: Boolean = false,
+    val settingsManagement: Boolean = false,
+    val launcher: Boolean = false,
 )
