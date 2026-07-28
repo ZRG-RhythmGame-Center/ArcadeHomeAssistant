@@ -147,6 +147,28 @@ class AgentClient(
         }
     }
 
+    /**
+     * Streams a download directly into a SAF-chosen destination Uri
+     * (returned by ACTION_CREATE_DOCUMENT). The user picks a visible
+     * location (Downloads, internal storage, SD card, cloud provider)
+     * instead of the app-private external directory.
+     */
+    suspend fun downloadFile(address: String, rootId: String, path: String, targetUri: Uri, contentResolver: ContentResolver) {
+        val request = Request.Builder()
+            .url("${normalizedBaseUrl(address)}/api/files/download?rootId=${Uri.encode(rootId)}&path=${Uri.encode(path)}")
+            .get()
+            .build()
+        withContext(kotlinx.coroutines.Dispatchers.IO) {
+            execute(request).use { response ->
+                if (!response.isSuccessful) throw mapError(response.code, response.body?.string())
+                val body = response.body ?: throw AgentRequestException(ApiError(ApiError.Kind.Network, "响应为空"))
+                contentResolver.openOutputStream(targetUri, "w")?.use { output ->
+                    body.byteStream().use { input -> input.copyTo(output) }
+                } ?: throw AgentRequestException(ApiError(ApiError.Kind.Unknown, "无法写入目标位置"))
+            }
+        }
+    }
+
     suspend fun deleteFile(address: String, rootId: String, path: String) {
         requestUnit(
             "${normalizedBaseUrl(address)}/api/files",

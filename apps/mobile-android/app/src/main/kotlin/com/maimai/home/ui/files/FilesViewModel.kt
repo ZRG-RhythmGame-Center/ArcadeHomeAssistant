@@ -256,16 +256,14 @@ class FilesViewModel(
         loadListing(root, current.path, reset = false, offset = nextOffset)
     }
 
-    fun download(entry: FileEntry, onDone: (String) -> Unit, onError: (String) -> Unit) {
+    fun download(entry: FileEntry, targetUri: Uri, onDone: (String) -> Unit, onError: (String) -> Unit) {
         val root = _uiState.value.selectedRoot ?: return
         val path = currentEntryPath(entry)
         viewModelScope.launch {
             runCatching {
-                val directory = getApplication<Application>().getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS)
-                    ?: throw IllegalStateException("下载目录不可用")
-                val target = File(directory, entry.name)
-                agentClient.downloadFile(address, root.id, path, target)
-                target.absolutePath
+                val cr = getApplication<Application>().contentResolver
+                agentClient.downloadFile(address, root.id, path, targetUri, cr)
+                entry.name
             }.onSuccess(onDone)
                 .onFailure { error -> onError((error as? AgentRequestException)?.apiError?.message ?: "网络错误") }
         }

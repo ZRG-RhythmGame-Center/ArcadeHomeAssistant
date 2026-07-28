@@ -143,6 +143,24 @@ fun FilesScreen(
         pendingConflict = { pendingConflict = null; retry() }
     }
 
+    // SAF download: keep the entry the user wants, then ask the system to
+    // create a document the user can see (Downloads, SD card, cloud, etc).
+    var pendingDownloadEntry by remember { mutableStateOf<FileEntry?>(null) }
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream"),
+    ) { uri ->
+        val entry = pendingDownloadEntry
+        pendingDownloadEntry = null
+        if (uri != null && entry != null) {
+            viewModel.download(
+                entry,
+                uri,
+                { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
+                { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
+            )
+        }
+    }
+
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) viewModel.upload(
             uri,
@@ -164,11 +182,9 @@ fun FilesScreen(
         onNavigateToPath = viewModel::navigateToPath,
         onLoadMore = viewModel::loadMore,
         onDownload = { entry ->
-            viewModel.download(
-                entry,
-                { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
-                { msg -> scope.launch { snackbarHostState.showSnackbar(msg) } },
-            )
+            // Defer the actual download until the user picks a destination Uri.
+            pendingDownloadEntry = entry
+            createDocumentLauncher.launch(entry.name)
         },
         onUpload = { launcher.launch("*/*") },
         onDelete = { entry ->

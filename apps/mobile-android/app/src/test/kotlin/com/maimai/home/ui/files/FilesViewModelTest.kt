@@ -346,25 +346,29 @@ class FilesViewModelTest {
         var doneMsg: String? = null
         var errorMsg: String? = null
         val entry = FileEntry(name = "file.txt", kind = "file", size = 100L, modified = "2026-01-01T00:00:00Z")
+        val targetUri = mockk<android.net.Uri>(relaxed = true)
 
-        vm.download(entry, { doneMsg = it }, { errorMsg = it })
+        vm.download(entry, targetUri, { doneMsg = it }, { errorMsg = it })
         advanceUntilIdle()
 
         assertThat(errorMsg).isNull()
-        assertThat(doneMsg).isNotNull()
+        assertThat(doneMsg).isEqualTo("file.txt")
+        coVerify { agentClient.downloadFile(address, writableRoot.id, "file.txt", targetUri, any()) }
     }
 
     @Test
     fun download_failure_callsOnError() = runTest {
         advanceUntilIdle()
 
-        coEvery { agentClient.downloadFile(any(), any(), any(), any()) } throws
-            AgentRequestException(ApiError(ApiError.Kind.NotFound, "文件不存在"))
+        coEvery {
+            agentClient.downloadFile(any(), any(), any(), any<android.net.Uri>(), any<android.content.ContentResolver>())
+        } throws AgentRequestException(ApiError(ApiError.Kind.NotFound, "文件不存在"))
 
         var errorMsg: String? = null
         val entry = FileEntry(name = "missing.txt", kind = "file", size = null, modified = "2026-01-01T00:00:00Z")
+        val targetUri = mockk<android.net.Uri>(relaxed = true)
 
-        vm.download(entry, {}, { errorMsg = it })
+        vm.download(entry, targetUri, {}, { errorMsg = it })
         advanceUntilIdle()
 
         assertThat(errorMsg).isEqualTo("文件不存在")
