@@ -10,6 +10,7 @@ import com.maimai.home.data.models.AudioDevice
 import com.maimai.home.data.models.AudioState
 import com.maimai.home.data.models.FileEntry
 import com.maimai.home.data.models.FileRoot
+import com.maimai.home.data.models.LauncherStatus
 import com.maimai.home.data.models.RemoteShutdownStatus
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -83,6 +84,36 @@ class AgentClient(
         RemoteShutdownRequest.serializer(),
         RemoteShutdownStatus.serializer(),
     )
+
+    // ── Launcher ────────────────────────────────────────────────────────────
+
+    suspend fun fetchLauncherStatus(address: String): LauncherStatus =
+        get(address, "/api/launcher/status", LauncherStatus.serializer())
+
+    suspend fun showLauncher(address: String): LauncherStatus = postJson(
+        address,
+        "/api/launcher/show",
+        body = Unit,
+        bodySerializer = kotlinx.serialization.serializer(),
+        responseSerializer = LauncherStatus.serializer(),
+    )
+
+    suspend fun startLauncherItem(address: String, itemId: String): LauncherStatus = postJson(
+        address,
+        "/api/launcher/start",
+        StartLauncherItemRequest(itemId),
+        StartLauncherItemRequest.serializer(),
+        LauncherStatus.serializer(),
+    )
+
+    suspend fun stopLauncherItem(address: String): LauncherStatus = postJson(
+        address,
+        "/api/launcher/stop",
+        body = Unit,
+        bodySerializer = kotlinx.serialization.serializer(),
+        responseSerializer = LauncherStatus.serializer(),
+    )
+
 
     suspend fun fetchFiles(address: String, rootId: String, path: String, offset: Int = 0, limit: Int = 200): FileListingResult {
         val url = "${normalizedBaseUrl(address)}/api/files?rootId=${Uri.encode(rootId)}&path=${Uri.encode(path)}&offset=$offset&limit=$limit"
@@ -347,4 +378,5 @@ class AgentClient(
 @Serializable private data class RenameRequest(val rootId: String, val path: String, val newName: String, val confirm: Boolean, val overwrite: Boolean)
 @Serializable private data class MoveRequest(val rootId: String, val fromPath: String, val toPath: String, val confirm: Boolean, val overwrite: Boolean)
 @Serializable private data class RemoteShutdownRequest(val confirm: Boolean)
+@Serializable private data class StartLauncherItemRequest(val itemId: String)
 @Serializable private data class ErrorResponse(val error: String, val message: String? = null)
