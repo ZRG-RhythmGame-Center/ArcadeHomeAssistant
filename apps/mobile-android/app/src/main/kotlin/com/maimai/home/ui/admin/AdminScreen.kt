@@ -16,12 +16,15 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -45,6 +48,7 @@ object AdminScreenTags {
     const val REFRESH_BUTTON = "admin.refresh"
     const val SNACKBAR_HOST = "admin.snackbar"
     const val LAUNCHER_ITEM_BUTTON_PREFIX = "admin.launcher.item."
+    const val SAVE_BUTTON = "admin.save"
 }
 
 @Composable
@@ -77,6 +81,10 @@ fun AdminScreen(
         onRefresh = viewModel::refresh,
         onSwitchDevice = onSwitchDevice,
         onStartItem = viewModel::startLauncherItem,
+        onAutoStartChange = viewModel::updateAutoStartEnabled,
+        onRemoteShutdownChange = viewModel::updateRemoteShutdownEnabled,
+        onLauncherFieldChange = viewModel::updateLauncherField,
+        onSave = viewModel::saveCurrentSettings,
     )
 }
 
@@ -88,6 +96,10 @@ internal fun AdminScreenContent(
     onRefresh: () -> Unit,
     onSwitchDevice: () -> Unit,
     onStartItem: (String) -> Unit,
+    onAutoStartChange: (Boolean) -> Unit = {},
+    onRemoteShutdownChange: (Boolean) -> Unit = {},
+    onLauncherFieldChange: (String, Any?) -> Unit = { _, _ -> },
+    onSave: () -> Unit = {},
 ) {
     MaimaiScreenScaffold(
         topBarActions = {
@@ -122,13 +134,31 @@ internal fun AdminScreenContent(
                 )
             }
             item {
-                BasicSettingsCard(state)
+                BasicSettingsCard(state, onAutoStartChange = onAutoStartChange, onLauncherFieldChange = onLauncherFieldChange)
             }
             item {
                 LauncherItemsCard(state = state, onStartItem = onStartItem)
             }
             item {
-                RemoteShutdownSettingsCard(state)
+                RemoteShutdownSettingsCard(state, onRemoteShutdownChange = onRemoteShutdownChange)
+            }
+            item {
+                Button(
+                    onClick = onSave,
+                    enabled = state.settings != null && !state.isSaving,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(AdminScreenTags.SAVE_BUTTON),
+                ) {
+                    if (state.isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.height(16.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(Modifier.height(0.dp))
+                    }
+                    Text(if (state.isSaving) "保存中…" else "保存设置")
+                }
             }
             item { Spacer(Modifier.height(24.dp)) }
         }
@@ -136,7 +166,11 @@ internal fun AdminScreenContent(
 }
 
 @Composable
-private fun BasicSettingsCard(state: AdminUiState) {
+private fun BasicSettingsCard(
+    state: AdminUiState,
+    onAutoStartChange: (Boolean) -> Unit,
+    onLauncherFieldChange: (String, Any?) -> Unit,
+) {
     val settings = state.settings
     BentoCard {
         BentoCardTitle(text = "基本设置", leadingIcon = Icons.Filled.Settings)
@@ -145,15 +179,32 @@ private fun BasicSettingsCard(state: AdminUiState) {
             Text("尚未加载设置。", color = MaterialTheme.colorScheme.onSurfaceVariant)
             return@BentoCard
         }
-        SettingRow("开机自启", if (settings.autoStartEnabled) "已启用" else "未启用")
-        SettingRow("启动器自动显示", if (settings.launcher.showOnAgentStart) "是" else "否")
-        SettingRow("显示延迟秒数", settings.launcher.showDelaySeconds.toString())
-        SettingRow("画布尺寸", "${settings.launcher.canvasWidth}×${settings.launcher.canvasHeight}")
-        SettingRow("壁纸路径", settings.launcher.backgroundImagePath ?: "（默认）")
-        SettingRow("左移键", settings.launcher.navigateLeftKey)
-        SettingRow("右移键", settings.launcher.navigateRightKey)
-        SettingRow("确认键", settings.launcher.confirmKey)
-        SettingRow("关闭键", settings.launcher.stopKey)
+        SwitchRow("开机自启", settings.autoStartEnabled, onAutoStartChange)
+        SwitchRow(
+            "启动器自动显示",
+            settings.launcher.showOnAgentStart,
+        ) { v -> onLauncherFieldChange("showOnAgentStart", v) }
+        TextFieldRow(
+            "显示延迟秒数",
+            settings.launcher.showDelaySeconds.toString(),
+        ) { v -> onLauncherFieldChange("showDelaySeconds", v) }
+        TextFieldRow(
+            "画布宽度",
+            settings.launcher.canvasWidth.toString(),
+        ) { v -> onLauncherFieldChange("canvasWidth", v) }
+        TextFieldRow(
+            "画布高度",
+            settings.launcher.canvasHeight.toString(),
+        ) { v -> onLauncherFieldChange("canvasHeight", v) }
+        TextFieldRow(
+            "壁纸路径",
+            settings.launcher.backgroundImagePath ?: "",
+            placeholder = "留空使用默认壁纸",
+        ) { v -> onLauncherFieldChange("backgroundImagePath", v.ifBlank { null }) }
+        TextFieldRow("左移键", settings.launcher.navigateLeftKey) { v -> onLauncherFieldChange("navigateLeftKey", v) }
+        TextFieldRow("右移键", settings.launcher.navigateRightKey) { v -> onLauncherFieldChange("navigateRightKey", v) }
+        TextFieldRow("确认键", settings.launcher.confirmKey) { v -> onLauncherFieldChange("confirmKey", v) }
+        TextFieldRow("关闭键", settings.launcher.stopKey) { v -> onLauncherFieldChange("stopKey", v) }
     }
 }
 
@@ -215,7 +266,10 @@ private fun LauncherItemRow(
 }
 
 @Composable
-private fun RemoteShutdownSettingsCard(state: AdminUiState) {
+private fun RemoteShutdownSettingsCard(
+    state: AdminUiState,
+    onRemoteShutdownChange: (Boolean) -> Unit,
+) {
     val settings = state.settings
     BentoCard {
         BentoCardTitle(text = "远程关机")
@@ -224,19 +278,45 @@ private fun RemoteShutdownSettingsCard(state: AdminUiState) {
             Text("尚未加载设置。", color = MaterialTheme.colorScheme.onSurfaceVariant)
             return@BentoCard
         }
-        SettingRow("启用远程关机", if (settings.remoteShutdown.enabled) "已启用" else "未启用")
+        SwitchRow("启用远程关机", settings.remoteShutdown.enabled, onRemoteShutdownChange)
     }
 }
 
 @Composable
-private fun SettingRow(label: String, value: String) {
+private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
+
+@Composable
+private fun TextFieldRow(
+    label: String,
+    value: String,
+    placeholder: String? = null,
+    onChange: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(0.4f))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onChange,
+            singleLine = true,
+            placeholder = placeholder?.let { { Text(it) } },
+            modifier = Modifier.weight(0.6f),
+        )
     }
 }

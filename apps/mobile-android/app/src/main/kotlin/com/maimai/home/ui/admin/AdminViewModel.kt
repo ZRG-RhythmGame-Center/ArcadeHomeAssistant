@@ -139,6 +139,57 @@ class AdminViewModel(
         }
     }
 
+    /**
+     * Convenience: build an update request from the current snapshot and
+     * call [saveSettings]. UI edits mutate the snapshot in place via the
+     * update* methods below; this packages the result for PUT /api/settings.
+     */
+    fun saveCurrentSettings() {
+        val current = _uiState.value.settings ?: return
+        saveSettings(
+            AgentSettingsUpdateRequest(
+                autoStartEnabled = current.autoStartEnabled,
+                launcher = current.launcher,
+                fileRoots = current.fileRoots,
+                remoteShutdown = current.remoteShutdown,
+            ),
+        )
+    }
+
+    fun updateAutoStartEnabled(value: Boolean) {
+        _uiState.update { it.copy(settings = it.settings?.copy(autoStartEnabled = value)) }
+    }
+
+    fun updateRemoteShutdownEnabled(value: Boolean) {
+        _uiState.update {
+            it.copy(
+                settings = it.settings?.copy(
+                    remoteShutdown = it.settings.remoteShutdown.copy(enabled = value),
+                ),
+            )
+        }
+    }
+
+    fun updateLauncherField(field: String, value: Any?) {
+        _uiState.update { state ->
+            val s = state.settings ?: return@update state
+            val l = s.launcher
+            val updated = when (field) {
+                "showOnAgentStart" -> l.copy(showOnAgentStart = value as Boolean)
+                "showDelaySeconds" -> l.copy(showDelaySeconds = (value as String).toIntOrNull() ?: l.showDelaySeconds)
+                "canvasWidth" -> l.copy(canvasWidth = (value as String).toIntOrNull() ?: l.canvasWidth)
+                "canvasHeight" -> l.copy(canvasHeight = (value as String).toIntOrNull() ?: l.canvasHeight)
+                "backgroundImagePath" -> l.copy(backgroundImagePath = value as String?)
+                "navigateLeftKey" -> l.copy(navigateLeftKey = value as String)
+                "navigateRightKey" -> l.copy(navigateRightKey = value as String)
+                "confirmKey" -> l.copy(confirmKey = value as String)
+                "stopKey" -> l.copy(stopKey = value as String)
+                else -> l
+            }
+            state.copy(settings = s.copy(launcher = updated))
+        }
+    }
+
     fun startLauncherItem(itemId: String) {
         viewModelScope.launch {
             runCatching { agentClient.startLauncherItem(address, itemId) }
