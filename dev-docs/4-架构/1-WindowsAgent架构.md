@@ -16,7 +16,7 @@ source_of_truth:
 
 ## 目的
 
-记录 Windows Agent 已落地的启动骨架、LAN-only 安全边界、远程关机控制令牌、运行方式、状态接口、日志与开发注意事项。
+记录 Windows Agent 已落地的启动骨架、LAN-only 安全边界、远程关机、运行方式、状态接口、日志与开发注意事项。
 
 ## 当前代码状态
 
@@ -88,7 +88,7 @@ source_of_truth:
 
 当前源码没有 `Security/` 目录、`AuthMiddleware`、配对码端点或 token 管理端点。开发者不要假设普通音频、文件或状态 API 已被 Bearer token 保护。
 
-远程关机是当前唯一带独立控制令牌的 HTTP 能力，令牌只从请求头读取：
+远程关机为 LAN-only 免鉴权 HTTP 能力，请求体携带 `confirm: true` 即可执行：
 
 ```http
 Authorization: Bearer <RemoteShutdown.ControlToken>
@@ -116,14 +116,14 @@ Authorization: Bearer <RemoteShutdown.ControlToken>
 错误约定：
 
 - 400：缺少 `confirm: true`
-- 401：控制令牌缺失或不匹配
+- 503：远程关机当前不可用（未启用或关机正在执行）
 - 409：远程关机正在执行
 - 503：远程关机不可用，例如配置未启用、令牌为空、非 Windows 平台或执行器不支持
 - 502：系统关机命令执行失败
 
 ### 管理员鉴权
 
-统一设置接口和启动选择器管理接口均要求管理员密码，通过请求头传递：
+统一设置接口和启动选择器管理接口均要求LAN-only 免鉴权，通过请求头传递：
 
 ```http
 Authorization: Bearer <Admin.Password>
@@ -135,12 +135,12 @@ Authorization: Bearer <Admin.Password>
 
 | 端点 | 说明 | 认证要求 |
 |---|---|---|
-| `GET /api/settings` | 读取完整配置快照（`AgentSettingsSnapshot`） | 管理员密码 |
-| `PUT /api/settings` | 保存配置（`AgentSettingsUpdateRequest`），成功返回新快照 | 管理员密码 |
+| `GET /api/settings` | 读取完整配置快照（`AgentSettingsSnapshot`） | LAN-only 免鉴权 |
+| `PUT /api/settings` | 保存配置（`AgentSettingsUpdateRequest`），成功返回新快照 | LAN-only 免鉴权 |
 
 `AgentSettingsSnapshot` 包含以下字段：
 
-- `adminPasswordConfigured`：管理员密码是否已配置（布尔值，不返回密码明文）
+- `adminPasswordConfigured`：LAN-only 免鉴权是否已配置（布尔值，不返回密码明文）
 - `autoStartEnabled`：开机自启状态
 - `launcher`：启动选择器配置（见 `LauncherSettingsDto`）
 - `fileRoots`：文件根目录列表
@@ -163,9 +163,9 @@ Authorization: Bearer <Admin.Password>
 | 端点 | 说明 | 认证要求 |
 |---|---|---|
 | `GET /api/launcher/status` | 读取启动选择器窗口和当前运行启动项状态 | 无 |
-| `POST /api/launcher/show` | 重新显示启动选择器 | 管理员密码 |
-| `POST /api/launcher/start` | 按启动项 ID 启动指定启动项（`{ "itemId": "..." }`） | 管理员密码 |
-| `POST /api/launcher/stop` | 调用当前运行启动项的关闭命令 | 管理员密码 |
+| `POST /api/launcher/show` | 重新显示启动选择器 | LAN-only 免鉴权 |
+| `POST /api/launcher/start` | 按启动项 ID 启动指定启动项（`{ "itemId": "..." }`） | LAN-only 免鉴权 |
+| `POST /api/launcher/stop` | 调用当前运行启动项的关闭命令 | LAN-only 免鉴权 |
 
 `LauncherStatusDto` 字段：`isVisible`、`hasActiveItem`、`activeItemId`、`activeItemName`、`state`、`lastError`。
 
@@ -211,7 +211,7 @@ http://0.0.0.0:8765
 字段说明：
 
 - `Enabled`：总开关，默认 `false`，未启用时 `capabilities.remoteShutdown = false`
-- `ControlToken`：远程关机控制令牌，默认空；为空时即使 `Enabled = true` 也不可用
+- 远程关机为 LAN-only 免鉴权，无需控制令牌
 
 注意：远程关机没有延迟参数。PC Web 与 Android 都只发送 `{ "confirm": true }`，服务端在令牌校验通过后立即执行关机。
 
@@ -387,7 +387,7 @@ dotnet tool install -g csharp-ls
 
 建议接下来优先做：
 
-1. 为远程关机控制令牌提供更友好的本机配置入口，避免用户手工编辑 `appsettings.json`
+1. ~~为远程关机控制令牌提供更友好的本机配置入口~~（已完成：移除控制令牌，改为 LAN-only 免鉴权）
 2. 单文件打包与防火墙放行说明继续保持同步，尤其是 PC Web `/power` 静态路由
 
 ---
@@ -402,5 +402,5 @@ dotnet tool install -g csharp-ls
 | 2026-06-12 19:09 | Maimai Dev | 补充 Windows Agent 本机桌面 UI 迁移状态：设置窗口和启动器已迁移到 Avalonia，托盘消息循环改为原生 Win32，项目不再启用 WinForms；同步记录 Avalonia 依赖和验证结果。 |
 | 2026-06-12 | Maimai Dev | 补充管理员鉴权、统一设置接口（`/api/settings`）、启动选择器管理接口（`/api/launcher/*`）说明；`capabilities` 增加 `settingsManagement` 和 `launcher` 字段。 |
 | 2026-06-03 10:05 | Maimai Dev | 远程关机状态响应收敛为 `available`、`state`、`error`，移除旧状态字段和 `/api/events` 查询参数透传。 |
-| 2026-06-03 09:50 | Maimai Dev | 远程关机改为控制令牌确认后立即执行，移除延迟配置、撤销接口、排程状态和对应测试描述。 |
+| 2026-07-30 | Maimai Dev | 远程关机移除控制令牌，改为 LAN-only 免鉴权 `POST /api/power/shutdown { confirm: true }`。 |
 | 2026-06-02 20:38 | Maimai Dev | 新增远程关机模块、配置、接口、安全边界和测试说明；移除已不存在的配对/TokenAdmin 接口与 Security 测试描述并归档。 |

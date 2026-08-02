@@ -83,17 +83,10 @@ class FilesViewModel(
         address = address,
         machineName = machineName,
         agentClient = ServiceLocator.agentClient,
-        eventFlow = kotlinx.coroutines.flow.emptyFlow(),
+        eventFlow = ServiceLocator.sharedEventStream.events,
     )
 
     private val json: Json = ServiceLocator.json
-
-    /**
-     * Production EventStream wired by [start]; null in tests (eventFlow is
-     * injected directly).
-     */
-    private var eventStream: EventStream? = null
-    private var eventJob: Job? = null
 
     private val _uiState = MutableStateFlow(FilesUiState(address = address, machineName = machineName))
     val uiState: StateFlow<FilesUiState> = _uiState.asStateFlow()
@@ -163,35 +156,15 @@ class FilesViewModel(
     }
 
     /**
-     * Called by the production screen via DisposableEffect. Creates a real
-     * [EventStream] and forwards its events into the WS subscription set up
-     * in [subscribeToWsEvents]. The screen calls [stop] on dispose.
-     *
-     * Tests do NOT call this; they pass `eventFlow` directly via the primary
-     * constructor.
+     * Called by the production screen via DisposableEffect. The shared event
+     * stream is managed by [ServiceLocator]; this just ensures we're subscribed.
      */
     fun start() {
-        if (eventStream != null) return
-        val stream = EventStream(ServiceLocator.okHttpClient, json, address) {
-            // On reconnect, refresh the listing.
-            refresh()
-        }
-        eventStream = stream
-        // Production uses the real EventStream; tests inject eventFlow directly.
-        eventJob = viewModelScope.launch {
-            stream.events
-                .filter(::isFileMutationEvent)
-                .debounce(500L)
-                .collect { event -> handleFileEvent(event) }
-        }
-        stream.connect()
+        // Subscription is already wired via the constructor-injected eventFlow.
     }
 
     fun stop() {
-        eventJob?.cancel()
-        eventJob = null
-        eventStream?.disconnect()
-        eventStream = null
+        // SharedEventStream is managed by ServiceLocator; nothing to disconnect.
     }
 
     private fun isFileMutationEvent(event: EventEnvelope): Boolean =
@@ -252,7 +225,7 @@ class FilesViewModel(
         val listing = current.listing ?: return
         if (!listing.truncated) return
         if (current.isRefreshing) return
-        val nextOffset = current.loadedOffset + listing.entries.size
+        val nextOffset = current.loadedOffset
         loadListing(root, current.path, reset = false, offset = nextOffset)
     }
 

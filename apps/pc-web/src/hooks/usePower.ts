@@ -31,7 +31,7 @@ export function useRemoteShutdownStatus() {
 export function useExecuteRemoteShutdown() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (controlToken: string) => executeRemoteShutdown(controlToken),
+    mutationFn: () => executeRemoteShutdown(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: powerQueryKeys.shutdown });
       queryClient.invalidateQueries({ queryKey: powerQueryKeys.agentStatus });

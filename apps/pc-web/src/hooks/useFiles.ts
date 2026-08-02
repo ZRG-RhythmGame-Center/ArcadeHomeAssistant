@@ -53,6 +53,26 @@ export function useFileListing(rootId: string | null, path: string) {
   });
 }
 
+/**
+ * Load the next page of entries for a listing. Returns the concatenated
+ * entries so the caller can update its UI state.
+ */
+export function useLoadMore(rootId: string | null, path: string) {
+  const queryClient = useQueryClient();
+  return useMutation<FileListingResult, Error, { offset: number }>({
+    mutationFn: ({ offset }) => getFileListing(rootId as string, path, offset),
+    onSuccess: (data) => {
+      const queryKey = filesKeys.listing(rootId as string, path);
+      const previous = queryClient.getQueryData<FileListingResult>(queryKey);
+      if (previous) {
+        const seen = new Set(previous.entries.map((e) => `${e.name}-${e.kind}`));
+        const merged = [...previous.entries, ...data.entries.filter((e) => !seen.has(`${e.name}-${e.kind}`))];
+        queryClient.setQueryData(queryKey, { ...data, entries: merged });
+      }
+    },
+  });
+}
+
 export interface UploadVariables {
   rootId: string;
   path: string;

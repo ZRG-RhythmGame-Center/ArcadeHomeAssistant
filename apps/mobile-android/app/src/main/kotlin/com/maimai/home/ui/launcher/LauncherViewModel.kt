@@ -46,14 +46,11 @@ class LauncherViewModel(
         address = address,
         machineName = machineName,
         agentClient = ServiceLocator.agentClient,
-        eventFlow = emptyFlow(),
+        eventFlow = ServiceLocator.sharedEventStream.events,
     )
 
     private val _uiState = MutableStateFlow(LauncherUiState(address = address, machineName = machineName))
     val uiState: StateFlow<LauncherUiState> = _uiState.asStateFlow()
-
-    private var eventStream: EventStream? = null
-    private var eventJob: Job? = null
 
     init {
         subscribeToEvents(eventFlow)
@@ -61,24 +58,10 @@ class LauncherViewModel(
 
     fun start() {
         refresh()
-        if (eventStream != null) return
-        val stream = EventStream(ServiceLocator.okHttpClient, ServiceLocator.json, address) { refresh() }
-        eventStream = stream
-        eventJob = viewModelScope.launch {
-            stream.events.collect { event ->
-                if (isLauncherEvent(event)) {
-                    refreshLauncherStatus()
-                }
-            }
-        }
-        stream.connect()
     }
 
     fun stop() {
-        eventJob?.cancel()
-        eventJob = null
-        eventStream?.disconnect()
-        eventStream = null
+        // SharedEventStream is managed by ServiceLocator; nothing to disconnect.
     }
 
     fun refresh() {

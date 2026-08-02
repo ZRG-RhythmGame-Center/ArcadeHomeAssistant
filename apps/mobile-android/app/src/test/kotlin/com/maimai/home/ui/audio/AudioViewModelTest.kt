@@ -358,6 +358,6 @@ class AudioViewModelTest {
         fakeConnectionState.value = com.maimai.home.data.EventStream.ConnectionState.Connected
         advanceUntilIdle()
 
-        assertThat(vm.uiState.value.connectionText).isEqualTo("Connected")
+        assertThat(vm.uiState.value.connectionText).isEqualTo("已连接")
     }
 }

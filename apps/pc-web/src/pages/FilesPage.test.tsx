@@ -59,7 +59,7 @@ describe('FilesPage', () => {
 
     renderPage();
 
-    expect(await screen.findByText(/truncated/i)).toBeInTheDocument();
+    expect(await screen.findByText(/仅显示前/)).toBeInTheDocument();
   });
 
   it('navigates into a directory when its name is clicked', async () => {
@@ -107,10 +107,9 @@ describe('FilesPage', () => {
 
     renderPage();
 
-    // wait for initial state
     await screen.findByRole('button', { name: /Music/ });
 
-    const input = screen.getByLabelText(/upload/i) as HTMLInputElement;
+    const input = screen.getByLabelText(/上传/) as HTMLInputElement;
     const file = new File(['hi'], 'a.txt', { type: 'text/plain' });
     await userEvent.upload(input, file);
 
@@ -129,14 +128,16 @@ describe('FilesPage', () => {
       truncated: false,
     });
     const del = vi.spyOn(filesApi, 'deleteFile').mockResolvedValue({ rootId: 'r1', path: 'a.txt' });
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     renderPage();
 
     const row = await screen.findByRole('row', { name: /a\.txt/ });
-    await userEvent.click(within(row).getByRole('button', { name: /delete/i }));
+    await userEvent.click(within(row).getByRole('button', { name: '删除' }));
 
-    expect(confirm).toHaveBeenCalledTimes(1);
+    // Confirm dialog should appear; click cancel
+    const cancelButton = await screen.findByRole('button', { name: '取消' });
+    await userEvent.click(cancelButton);
+
     expect(del).not.toHaveBeenCalled();
   });
 
@@ -150,17 +151,24 @@ describe('FilesPage', () => {
       truncated: false,
     });
     const del = vi.spyOn(filesApi, 'deleteFile').mockResolvedValue({ rootId: 'r1', path: 'a.txt' });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     renderPage();
 
     const row = await screen.findByRole('row', { name: /a\.txt/ });
-    await userEvent.click(within(row).getByRole('button', { name: /delete/i }));
+    await userEvent.click(within(row).getByRole('button', { name: '删除' }));
+
+    // Confirm dialog — click the "删除" confirm button (the danger button)
+    const confirmButtons = await screen.findAllByRole('button', { name: '删除' });
+    // The first "删除" is the row button; the second is the dialog confirm
+    const dialogConfirm = confirmButtons.find(
+      (btn) => !within(row).queryByRole('button', { name: '删除' })?.contains(btn),
+    ) ?? confirmButtons[confirmButtons.length - 1];
+    await userEvent.click(dialogConfirm);
 
     await waitFor(() => expect(del).toHaveBeenCalledWith('r1', 'a.txt'));
   });
 
-  it('renames a file using window.prompt for the new name', async () => {
+  it('renames a file using a prompt dialog for the new name', async () => {
     vi.spyOn(filesApi, 'getFileRoots').mockResolvedValue([
       { id: 'r1', name: 'Music', readOnly: false },
     ]);
@@ -172,13 +180,22 @@ describe('FilesPage', () => {
     const ren = vi
       .spyOn(filesApi, 'renameFile')
       .mockResolvedValue({ rootId: 'r1', fromPath: 'a.txt', toPath: 'b.txt' });
-    vi.spyOn(window, 'prompt').mockReturnValue('b.txt');
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     renderPage();
 
     const row = await screen.findByRole('row', { name: /a\.txt/ });
-    await userEvent.click(within(row).getByRole('button', { name: /rename/i }));
+    await userEvent.click(within(row).getByRole('button', { name: '重命名' }));
+
+    // Prompt dialog input should have the current name
+    const input = await screen.findByDisplayValue('a.txt');
+    await userEvent.clear(input);
+    await userEvent.type(input, 'b.txt');
+
+    // Click the confirm button (重命名 in the dialog)
+    const confirmBtn = screen.getAllByRole('button', { name: '重命名' }).find(
+      (btn) => !within(row).queryByRole('button', { name: '重命名' })?.contains(btn),
+    )!;
+    await userEvent.click(confirmBtn);
 
     await waitFor(() => expect(ren).toHaveBeenCalledWith('r1', 'a.txt', 'b.txt'));
   });
@@ -195,13 +212,21 @@ describe('FilesPage', () => {
     const mv = vi
       .spyOn(filesApi, 'moveFile')
       .mockResolvedValue({ rootId: 'r1', fromPath: 'a.txt', toPath: 'sub/a.txt' });
-    vi.spyOn(window, 'prompt').mockReturnValue('sub/a.txt');
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     renderPage();
 
     const row = await screen.findByRole('row', { name: /a\.txt/ });
-    await userEvent.click(within(row).getByRole('button', { name: /^move$/i }));
+    await userEvent.click(within(row).getByRole('button', { name: '移动' }));
+
+    // Prompt dialog input shows the current path
+    const input = await screen.findByDisplayValue('a.txt');
+    await userEvent.clear(input);
+    await userEvent.type(input, 'sub/a.txt');
+
+    const confirmBtn = screen.getAllByRole('button', { name: '移动' }).find(
+      (btn) => !within(row).queryByRole('button', { name: '移动' })?.contains(btn),
+    )!;
+    await userEvent.click(confirmBtn);
 
     await waitFor(() => expect(mv).toHaveBeenCalledWith('r1', 'a.txt', 'sub/a.txt'));
   });
@@ -219,11 +244,11 @@ describe('FilesPage', () => {
     renderPage();
 
     const row = await screen.findByRole('row', { name: /a\.jpg/ });
-    expect(within(row).getByRole('button', { name: /delete/i })).toBeDisabled();
-    expect(within(row).getByRole('button', { name: /rename/i })).toBeDisabled();
-    expect(within(row).getByRole('button', { name: /^move$/i })).toBeDisabled();
+    expect(within(row).getByRole('button', { name: '删除' })).toBeDisabled();
+    expect(within(row).getByRole('button', { name: '重命名' })).toBeDisabled();
+    expect(within(row).getByRole('button', { name: '移动' })).toBeDisabled();
 
-    const upload = screen.getByLabelText(/upload/i) as HTMLInputElement;
+    const upload = screen.getByLabelText(/上传/) as HTMLInputElement;
     expect(upload).toBeDisabled();
   });
 });

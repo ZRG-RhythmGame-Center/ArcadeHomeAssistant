@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
@@ -21,11 +22,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -83,8 +86,22 @@ fun AdminScreen(
         onStartItem = viewModel::startLauncherItem,
         onAutoStartChange = viewModel::updateAutoStartEnabled,
         onRemoteShutdownChange = viewModel::updateRemoteShutdownEnabled,
-        onLauncherFieldChange = viewModel::updateLauncherField,
+        onLauncherShowOnAgentStartChange = viewModel::updateLauncherShowOnAgentStart,
+        onLauncherShowDelaySecondsChange = viewModel::updateLauncherShowDelaySeconds,
+        onLauncherCanvasWidthChange = viewModel::updateLauncherCanvasWidth,
+        onLauncherCanvasHeightChange = viewModel::updateLauncherCanvasHeight,
+        onLauncherBackgroundImagePathChange = viewModel::updateLauncherBackgroundImagePath,
+        onLauncherNavigateLeftKeyChange = viewModel::updateLauncherNavigateLeftKey,
+        onLauncherNavigateRightKeyChange = viewModel::updateLauncherNavigateRightKey,
+        onLauncherConfirmKeyChange = viewModel::updateLauncherConfirmKey,
+        onLauncherStopKeyChange = viewModel::updateLauncherStopKey,
         onSave = viewModel::saveCurrentSettings,
+        onAddLauncherItem = viewModel::addLauncherItem,
+        onUpdateLauncherItem = viewModel::updateLauncherItem,
+        onRemoveLauncherItem = viewModel::removeLauncherItem,
+        onAddFileRoot = viewModel::addFileRoot,
+        onUpdateFileRoot = viewModel::updateFileRoot,
+        onRemoveFileRoot = viewModel::removeFileRoot,
     )
 }
 
@@ -98,8 +115,22 @@ internal fun AdminScreenContent(
     onStartItem: (String) -> Unit,
     onAutoStartChange: (Boolean) -> Unit = {},
     onRemoteShutdownChange: (Boolean) -> Unit = {},
-    onLauncherFieldChange: (String, Any?) -> Unit = { _, _ -> },
+    onLauncherShowOnAgentStartChange: (Boolean) -> Unit = {},
+    onLauncherShowDelaySecondsChange: (String) -> Unit = {},
+    onLauncherCanvasWidthChange: (String) -> Unit = {},
+    onLauncherCanvasHeightChange: (String) -> Unit = {},
+    onLauncherBackgroundImagePathChange: (String?) -> Unit = {},
+    onLauncherNavigateLeftKeyChange: (String) -> Unit = {},
+    onLauncherNavigateRightKeyChange: (String) -> Unit = {},
+    onLauncherConfirmKeyChange: (String) -> Unit = {},
+    onLauncherStopKeyChange: (String) -> Unit = {},
     onSave: () -> Unit = {},
+    onAddLauncherItem: () -> Unit = {},
+    onUpdateLauncherItem: (String, String, Any?) -> Unit = { _, _, _ -> },
+    onRemoveLauncherItem: (String) -> Unit = {},
+    onAddFileRoot: () -> Unit = {},
+    onUpdateFileRoot: (String, String, Any?) -> Unit = { _, _, _ -> },
+    onRemoveFileRoot: (String) -> Unit = {},
 ) {
     MaimaiScreenScaffold(
         topBarActions = {
@@ -134,10 +165,36 @@ internal fun AdminScreenContent(
                 )
             }
             item {
-                BasicSettingsCard(state, onAutoStartChange = onAutoStartChange, onLauncherFieldChange = onLauncherFieldChange)
+                BasicSettingsCard(
+                    state = state,
+                    onAutoStartChange = onAutoStartChange,
+                    onLauncherShowOnAgentStartChange = onLauncherShowOnAgentStartChange,
+                    onLauncherShowDelaySecondsChange = onLauncherShowDelaySecondsChange,
+                    onLauncherCanvasWidthChange = onLauncherCanvasWidthChange,
+                    onLauncherCanvasHeightChange = onLauncherCanvasHeightChange,
+                    onLauncherBackgroundImagePathChange = onLauncherBackgroundImagePathChange,
+                    onLauncherNavigateLeftKeyChange = onLauncherNavigateLeftKeyChange,
+                    onLauncherNavigateRightKeyChange = onLauncherNavigateRightKeyChange,
+                    onLauncherConfirmKeyChange = onLauncherConfirmKeyChange,
+                    onLauncherStopKeyChange = onLauncherStopKeyChange,
+                )
             }
             item {
-                LauncherItemsCard(state = state, onStartItem = onStartItem)
+                LauncherItemsCard(
+                    state = state,
+                    onStartItem = onStartItem,
+                    onAddLauncherItem = onAddLauncherItem,
+                    onUpdateLauncherItem = onUpdateLauncherItem,
+                    onRemoveLauncherItem = onRemoveLauncherItem,
+                )
+            }
+            item {
+                FileRootsCard(
+                    state = state,
+                    onAddFileRoot = onAddFileRoot,
+                    onUpdateFileRoot = onUpdateFileRoot,
+                    onRemoveFileRoot = onRemoveFileRoot,
+                )
             }
             item {
                 RemoteShutdownSettingsCard(state, onRemoteShutdownChange = onRemoteShutdownChange)
@@ -169,7 +226,15 @@ internal fun AdminScreenContent(
 private fun BasicSettingsCard(
     state: AdminUiState,
     onAutoStartChange: (Boolean) -> Unit,
-    onLauncherFieldChange: (String, Any?) -> Unit,
+    onLauncherShowOnAgentStartChange: (Boolean) -> Unit,
+    onLauncherShowDelaySecondsChange: (String) -> Unit,
+    onLauncherCanvasWidthChange: (String) -> Unit,
+    onLauncherCanvasHeightChange: (String) -> Unit,
+    onLauncherBackgroundImagePathChange: (String?) -> Unit,
+    onLauncherNavigateLeftKeyChange: (String) -> Unit,
+    onLauncherNavigateRightKeyChange: (String) -> Unit,
+    onLauncherConfirmKeyChange: (String) -> Unit,
+    onLauncherStopKeyChange: (String) -> Unit,
 ) {
     val settings = state.settings
     BentoCard {
@@ -180,31 +245,15 @@ private fun BasicSettingsCard(
             return@BentoCard
         }
         SwitchRow("开机自启", settings.autoStartEnabled, onAutoStartChange)
-        SwitchRow(
-            "启动器自动显示",
-            settings.launcher.showOnAgentStart,
-        ) { v -> onLauncherFieldChange("showOnAgentStart", v) }
-        TextFieldRow(
-            "显示延迟秒数",
-            settings.launcher.showDelaySeconds.toString(),
-        ) { v -> onLauncherFieldChange("showDelaySeconds", v) }
-        TextFieldRow(
-            "画布宽度",
-            settings.launcher.canvasWidth.toString(),
-        ) { v -> onLauncherFieldChange("canvasWidth", v) }
-        TextFieldRow(
-            "画布高度",
-            settings.launcher.canvasHeight.toString(),
-        ) { v -> onLauncherFieldChange("canvasHeight", v) }
-        TextFieldRow(
-            "壁纸路径",
-            settings.launcher.backgroundImagePath ?: "",
-            placeholder = "留空使用默认壁纸",
-        ) { v -> onLauncherFieldChange("backgroundImagePath", v.ifBlank { null }) }
-        TextFieldRow("左移键", settings.launcher.navigateLeftKey) { v -> onLauncherFieldChange("navigateLeftKey", v) }
-        TextFieldRow("右移键", settings.launcher.navigateRightKey) { v -> onLauncherFieldChange("navigateRightKey", v) }
-        TextFieldRow("确认键", settings.launcher.confirmKey) { v -> onLauncherFieldChange("confirmKey", v) }
-        TextFieldRow("关闭键", settings.launcher.stopKey) { v -> onLauncherFieldChange("stopKey", v) }
+        SwitchRow("启动器自动显示", settings.launcher.showOnAgentStart, onLauncherShowOnAgentStartChange)
+        TextFieldRow("显示延迟秒数", settings.launcher.showDelaySeconds.toString(), onChange = onLauncherShowDelaySecondsChange)
+        TextFieldRow("画布宽度", settings.launcher.canvasWidth.toString(), onChange = onLauncherCanvasWidthChange)
+        TextFieldRow("画布高度", settings.launcher.canvasHeight.toString(), onChange = onLauncherCanvasHeightChange)
+        TextFieldRow("壁纸路径", settings.launcher.backgroundImagePath ?: "", placeholder = "留空使用默认壁纸", onChange = { v -> onLauncherBackgroundImagePathChange(v.ifBlank { null }) })
+        TextFieldRow("左移键", settings.launcher.navigateLeftKey, onChange = onLauncherNavigateLeftKeyChange)
+        TextFieldRow("右移键", settings.launcher.navigateRightKey, onChange = onLauncherNavigateRightKeyChange)
+        TextFieldRow("确认键", settings.launcher.confirmKey, onChange = onLauncherConfirmKeyChange)
+        TextFieldRow("关闭键", settings.launcher.stopKey, onChange = onLauncherStopKeyChange)
     }
 }
 
@@ -212,6 +261,9 @@ private fun BasicSettingsCard(
 private fun LauncherItemsCard(
     state: AdminUiState,
     onStartItem: (String) -> Unit,
+    onAddLauncherItem: () -> Unit,
+    onUpdateLauncherItem: (String, String, Any?) -> Unit,
+    onRemoveLauncherItem: (String) -> Unit,
 ) {
     val items = state.settings?.launcher?.items.orEmpty().sortedBy { it.order }
     BentoCard {
@@ -219,9 +271,22 @@ private fun LauncherItemsCard(
         Spacer(Modifier.height(12.dp))
         if (items.isEmpty()) {
             Text("未配置启动项。", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            return@BentoCard
         }
-        items.forEach { item -> LauncherItemRow(item, onStartItem) }
+        items.forEach { item ->
+            LauncherItemRow(
+                item,
+                onStartItem,
+                onUpdateLauncherItem = onUpdateLauncherItem,
+                onRemoveLauncherItem = onRemoveLauncherItem,
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = onAddLauncherItem,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("+ 添加启动项")
+        }
     }
 }
 
@@ -229,38 +294,55 @@ private fun LauncherItemsCard(
 private fun LauncherItemRow(
     item: LauncherItemSettingsDto,
     onStartItem: (String) -> Unit,
+    onUpdateLauncherItem: (String, String, Any?) -> Unit,
+    onRemoveLauncherItem: (String) -> Unit,
 ) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.name.ifBlank { item.title.ifBlank { "(未命名)" } },
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            if (!item.note.isNullOrBlank()) {
+        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = item.note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = item.name.ifBlank { item.title.ifBlank { "(未命名)" } },
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                if (!item.note.isNullOrBlank()) {
+                    Text(
+                        text = item.note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(
+                    text = if (item.enabled) "已启用" else "已禁用",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (item.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = if (item.enabled) "已启用" else "已禁用",
-                style = MaterialTheme.typography.labelSmall,
-                color = if (item.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Button(
+                onClick = { onStartItem(item.id) },
+                enabled = item.enabled,
+                modifier = Modifier.testTag(AdminScreenTags.LAUNCHER_ITEM_BUTTON_PREFIX + item.id),
+            ) {
+                Icon(Icons.Filled.PlayArrow, contentDescription = null)
+                Text("启动")
+            }
         }
-        Button(
-            onClick = { onStartItem(item.id) },
-            enabled = item.enabled,
-            modifier = Modifier.testTag(AdminScreenTags.LAUNCHER_ITEM_BUTTON_PREFIX + item.id),
+        Spacer(Modifier.height(4.dp))
+        TextFieldRow("名称", item.name) { v -> onUpdateLauncherItem(item.id, "name", v) }
+        TextFieldRow("命令行", item.commandLine) { v -> onUpdateLauncherItem(item.id, "commandLine", v) }
+        TextFieldRow("工作目录", item.workingDirectory ?: "") { v -> onUpdateLauncherItem(item.id, "workingDirectory", v.ifBlank { null }) }
+        TextFieldRow("关闭命令", item.stopCommandLine) { v -> onUpdateLauncherItem(item.id, "stopCommandLine", v) }
+        TextFieldRow("关闭工作目录", item.stopWorkingDirectory ?: "") { v -> onUpdateLauncherItem(item.id, "stopWorkingDirectory", v.ifBlank { null }) }
+        TextFieldRow("快捷键", item.key) { v -> onUpdateLauncherItem(item.id, "key", v) }
+        SwitchRow("启用", item.enabled) { v -> onUpdateLauncherItem(item.id, "enabled", v) }
+        TextButton(
+            onClick = { onRemoveLauncherItem(item.id) },
+            modifier = Modifier.testTag("admin.launcher.remove.${item.id}"),
         ) {
-            Icon(Icons.Filled.PlayArrow, contentDescription = null)
-            Text("启动")
+            Text("删除", color = MaterialTheme.colorScheme.error)
         }
     }
 }
@@ -279,6 +361,44 @@ private fun RemoteShutdownSettingsCard(
             return@BentoCard
         }
         SwitchRow("启用远程关机", settings.remoteShutdown.enabled, onRemoteShutdownChange)
+    }
+}
+
+@Composable
+private fun FileRootsCard(
+    state: AdminUiState,
+    onAddFileRoot: () -> Unit,
+    onUpdateFileRoot: (String, String, Any?) -> Unit,
+    onRemoveFileRoot: (String) -> Unit,
+) {
+    val roots = state.settings?.fileRoots.orEmpty()
+    BentoCard {
+        BentoCardTitle(text = "文件根目录", leadingIcon = Icons.Filled.Folder)
+        Spacer(Modifier.height(12.dp))
+        if (state.settings == null) {
+            Text("尚未加载设置。", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            return@BentoCard
+        }
+        roots.forEach { root ->
+            Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                TextFieldRow("名称", root.name) { v -> onUpdateFileRoot(root.id, "name", v) }
+                TextFieldRow("路径", root.path) { v -> onUpdateFileRoot(root.id, "path", v) }
+                SwitchRow("只读", root.readOnly) { v -> onUpdateFileRoot(root.id, "readOnly", v) }
+                TextButton(
+                    onClick = { onRemoveFileRoot(root.id) },
+                    modifier = Modifier.testTag("admin.fileroot.remove.${root.id}"),
+                ) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = onAddFileRoot,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("+ 添加文件根目录")
+        }
     }
 }
 

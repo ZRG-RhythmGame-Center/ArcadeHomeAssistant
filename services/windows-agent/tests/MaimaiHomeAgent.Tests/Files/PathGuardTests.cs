@@ -243,7 +243,7 @@ public class PathGuardTests : IDisposable
             var result = PathGuard.ResolveSafe(_root, "junction-outside");
 
             Assert.False(result.IsOk);
-            Assert.Equal(PathSafetyError.ReparsePointInPath, result.Error);
+            Assert.Equal(PathSafetyError.SymlinkEscape, result.Error);
         }
         finally
         {

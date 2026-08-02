@@ -4,13 +4,14 @@ import {
   useDownload,
   useFileListing,
   useFileRoots,
+  useLoadMore,
   useMove,
   useRename,
   useUpload,
 } from '../hooks/useFiles';
+import { ConfirmDialog, PromptDialog } from '../components/ConfirmDialog';
 import type { FileEntry, FileRoot } from '../services/filesApi';
 
-/** Join a directory path and a single name with `/`, dropping leading/trailing slashes. */
 function joinPath(dir: string, name: string): string {
   if (!dir) {
     return name;
@@ -18,12 +19,10 @@ function joinPath(dir: string, name: string): string {
   return `${dir.replace(/\/+$/, '')}/${name}`;
 }
 
-/** Split `a/b/c` into `['a', 'b', 'c']`, ignoring empty segments. */
 function splitPath(path: string): string[] {
   return path.split('/').filter(Boolean);
 }
 
-/** Format `bytes` for the size column. Returns `''` for null (directories). */
 function formatSize(size: number | null): string {
   if (size === null) {
     return '';
@@ -37,7 +36,6 @@ function formatSize(size: number | null): string {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/** Format an ISO-8601 string as a locale-aware short timestamp. */
 function formatModified(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) {
@@ -83,14 +81,14 @@ function FileRow({ entry, rootReadOnly, onOpen, onDownload, onDelete, onRename, 
       <td className="files-cell--actions">
         {!isDir && (
           <button type="button" onClick={onDownload}>
-            Download
+            下载
           </button>
         )}
         <button type="button" onClick={onRename} disabled={rootReadOnly || isDir}>
-          Rename
+          重命名
         </button>
         <button type="button" onClick={onMove} disabled={rootReadOnly || isDir}>
-          Move
+          移动
         </button>
         <button
           type="button"
@@ -98,7 +96,7 @@ function FileRow({ entry, rootReadOnly, onOpen, onDownload, onDelete, onRename, 
           disabled={rootReadOnly || isDir}
           className="files-action--danger"
         >
-          Delete
+          删除
         </button>
       </td>
     </tr>
@@ -112,8 +110,6 @@ export function FilesPage() {
   const [selectedRootId, setSelectedRootId] = useState<string | null>(null);
   const [path, setPath] = useState('');
 
-  // Auto-select the first root once roots load. Re-runs only when the set of
-  // roots changes (length is a cheap proxy that holds for our use).
   useEffect(() => {
     if (selectedRootId === null && roots.length > 0) {
       setSelectedRootId(roots[0].id);
@@ -126,6 +122,7 @@ export function FilesPage() {
   );
 
   const listing = useFileListing(selectedRootId, path);
+  const loadMore = useLoadMore(selectedRootId, path);
   const upload = useUpload();
   const remove = useDelete();
   const rename = useRename();
@@ -133,6 +130,13 @@ export function FilesPage() {
   const download = useDownload();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [deleteTarget, setDeleteTarget] = useState<FileEntry | null>(null);
+  const [renameTarget, setRenameTarget] = useState<FileEntry | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [moveTarget, setMoveTarget] = useState<FileEntry | null>(null);
+  const [moveValue, setMoveValue] = useState('');
+  const [uploadConflict, setUploadConflict] = useState<{ name: string; file: File } | null>(null);
 
   function selectRoot(rootId: string) {
     setSelectedRootId(rootId);
@@ -150,7 +154,6 @@ export function FilesPage() {
 
   async function handleUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    // Always reset the input so the user can re-pick the same file.
     if (event.target) {
       event.target.value = '';
     }
@@ -165,83 +168,81 @@ export function FilesPage() {
         file,
         overwrite: false,
       });
-    } catch {
-      // Surface failures via the upload mutation's error state below.
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '';
+      if (message.includes('409') || message.toLowerCase().includes('conflict') || message.includes('已存在')) {
+        setUploadConflict({ name: file.name, file });
+      }
     }
+  }
+
+  async function handleOverwriteConfirm() {
+    if (!uploadConflict || !selectedRootId) return;
+    const targetPath = joinPath(path, uploadConflict.name);
+    try {
+      await upload.mutateAsync({
+        rootId: selectedRootId,
+        path: targetPath,
+        file: uploadConflict.file,
+        overwrite: true,
+      });
+    } catch {
+      // Error visible in mutation state.
+    }
+    setUploadConflict(null);
   }
 
   async function handleDelete(entry: FileEntry) {
-    if (!selectedRootId) {
-      return;
-    }
+    if (!selectedRootId) return;
     const targetPath = joinPath(path, entry.name);
-    if (!window.confirm(`Delete ${targetPath}? This cannot be undone.`)) {
-      return;
-    }
     try {
       await remove.mutateAsync({ rootId: selectedRootId, path: targetPath });
     } catch {
-      // Error visible in mutation state below.
+      // Error visible in mutation state.
     }
+    setDeleteTarget(null);
   }
 
-  async function handleRename(entry: FileEntry) {
-    if (!selectedRootId) {
-      return;
-    }
-    const newName = window.prompt(`Rename ${entry.name} to:`, entry.name);
-    if (!newName || newName === entry.name) {
-      return;
-    }
-    if (!window.confirm(`Rename ${entry.name} to ${newName}?`)) {
-      return;
-    }
+  async function handleRename(entry: FileEntry, newName: string) {
+    if (!selectedRootId || !newName || newName === entry.name) return;
     const targetPath = joinPath(path, entry.name);
     try {
       await rename.mutateAsync({ rootId: selectedRootId, path: targetPath, newName });
     } catch {
-      // Error visible in mutation state below.
+      // Error visible in mutation state.
     }
+    setRenameTarget(null);
   }
 
-  async function handleMove(entry: FileEntry) {
-    if (!selectedRootId) {
-      return;
-    }
+  async function handleMove(entry: FileEntry, toPath: string) {
+    if (!selectedRootId || !toPath || toPath === joinPath(path, entry.name)) return;
     const fromPath = joinPath(path, entry.name);
-    const toPath = window.prompt(
-      `Move ${fromPath} to (path within the same root):`,
-      fromPath,
-    );
-    if (!toPath || toPath === fromPath) {
-      return;
-    }
-    if (!window.confirm(`Move ${fromPath} to ${toPath}?`)) {
-      return;
-    }
     try {
       await move.mutateAsync({ rootId: selectedRootId, fromPath, toPath });
     } catch {
-      // Error visible in mutation state below.
+      // Error visible in mutation state.
     }
+    setMoveTarget(null);
   }
 
   async function handleDownload(entry: FileEntry) {
-    if (!selectedRootId) {
-      return;
-    }
+    if (!selectedRootId) return;
     const targetPath = joinPath(path, entry.name);
     try {
       await download({ rootId: selectedRootId, path: targetPath });
     } catch {
-      // Failure to fetch a blob is surfaced through the browser, not here.
+      // Failure to fetch a blob is surfaced through the browser.
     }
+  }
+
+  function handleLoadMore() {
+    const currentCount = listing.data?.entries.length ?? 0;
+    loadMore.mutate({ offset: currentCount });
   }
 
   const segments = splitPath(path);
   const writeDisabled = !selectedRoot || selectedRoot.readOnly;
 
-  // Combine mutation errors for a single inline status row at the bottom.
   const mutationError =
     upload.error?.message ||
     remove.error?.message ||
@@ -251,17 +252,17 @@ export function FilesPage() {
 
   return (
     <section className="files-page">
-      <h1>Files</h1>
+      <h1>文件</h1>
 
       <div className="files-layout">
         <aside className="files-sidebar" aria-label="File roots">
-          <h2 className="files-sidebar-title">Roots</h2>
-          {rootsQuery.isLoading && <p className="files-muted">Loading roots…</p>}
+          <h2 className="files-sidebar-title">根目录</h2>
+          {rootsQuery.isLoading && <p className="files-muted">加载中…</p>}
           {rootsQuery.isError && (
-            <p className="files-error">Failed to load roots: {rootsQuery.error?.message}</p>
+            <p className="files-error">加载失败: {rootsQuery.error?.message}</p>
           )}
           {!rootsQuery.isLoading && roots.length === 0 && (
-            <p className="files-muted">No roots configured.</p>
+            <p className="files-muted">未配置文件根目录。</p>
           )}
           <ul className="files-root-list">
             {roots.map((root) => {
@@ -277,7 +278,7 @@ export function FilesPage() {
                     aria-pressed={active}
                   >
                     <span className="files-root-name">{root.name}</span>
-                    {root.readOnly && <span className="files-badge">read-only</span>}
+                    {root.readOnly && <span className="files-badge">只读</span>}
                   </button>
                 </li>
               );
@@ -314,7 +315,7 @@ export function FilesPage() {
 
               <div className="files-toolbar">
                 <label className="files-upload-label">
-                  Upload
+                  上传
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -322,19 +323,21 @@ export function FilesPage() {
                     disabled={writeDisabled || upload.isPending}
                   />
                 </label>
-                {upload.isPending && <span className="files-muted">Uploading…</span>}
+                {upload.isPending && <span className="files-muted">上传中…</span>}
               </div>
 
-              {listing.isLoading && <p className="files-muted">Loading…</p>}
+              {listing.isLoading && <p className="files-muted">加载中…</p>}
               {listing.isError && (
                 <p className="files-error">
-                  Failed to load listing: {listing.error?.message}
+                  加载失败: {listing.error?.message}
                 </p>
               )}
               {listing.data?.truncated && (
                 <p className="files-banner" role="status">
-                  Listing truncated — only the first {listing.data.entries.length} of{' '}
-                  {listing.data.total} entries shown.
+                  仅显示前 {listing.data.entries.length} / {listing.data.total} 项。
+                  <button type="button" onClick={handleLoadMore} disabled={loadMore.isPending}>
+                    {loadMore.isPending ? '加载中…' : '加载更多'}
+                  </button>
                 </p>
               )}
 
@@ -342,18 +345,18 @@ export function FilesPage() {
                 <table className="files-table">
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Kind</th>
-                      <th className="files-cell--right">Size</th>
-                      <th>Modified</th>
-                      <th className="files-cell--actions">Actions</th>
+                      <th>名称</th>
+                      <th>类型</th>
+                      <th className="files-cell--right">大小</th>
+                      <th>修改时间</th>
+                      <th className="files-cell--actions">操作</th>
                     </tr>
                   </thead>
                   <tbody>
                     {listing.data.entries.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="files-muted">
-                          (empty)
+                          (空)
                         </td>
                       </tr>
                     ) : (
@@ -364,9 +367,15 @@ export function FilesPage() {
                           rootReadOnly={selectedRoot.readOnly}
                           onOpen={() => openDir(entry.name)}
                           onDownload={() => handleDownload(entry)}
-                          onDelete={() => handleDelete(entry)}
-                          onRename={() => handleRename(entry)}
-                          onMove={() => handleMove(entry)}
+                          onDelete={() => setDeleteTarget(entry)}
+                          onRename={() => {
+                            setRenameTarget(entry);
+                            setRenameValue(entry.name);
+                          }}
+                          onMove={() => {
+                            setMoveTarget(entry);
+                            setMoveValue(joinPath(path, entry.name));
+                          }}
                         />
                       ))
                     )}
@@ -381,10 +390,52 @@ export function FilesPage() {
               )}
             </>
           ) : (
-            <p className="files-muted">Select a root to begin.</p>
+            <p className="files-muted">请选择一个根目录。</p>
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="删除文件"
+        message={`确认删除 ${deleteTarget ? joinPath(path, deleteTarget.name) : ''}？此操作不可撤销。`}
+        confirmLabel="删除"
+        cancelLabel="取消"
+        onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
+
+      <PromptDialog
+        open={renameTarget !== null}
+        title="重命名"
+        label="新名称"
+        initialValue={renameValue}
+        confirmLabel="重命名"
+        cancelLabel="取消"
+        onConfirm={(value) => renameTarget && handleRename(renameTarget, value)}
+        onCancel={() => setRenameTarget(null)}
+      />
+
+      <PromptDialog
+        open={moveTarget !== null}
+        title="移动"
+        label="目标路径（同一根目录内）"
+        initialValue={moveValue}
+        confirmLabel="移动"
+        cancelLabel="取消"
+        onConfirm={(value) => moveTarget && handleMove(moveTarget, value)}
+        onCancel={() => setMoveTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={uploadConflict !== null}
+        title="文件已存在"
+        message={`文件 "${uploadConflict?.name ?? ''}" 已存在，是否覆盖？`}
+        confirmLabel="覆盖"
+        cancelLabel="取消"
+        onConfirm={handleOverwriteConfirm}
+        onCancel={() => setUploadConflict(null)}
+      />
     </section>
   );
 }

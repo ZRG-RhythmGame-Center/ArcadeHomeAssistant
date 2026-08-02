@@ -33,13 +33,10 @@ export async function getRemoteShutdownStatus(): Promise<RemoteShutdownStatus> {
   return response.data;
 }
 
-export async function executeRemoteShutdown(
-  controlToken: string,
-): Promise<RemoteShutdownStatus> {
+export async function executeRemoteShutdown(): Promise<RemoteShutdownStatus> {
   const response = await agentApi.post<RemoteShutdownStatus>(
     '/api/power/shutdown',
     { confirm: true },
-    { headers: { Authorization: `Bearer ${controlToken}` } },
   );
   return response.data;
 }

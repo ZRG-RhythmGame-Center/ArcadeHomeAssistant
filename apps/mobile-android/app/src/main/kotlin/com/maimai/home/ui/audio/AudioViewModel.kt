@@ -51,20 +51,16 @@ class AudioViewModel(
     private val connectionStateFlow: StateFlow<EventStream.ConnectionState>,
 ) : ViewModel() {
 
-    /** Production secondary constructor — creates a real EventStream. */
+    /** Production secondary constructor — subscribes to the shared event stream. */
     constructor(address: String, machineName: String) : this(
         address = address,
         machineName = machineName,
         agentClient = ServiceLocator.agentClient,
-        eventFlow = emptyFlow(),
-        connectionStateFlow = MutableStateFlow(EventStream.ConnectionState.Disconnected),
+        eventFlow = ServiceLocator.sharedEventStream.events,
+        connectionStateFlow = ServiceLocator.sharedEventStream.connectionState,
     )
 
     private val json = ServiceLocator.json
-
-    // Real EventStream used only in production (secondary constructor path).
-    private var eventStream: EventStream? = null
-    private var eventJob: Job? = null
 
     /** True while the user is actively dragging the volume slider. */
     private var isDragging = false
@@ -79,6 +75,13 @@ class AudioViewModel(
             ?: error.message?.takeIf { it.isNotBlank() }
             ?: "网络错误"
 
+    private fun describeConnectionState(state: EventStream.ConnectionState): String = when (state) {
+        EventStream.ConnectionState.Connected -> "已连接"
+        EventStream.ConnectionState.Connecting -> "连接中"
+        EventStream.ConnectionState.Reconnecting -> "重连中"
+        EventStream.ConnectionState.Disconnected -> "已断开"
+    }
+
     init {
         // Subscribe to the injected flows immediately (test path).
         // Production path calls start() which creates the real EventStream.
@@ -91,7 +94,7 @@ class AudioViewModel(
     ) {
         viewModelScope.launch {
             connFlow.collect { state ->
-                _uiState.update { it.copy(connectionText = state.name) }
+                _uiState.update { it.copy(connectionText = describeConnectionState(state)) }
             }
         }
         viewModelScope.launch {
@@ -104,23 +107,6 @@ class AudioViewModel(
     /** Called by the production screen via DisposableEffect. */
     fun start() {
         refresh()
-        if (eventStream != null) return
-        val stream = EventStream(ServiceLocator.okHttpClient, json, address) { refresh() }
-        eventStream = stream
-        // Wire the real stream's flows into the ViewModel
-        eventJob = viewModelScope.launch {
-            launch {
-                stream.connectionState.collect { state ->
-                    _uiState.update { it.copy(connectionText = state.name) }
-                }
-            }
-            launch {
-                stream.events.collect { event ->
-                    handleAudioEvent(event)
-                }
-            }
-        }
-        stream.connect()
     }
 
     private fun handleAudioEvent(event: EventEnvelope) {
@@ -141,10 +127,7 @@ class AudioViewModel(
     }
 
     fun stop() {
-        eventJob?.cancel()
-        eventJob = null
-        eventStream?.disconnect()
-        eventStream = null
+        // SharedEventStream is managed by ServiceLocator; nothing to disconnect here.
     }
 
     fun refresh() {

@@ -4,19 +4,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Devices
 import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.PowerSettingsNew
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
  * Top-level app destinations. Audio and Files are primary task surfaces;
+ * Admin includes settings, launcher items, and power management;
  * Device keeps connection setup, switching, and troubleshooting discoverable.
  */
 internal enum class AppDestination(
@@ -42,12 +41,6 @@ internal enum class AppDestination(
         label = "启动器",
         outlinedIcon = Icons.Outlined.Apps,
         filledIcon = Icons.Filled.Apps,
-    ),
-    Power(
-        route = "power",
-        label = "电源",
-        outlinedIcon = Icons.Outlined.PowerSettingsNew,
-        filledIcon = Icons.Filled.PowerSettingsNew,
     ),
     Admin(
         route = "admin",

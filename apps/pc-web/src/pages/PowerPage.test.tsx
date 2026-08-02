@@ -52,7 +52,7 @@ describe('PowerPage', () => {
     await waitFor(() => expect(button).toBeDisabled());
   });
 
-  it('requires confirmation and sends bearer token for immediate shutdown', async () => {
+  it('requires confirmation and triggers shutdown without token', async () => {
     vi.mocked(powerApi.getAgentStatus).mockResolvedValue({
       machineName: 'PC-A',
       version: '1',
@@ -74,13 +74,10 @@ describe('PowerPage', () => {
 
     expect(screen.getByText(/确认后将立即关机/)).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('控制令牌'), {
-      target: { value: 'secret-token' },
-    });
     fireEvent.click(screen.getByRole('button', { name: '确认关机' }));
 
     await waitFor(() => {
-      expect(powerApi.executeRemoteShutdown).toHaveBeenCalledWith('secret-token');
+      expect(powerApi.executeRemoteShutdown).toHaveBeenCalledWith();
     });
   });
 });

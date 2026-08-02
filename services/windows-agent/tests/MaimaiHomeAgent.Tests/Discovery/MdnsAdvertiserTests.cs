@@ -12,11 +12,12 @@ public class MdnsAdvertiserTests
     public async Task StartAsync_RegistersNetworkChangeHandler()
     {
         // Arrange
-        var options = Options.Create(new DiscoveryOptions { Enabled = true, Port = 8765 });
+        var options = new Mock<IOptionsMonitor<DiscoveryOptions>>();
+            options.SetupGet(o => o.CurrentValue).Returns(new DiscoveryOptions { Enabled = true, Port = 8765 });
         var loggerMock = new Mock<ILogger<MdnsAdvertiser>>();
         var appLifetimeMock = new Mock<IHostApplicationLifetime>();
 
-        var advertiser = new MdnsAdvertiser(options, loggerMock.Object, appLifetimeMock.Object);
+        var advertiser = new MdnsAdvertiser(options.Object, loggerMock.Object, appLifetimeMock.Object);
 
         // Act
         await advertiser.StartAsync(CancellationToken.None);
@@ -30,11 +31,12 @@ public class MdnsAdvertiserTests
     public async Task OnNetworkChanged_DebouncesMergesRapidEvents()
     {
         // Arrange
-        var options = Options.Create(new DiscoveryOptions { Enabled = true, Port = 8765 });
+        var options = new Mock<IOptionsMonitor<DiscoveryOptions>>();
+            options.SetupGet(o => o.CurrentValue).Returns(new DiscoveryOptions { Enabled = true, Port = 8765 });
         var loggerMock = new Mock<ILogger<MdnsAdvertiser>>();
         var appLifetimeMock = new Mock<IHostApplicationLifetime>();
 
-        var advertiser = new MdnsAdvertiser(options, loggerMock.Object, appLifetimeMock.Object);
+        var advertiser = new MdnsAdvertiser(options.Object, loggerMock.Object, appLifetimeMock.Object);
         await advertiser.StartAsync(CancellationToken.None);
 
         // Act - simulate rapid network changes (all within <50ms so they merge into 1 debounce window)
@@ -61,11 +63,12 @@ public class MdnsAdvertiserTests
     public async Task StopAsync_UnregistersNetworkChangeHandler()
     {
         // Arrange
-        var options = Options.Create(new DiscoveryOptions { Enabled = true, Port = 8765 });
+        var options = new Mock<IOptionsMonitor<DiscoveryOptions>>();
+            options.SetupGet(o => o.CurrentValue).Returns(new DiscoveryOptions { Enabled = true, Port = 8765 });
         var loggerMock = new Mock<ILogger<MdnsAdvertiser>>();
         var appLifetimeMock = new Mock<IHostApplicationLifetime>();
 
-        var advertiser = new MdnsAdvertiser(options, loggerMock.Object, appLifetimeMock.Object);
+        var advertiser = new MdnsAdvertiser(options.Object, loggerMock.Object, appLifetimeMock.Object);
         await advertiser.StartAsync(CancellationToken.None);
 
         // Act

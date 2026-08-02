@@ -5,6 +5,7 @@ import com.maimai.home.data.AgentClient
 import com.maimai.home.data.LanDns
 import com.maimai.home.data.AgentPreferences
 import com.maimai.home.data.DiscoveryService
+import com.maimai.home.data.SharedEventStream
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +35,7 @@ object ServiceLocator {
     val preferences: AgentPreferences by lazy { AgentPreferences(appContext) }
     val agentClient: AgentClient by lazy { AgentClient(okHttpClient, json) }
     val discoveryService: DiscoveryService by lazy { DiscoveryService(appContext) }
+    val sharedEventStream: SharedEventStream by lazy { SharedEventStream(okHttpClient, json) }
 
     /**
      * Cross-screen connection handle. Connection screen writes (address +
@@ -46,6 +48,11 @@ object ServiceLocator {
 
     fun setConnectionHandle(handle: ConnectionHandle?) {
         _connectionHandle.value = handle
+        if (handle != null) {
+            sharedEventStream.connect(handle.address)
+        } else {
+            sharedEventStream.disconnect()
+        }
     }
 
     fun init(context: Context) {

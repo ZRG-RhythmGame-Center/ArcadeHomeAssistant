@@ -411,7 +411,7 @@ private fun ConnectedStatusCard(
         Spacer(Modifier.height(12.dp))
         InfoRow("设备", status.machineName)
         InfoRow("版本", status.version)
-        InfoRow("已运行", "${status.uptimeSeconds} s")
+        InfoRow("已运行", formatUptime(status.uptimeSeconds))
         Spacer(Modifier.height(12.dp))
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -462,6 +462,16 @@ private fun InfoRow(label: String, value: String) {
     }
 }
 
+private fun formatUptime(seconds: Long): String {
+    if (seconds < 60) return "$seconds 秒"
+    val minutes = seconds / 60
+    if (minutes < 60) return "$minutes 分钟"
+    val hours = minutes / 60
+    if (hours < 24) return "$hours 小时 ${minutes % 60} 分"
+    val days = hours / 24
+    return "$days 天 ${hours % 24} 小时"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CapabilityChip(label: String, enabled: Boolean) {
@@ -480,7 +490,7 @@ private fun CapabilityChip(label: String, enabled: Boolean) {
                 },
             )
         },
-        enabled = enabled,
+        enabled = false,
     )
 }
 

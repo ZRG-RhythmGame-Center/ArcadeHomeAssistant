@@ -48,14 +48,11 @@ class PowerViewModel(
         address = address,
         machineName = machineName,
         agentClient = ServiceLocator.agentClient,
-        eventFlow = emptyFlow(),
+        eventFlow = ServiceLocator.sharedEventStream.events,
     )
 
     private val _uiState = MutableStateFlow(PowerUiState(address = address, machineName = machineName))
     val uiState: StateFlow<PowerUiState> = _uiState.asStateFlow()
-
-    private var eventStream: EventStream? = null
-    private var eventJob: Job? = null
 
     init {
         subscribeToEvents(eventFlow)
@@ -63,24 +60,10 @@ class PowerViewModel(
 
     fun start() {
         refresh()
-        if (eventStream != null) return
-        val stream = EventStream(ServiceLocator.okHttpClient, ServiceLocator.json, address) { refresh() }
-        eventStream = stream
-        eventJob = viewModelScope.launch {
-            stream.events.collect { event ->
-                if (isPowerShutdownEvent(event)) {
-                    refreshShutdownStatus()
-                }
-            }
-        }
-        stream.connect()
     }
 
     fun stop() {
-        eventJob?.cancel()
-        eventJob = null
-        eventStream?.disconnect()
-        eventStream = null
+        // SharedEventStream is managed by ServiceLocator; nothing to disconnect.
     }
 
     fun refresh() {

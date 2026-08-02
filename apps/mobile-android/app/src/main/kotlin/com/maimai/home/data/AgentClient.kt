@@ -121,7 +121,7 @@ class AgentClient(
     suspend fun fetchSettings(address: String): AgentSettingsSnapshot =
         get(address, "/api/settings", AgentSettingsSnapshot.serializer())
 
-    suspend fun updateSettings(address: String, request: AgentSettingsUpdateRequest): AgentSettingsSnapshot = postJson(
+    suspend fun updateSettings(address: String, request: AgentSettingsUpdateRequest): AgentSettingsSnapshot = putJson(
         address,
         "/api/settings",
         request,
@@ -245,6 +245,18 @@ class AgentClient(
     ): T {
         val payload = json.encodeToString(bodySerializer, body).toRequestBody("application/json".toMediaType())
         return request("${normalizedBaseUrl(address)}$path", "POST", payload, responseSerializer, headers)
+    }
+
+    private suspend fun <B, T> putJson(
+        address: String,
+        path: String,
+        body: B,
+        bodySerializer: kotlinx.serialization.KSerializer<B>,
+        responseSerializer: kotlinx.serialization.KSerializer<T>,
+        headers: Map<String, String> = emptyMap(),
+    ): T {
+        val payload = json.encodeToString(bodySerializer, body).toRequestBody("application/json".toMediaType())
+        return request("${normalizedBaseUrl(address)}$path", "PUT", payload, responseSerializer, headers)
     }
 
     private suspend fun <B> postJsonUnit(address: String, path: String, body: B, bodySerializer: kotlinx.serialization.KSerializer<B>) {

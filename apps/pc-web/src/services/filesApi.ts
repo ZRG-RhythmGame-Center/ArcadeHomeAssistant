@@ -40,12 +40,14 @@ export async function getFileRoots(): Promise<FileRoot[]> {
 export async function getFileListing(
   rootId: string,
   path: string,
+  offset = 0,
   limit?: number
 ): Promise<FileListingResult> {
   const response = await agentApi.get<FileListingResult>('/api/files', {
     params: {
       rootId,
       path,
+      offset,
       limit: limit ?? DEFAULT_LISTING_LIMIT,
     },
   });

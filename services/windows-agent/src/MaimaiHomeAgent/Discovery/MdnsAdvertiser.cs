@@ -5,13 +5,13 @@ using Microsoft.Extensions.Options;
 namespace MaimaiHomeAgent.Discovery;
 
 public sealed class MdnsAdvertiser(
-    IOptions<DiscoveryOptions> options,
+    IOptionsMonitor<DiscoveryOptions> options,
     ILogger<MdnsAdvertiser> logger,
-    IHostApplicationLifetime appLifetime) : IHostedService
+    IHostApplicationLifetime appLifetime) : IHostedService, IDisposable
 {
     private readonly IHostApplicationLifetime _appLifetime = appLifetime;
     private readonly ILogger<MdnsAdvertiser> _logger = logger;
-    private readonly DiscoveryOptions _options = options.Value;
+    private readonly IOptionsMonitor<DiscoveryOptions> _options = options;
     private readonly SemaphoreSlim _restartSemaphore = new(1, 1);
 
     private CancellationTokenSource? _restartCts;
@@ -21,15 +21,15 @@ public sealed class MdnsAdvertiser(
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        if (!_options.Enabled)
+        if (!_options.CurrentValue.Enabled)
         {
             _logger.LogInformation("mDNS discovery broadcast disabled by configuration.");
             return Task.CompletedTask;
         }
 
-        if (_options.Port <= 0)
+        if (_options.CurrentValue.Port <= 0)
         {
-            _logger.LogWarning("mDNS discovery skipped because configured port is invalid: {Port}", _options.Port);
+            _logger.LogWarning("mDNS discovery skipped because configured port is invalid: {Port}", _options.CurrentValue.Port);
             return Task.CompletedTask;
         }
 
@@ -73,6 +73,12 @@ public sealed class MdnsAdvertiser(
         return Task.CompletedTask;
     }
 
+    public void Dispose()
+    {
+        _restartCts?.Dispose();
+        _restartSemaphore.Dispose();
+    }
+
     private void OnNetworkChanged(object? sender, EventArgs e)
     {
         _logger.LogInformation("Network address changed, scheduling mDNS restart.");
@@ -103,15 +109,15 @@ public sealed class MdnsAdvertiser(
 
     private void StartAdvertising()
     {
-        var instanceName = string.IsNullOrWhiteSpace(_options.InstanceName)
+        var instanceName = string.IsNullOrWhiteSpace(_options.CurrentValue.InstanceName)
             ? Environment.MachineName
-            : _options.InstanceName;
+            : _options.CurrentValue.InstanceName;
 
-        _serviceProfile = new ServiceProfile(instanceName, _options.ServiceType, (ushort)_options.Port);
+        _serviceProfile = new ServiceProfile(instanceName, _options.CurrentValue.ServiceType, (ushort)_options.CurrentValue.Port);
         _serviceProfile.AddProperty("name", Environment.MachineName);
-        _serviceProfile.AddProperty("version", _options.Version ?? "1.0.0.0");
-        _serviceProfile.AddProperty("path", _options.StatusPath);
-        _serviceProfile.AddProperty("proto", _options.Protocol);
+        _serviceProfile.AddProperty("version", _options.CurrentValue.Version ?? "1.0.0.0");
+        _serviceProfile.AddProperty("path", _options.CurrentValue.StatusPath);
+        _serviceProfile.AddProperty("proto", _options.CurrentValue.Protocol);
 
         _serviceDiscovery = new ServiceDiscovery();
         _serviceDiscovery.Advertise(_serviceProfile);
@@ -119,8 +125,8 @@ public sealed class MdnsAdvertiser(
         _logger.LogInformation(
             "mDNS service advertised. Instance={InstanceName} ServiceType={ServiceType} Port={Port}",
             instanceName,
-            _options.ServiceType,
-            _options.Port);
+            _options.CurrentValue.ServiceType,
+            _options.CurrentValue.Port);
     }
 
     private async Task RestartAdvertising()

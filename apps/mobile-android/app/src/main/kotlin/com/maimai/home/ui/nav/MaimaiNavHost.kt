@@ -25,8 +25,6 @@ import com.maimai.home.ui.files.FilesScreen
 import com.maimai.home.ui.files.FilesTabUnconnected
 import com.maimai.home.ui.launcher.LauncherScreen
 import com.maimai.home.ui.launcher.LauncherTabUnconnected
-import com.maimai.home.ui.power.PowerScreen
-import com.maimai.home.ui.power.PowerTabUnconnected
 
 /**
  * Four top-level tabs live side-by-side in a [NavigationBar]. Audio, Files,
@@ -158,31 +156,6 @@ fun MaimaiNavHost() {
                         address = handle.address,
                         machineName = handle.machineName,
                         onSwitchDevice = {
-                            navController.navigate(AppDestination.Device.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                    )
-                }
-            }
-            composable(AppDestination.Power.route) {
-                val handle = connectionHandle
-                if (handle == null) {
-                    PowerTabUnconnected(onGoToConnection = {
-                        navController.navigate(AppDestination.Device.route) {
-                            popUpTo(AppDestination.Device.route) { saveState = true }
-                            launchSingleTop = true
-                        }
-                    })
-                } else {
-                    PowerScreen(
-                        address = handle.address,
-                        machineName = handle.machineName,
-                        onOpenDevice = {
                             navController.navigate(AppDestination.Device.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true

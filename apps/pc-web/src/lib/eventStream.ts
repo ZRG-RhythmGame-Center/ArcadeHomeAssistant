@@ -115,6 +115,16 @@ export class EventStream {
       if (typeof data !== 'string') {
         return;
       }
+      // Agent sends {"type":"ping"} as a heartbeat every 30s. Reply with a
+      // pong so the agent keeps the session alive.
+      if (data.length < 32 && data.includes('"ping"')) {
+        try {
+          this.socket?.send('{"type":"pong"}');
+        } catch {
+          // socket may have closed — ignore
+        }
+        return;
+      }
       let parsed: unknown;
       try {
         parsed = JSON.parse(data);

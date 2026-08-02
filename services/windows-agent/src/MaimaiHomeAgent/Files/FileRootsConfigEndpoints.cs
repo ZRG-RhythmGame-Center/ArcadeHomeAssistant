@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -111,8 +112,6 @@ public static class FileRootsConfigEndpoints
         IConfiguration configuration,
         ILogger logger)
     {
-        // Determine the directory where appsettings.json lives
-        // For the running assembly, this is typically the app's base directory
         var appSettingsPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
         var appSettingsDir = Path.GetDirectoryName(appSettingsPath) ?? AppContext.BaseDirectory;
         var userConfigPath = Path.Combine(appSettingsDir, ConfigFileName);
@@ -120,27 +119,42 @@ public static class FileRootsConfigEndpoints
 
         try
         {
-            // Build the config object to persist
-            var configToSave = new
+            // Read existing user config (if any) and merge only the FileRoots section,
+            // preserving Launcher, RemoteShutdown and other keys saved by the unified
+            // settings API. Mirrors AgentSettingsService.PersistAsync behavior.
+            JsonObject root;
+            if (File.Exists(userConfigPath))
             {
-                FileRoots = roots.Select(r => new
+                var existingJson = await File.ReadAllTextAsync(userConfigPath);
+                root = string.IsNullOrWhiteSpace(existingJson)
+                    ? new JsonObject()
+                    : JsonNode.Parse(existingJson)?.AsObject() ?? new JsonObject();
+            }
+            else
+            {
+                root = new JsonObject();
+            }
+
+            root["FileRoots"] = JsonSerializer.SerializeToNode(
+                roots.Select(r => new
                 {
                     r.Id,
                     r.Name,
                     r.Path,
                     r.ReadOnly
-                }).ToList()
-            };
+                }).ToList(),
+                new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                });
 
-            var options = new JsonSerializerOptions
+            var json = root.ToJsonString(new JsonSerializerOptions
             {
                 WriteIndented = true,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
+            });
 
-            var json = JsonSerializer.Serialize(configToSave, options);
-
-            // Atomic write: write to temp file, then move with overwrite
             await File.WriteAllTextAsync(tempPath, json);
             File.Move(tempPath, userConfigPath, true);
 
@@ -152,14 +166,12 @@ public static class FileRootsConfigEndpoints
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to persist file roots to {Path}", userConfigPath);
-            // Clean up temp file if it exists
             try
             {
                 if (File.Exists(tempPath)) File.Delete(tempPath);
             }
             catch
             {
-                // Ignore cleanup errors
             }
 
             throw;

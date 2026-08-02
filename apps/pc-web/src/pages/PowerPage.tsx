@@ -12,7 +12,6 @@ export function PowerPage() {
   const shutdownQuery = useRemoteShutdownStatus();
   const executeMutation = useExecuteRemoteShutdown();
 
-  const [controlToken, setControlToken] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -43,7 +42,7 @@ export function PowerPage() {
 
   const execute = () => {
     setErrorMessage(null);
-    executeMutation.mutate(controlToken, {
+    executeMutation.mutate(undefined, {
       onSuccess: () => {
         setConfirming(false);
       },
@@ -85,19 +84,8 @@ export function PowerPage() {
           </span>
         </div>
         <p className="power-copy">
-          该操作会关闭当前连接的 Windows 电脑。Agent 必须启用远程关机并配置控制令牌后才能执行。
+          该操作会关闭当前连接的 Windows 电脑。请确认 Agent 已启用远程关机功能。
         </p>
-
-        <label className="power-token-label">
-          控制令牌
-          <input
-            type="password"
-            value={controlToken}
-            onChange={(event) => setControlToken(event.target.value)}
-            placeholder="输入 Agent 配置中的控制令牌"
-            className="power-token-input"
-          />
-        </label>
 
         {!confirming ? (
           <button
@@ -129,7 +117,7 @@ export function PowerPage() {
                 type="button"
                 className="power-danger-button"
                 onClick={execute}
-                disabled={!controlToken.trim() || busy}
+                disabled={busy}
               >
                 确认关机
               </button>
